@@ -1513,7 +1513,14 @@ class TaskViewModel @Inject constructor(
                 }
             }
             
-        // 2. Mesaj olarak gönder (Gelen kutusuna düşmesi için asıl yöntem)
+        // 2. Canlı Ofis durumunu güncelle (Anlık görünmesi için)
+        firestore.collection("live_focus").document(cleanTargetEmail)
+            .update("latestEmoji", emoji, "emojiTime", now)
+            .addOnFailureListener {
+                // Eğer live_focus'ta yoksa (odaklanmıyorsa) veya döküman yoksa hata verebilir, sorun değil.
+            }
+            
+        // 3. Mesaj olarak gönder (Gelen kutusuna düşmesi için asıl yöntem)
         val targetUser = _leaderboard.value.find { it.email.lowercase() == cleanTargetEmail }
         val targetName = targetUser?.name ?: "Arkadaş"
         sendDirectMessage(cleanTargetEmail, targetName, "Sana bir tepki gönderdi: $emoji")

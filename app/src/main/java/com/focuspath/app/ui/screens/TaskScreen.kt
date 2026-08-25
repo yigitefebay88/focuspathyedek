@@ -2054,10 +2054,38 @@ fun BoxScope.WorkerModel(worker: WorkerInfo, fixedRotationX: Float, selectedBudd
     val isThinking = worker.currentAction == WorkerAction.THINKING
     val isAsking = worker.currentAction == WorkerAction.ASKING
 
+    // Emoji Reaksiyonu Kontrolü (Anlık temizleme için)
+    var emojiVisible by remember(worker.latestEmoji, worker.emojiTime) {
+        mutableStateOf(worker.latestEmoji != null && (System.currentTimeMillis() - worker.emojiTime < 5000))
+    }
+    LaunchedEffect(worker.latestEmoji, worker.emojiTime) {
+        if (emojiVisible) {
+            val remaining = 5000 - (System.currentTimeMillis() - worker.emojiTime)
+            if (remaining > 0) {
+                kotlinx.coroutines.delay(remaining)
+                emojiVisible = false
+            }
+        }
+    }
+
     // Oturma mantığı: Odaklanma aktifse ve masadaysa oturur. Yürürken veya kahve molasında ayaktadır.
     val isSitting = worker.isFocusing && worker.deskId.isNotEmpty() && worker.currentAction != WorkerAction.WALKING && worker.currentAction != WorkerAction.COFFEE
 
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.align(Alignment.BottomCenter)) {
+        // EMOJİ BALONU (En Üstte)
+        if (emojiVisible && worker.latestEmoji != null) {
+            Surface(
+                color = Color.White.copy(alpha = 0.9f),
+                shape = CircleShape,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)),
+                modifier = Modifier.offset(y = (-25).dp).size(30.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(text = worker.latestEmoji!!, fontSize = 16.sp)
+                }
+            }
+        }
+
         // FOCUS AURA (Sadece kendimiz ve odaklanıyorsak)
         if (worker.isMe && worker.isFocusing) {
             val auraTransition = rememberInfiniteTransition()
@@ -3361,21 +3389,19 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
                             top3.forEachIndexed { index, user ->
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Box(contentAlignment = Alignment.Center) {
-                                        AsyncImage(
-                                            model = user.photoUrl,
-                                            contentDescription = null,
-                                            modifier = Modifier
-                                                .size(48.dp)
-                                                .clip(CircleShape)
-                                                .border(
-                                                    width = 2.dp,
-                                                    color = when(index) {
-                                                        0 -> Color(0xFFFFD700) // Gold
-                                                        1 -> Color(0xFFC0C0C0) // Silver
-                                                        else -> Color(0xFFCD7F32) // Bronze
-                                                    },
-                                                    shape = CircleShape
-                                                )
+                                        ProfileImage(
+                                            photoUrl = user.photoUrl,
+                                            name = user.name,
+                                            email = user.email,
+                                            size = 48.dp,
+                                            border = BorderStroke(
+                                                width = 2.dp,
+                                                color = when(index) {
+                                                    0 -> Color(0xFFFFD700) // Gold
+                                                    1 -> Color(0xFFC0C0C0) // Silver
+                                                    else -> Color(0xFFCD7F32) // Bronze
+                                                }
+                                            )
                                         )
                                         if (user.isFocusing) {
                                             Box(
