@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">FocusPath</string>
+    <string name="accessibility_service_description">Odaklanma seansı sırasında seçilen uygulamaları engellemek için kullanılır.</string>
+    <string name="plan_today">Bugünü Planla</string>
+    <string name="remember_tomorrow">Yarını Hatırla</string>
+    <string name="planning_title">GÜNLÜK DÖNGÜ</string>
+</resources>
