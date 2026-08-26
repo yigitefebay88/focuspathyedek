@@ -633,6 +633,9 @@ class TaskViewModel @Inject constructor(
                             firestore.collection("users").document(user.uid)
                                 .set(profileMap, com.google.firebase.firestore.SetOptions.merge()).await()
                             
+                            // Auth nesnesini tazele ki yeni URL görünsün
+                            user.reload().await()
+                            
                             // Liderlik tablosunu tamamen güncelle
                             syncXpToFirestore() 
 
