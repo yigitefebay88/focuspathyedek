@@ -14,6 +14,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -51,8 +54,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Inbox
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -717,13 +718,33 @@ class MainActivity : ComponentActivity(), BillingProvider {
                                                             Text(if (isOnline) "Online" else "Offline", style = MaterialTheme.typography.labelSmall, color = if (isOnline) Color.Green.copy(0.7f) else Color.Gray)
                                                         }
                                                     }
-                                                    Button(
-                                                        onClick = { selectedFriendForTask = friend },
-                                                        colors = ButtonDefaults.buttonColors(containerColor = terminalColor),
-                                                        shape = RoundedCornerShape(8.dp),
-                                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
-                                                    ) {
-                                                        Text("🎯 Görev", color = Color.Black, style = MaterialTheme.typography.labelSmall)
+                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                                        Button(
+                                                            onClick = { selectedFriendForTask = friend },
+                                                            colors = ButtonDefaults.buttonColors(containerColor = terminalColor),
+                                                            shape = RoundedCornerShape(8.dp),
+                                                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                                        ) {
+                                                            Text("🎯 Görev", color = Color.Black, style = MaterialTheme.typography.labelSmall)
+                                                        }
+                                                        
+                                                        Spacer(modifier = Modifier.width(8.dp))
+                                                        
+                                                        IconButton(
+                                                            onClick = {
+                                                                vm.removeFriend(friend.uid, friend.email) {
+                                                                    Toast.makeText(this@MainActivity, "Arkadaş silindi.", Toast.LENGTH_SHORT).show()
+                                                                }
+                                                            },
+                                                            modifier = Modifier.size(24.dp)
+                                                        ) {
+                                                            Icon(
+                                                                Icons.Default.Delete,
+                                                                contentDescription = "Sil",
+                                                                tint = Color.Red.copy(alpha = 0.6f),
+                                                                modifier = Modifier.size(16.dp)
+                                                            )
+                                                        }
                                                     }
                                                 }
                                             }

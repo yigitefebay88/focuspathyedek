@@ -2143,6 +2143,24 @@ class TaskViewModel @Inject constructor(
             }
     }
 
+    fun removeFriend(friendUid: String, friendEmail: String, onSuccess: () -> Unit) {
+        val currentUser = firebaseAuth.currentUser ?: return
+        val currentEmail = currentUser.email ?: return
+        val db = firestore
+        
+        // 1. Kendi listemden sil
+        db.collection("users").document(currentEmail.lowercase())
+            .collection("friends").document(friendUid).delete()
+            .addOnSuccessListener {
+                // 2. Karşı tarafın listesinden beni sil
+                db.collection("users").document(friendEmail.lowercase())
+                    .collection("friends").document(currentUser.uid).delete()
+                    .addOnSuccessListener {
+                        onSuccess()
+                    }
+            }
+    }
+
     private var friendsRegistration: com.google.firebase.firestore.ListenerRegistration? = null
     fun startFriendsListener() {
         val email = userEmail.value
