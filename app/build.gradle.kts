@@ -26,7 +26,7 @@ android {
         applicationId = "com.focuspath.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 73
+        versionCode = 75
         versionName = "1.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

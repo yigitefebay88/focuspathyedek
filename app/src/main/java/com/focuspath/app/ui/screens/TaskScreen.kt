@@ -1812,7 +1812,45 @@ private fun SettingsTabFull(vm: TaskViewModel, lang: Map<String, String>, isEngl
             }
         }
         Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))) { Column(modifier = Modifier.padding(16.dp)) { Text(if(isEnglish) "PRODUCTIVITY" else "ÜRETKENLİK", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f));
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Column(modifier = Modifier.weight(1f)) { Text(if(isEnglish) "App Blocker" else "Uygulama Engelleyici"); Text(if(isEnglish) "Block distracting apps during focus" else "Odaklanırken dikkat dağıtıcıları engelle", style = MaterialTheme.typography.labelSmall, color = Color.Gray) }; val context = LocalContext.current ; var showBlockerDialog by remember { mutableStateOf(false) }; Button(onClick = { if (vm.isAccessibilityServiceEnabled(context)) { showBlockerDialog = true } else { vm.openAccessibilitySettings(context) } }, shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = if (vm.isAccessibilityServiceEnabled(context)) MaterialTheme.colorScheme.primary.copy(alpha = 0.8f) else AccentRed.copy(alpha = 0.8f))) { Text(if (vm.isAccessibilityServiceEnabled(context)) (if(isEnglish) "CONFIGURE" else "YAPILANDIR") else (if(isEnglish) "ENABLE SERVICE" else "SERVİSİ AÇ"), color = Color.Black, fontSize = 11.sp) }; if (showBlockerDialog) { com.focuspath.app.ui.screens.task.AppBlockerDialog(vm, isEnglish) { showBlockerDialog = false } } } } };
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { 
+                Column(modifier = Modifier.weight(1f)) { 
+                    Text(if(isEnglish) "App Blocker" else "Uygulama Engelleyici")
+                    Text(if(isEnglish) "Block distracting apps during focus" else "Odaklanırken dikkat dağıtıcıları engelle", style = MaterialTheme.typography.labelSmall, color = Color.Gray) 
+                }
+                val context = LocalContext.current 
+                var showBlockerDialog by remember { mutableStateOf(false) }
+                var showDisclosureDialog by remember { mutableStateOf(false) }
+
+                if (showDisclosureDialog) {
+                    com.focuspath.app.ui.screens.task.AccessibilityDisclosureDialog(
+                        isEnglish = isEnglish,
+                        onDismiss = { showDisclosureDialog = false },
+                        onAccept = {
+                            showDisclosureDialog = false
+                            vm.openAccessibilitySettings(context)
+                        }
+                    )
+                }
+
+                Button(
+                    onClick = { 
+                        if (vm.isAccessibilityServiceEnabled(context)) { 
+                            showBlockerDialog = true 
+                        } else { 
+                            showDisclosureDialog = true 
+                        } 
+                    }, 
+                    shape = RoundedCornerShape(12.dp), 
+                    colors = ButtonDefaults.buttonColors(containerColor = if (vm.isAccessibilityServiceEnabled(context)) MaterialTheme.colorScheme.primary.copy(alpha = 0.8f) else AccentRed.copy(alpha = 0.8f))
+                ) { 
+                    Text(if (vm.isAccessibilityServiceEnabled(context)) (if(isEnglish) "CONFIGURE" else "YAPILANDIR") else (if(isEnglish) "ENABLE SERVICE" else "SERVİSİ AÇ"), color = Color.Black, fontSize = 11.sp) 
+                }
+                if (showBlockerDialog) { 
+                    com.focuspath.app.ui.screens.task.AppBlockerDialog(vm, isEnglish) { showBlockerDialog = false } 
+                } 
+            }
+        }
+    };
         Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))) { Column(modifier = Modifier.padding(16.dp)) { Text(if(isEnglish) "NOTIFICATIONS & SOUND" else "BİLDİRİM VE SES", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)); Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(if(isEnglish) "End Session Notification" else "Seans Bitiş Bildirimi"); Switch(checked = vm.isNotificationEnabled.value, onCheckedChange = { vm.setNotificationEnabled(it) }) }; Spacer(Modifier.height(8.dp)); Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Column(modifier = Modifier.weight(1f)) { Text(if(isEnglish) "Auto Do Not Disturb" else "Otomatik Rahatsız Etmeyin"); Text(if(isEnglish) "Enable DND when focus starts" else "Odaklanınca modu otomatik aç", style = MaterialTheme.typography.labelSmall, color = Color.Gray) }; val context = LocalContext.current ; Switch(checked = vm.isAutoDndEnabled.value, onCheckedChange = { vm.setAutoDndEnabled(context, it) }) }; 
             
             Spacer(Modifier.height(12.dp))

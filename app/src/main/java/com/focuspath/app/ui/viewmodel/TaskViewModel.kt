@@ -823,9 +823,16 @@ class TaskViewModel @Inject constructor(
                 if (e != null) return@addSnapshotListener
                 
                 // THROW AWAY UPDATES IF TOO FREQUENT (Anti-Overheating)
+                // EXCEPT if there's an emoji update
                 val now = System.currentTimeMillis()
-                if (now - lastLiveFocusUpdate < 3000) return@addSnapshotListener
-                lastLiveFocusUpdate = now
+                val hasEmojiUpdate = snapshot?.documentChanges?.any { 
+                    val data = it.document.data
+                    val emojiTime = data["emojiTime"] as? Long ?: 0L
+                    (now - emojiTime) < 5000 
+                } ?: false
+
+                if (!hasEmojiUpdate && now - lastLiveFocusUpdate < 3000) return@addSnapshotListener
+                if (!hasEmojiUpdate) lastLiveFocusUpdate = now
 
                 snapshot?.let { querySnapshot ->
                     val now = System.currentTimeMillis()
@@ -1479,7 +1486,13 @@ class TaskViewModel @Inject constructor(
                             // Gelen mesaj bildirimi - Sadece son 10 saniye içinde gönderilmişse göster (Spam engelleme)
                             if (System.currentTimeMillis() - msg.timestamp < 10000) {
                                 viewModelScope.launch(Dispatchers.Main) {
-                                    Toast.makeText(application, "${msg.fromName}: ${msg.text}", Toast.LENGTH_SHORT).show()
+                                    val toastMsg = if (msg.text.contains("Sana bir tepki gönderdi:")) {
+                                        val emoji = msg.text.substringAfterLast(": ").trim()
+                                        "${msg.fromName} sana $emoji gönderdi!"
+                                    } else {
+                                        "${msg.fromName}: ${msg.text}"
+                                    }
+                                    Toast.makeText(application, toastMsg, Toast.LENGTH_SHORT).show()
                                 }
                             }
                         }
@@ -1518,9 +1531,9 @@ class TaskViewModel @Inject constructor(
             
         // 2. Canlı Ofis durumunu güncelle (Anlık görünmesi için)
         firestore.collection("live_focus").document(cleanTargetEmail)
-            .update("latestEmoji", emoji, "emojiTime", now)
+            .set(mapOf("latestEmoji" to emoji, "emojiTime" to now), com.google.firebase.firestore.SetOptions.merge())
             .addOnFailureListener {
-                // Eğer live_focus'ta yoksa (odaklanmıyorsa) veya döküman yoksa hata verebilir, sorun değil.
+                android.util.Log.e("FocusPathEmoji", "Live focus update failed: ${it.message}")
             }
             
         // 3. Mesaj olarak gönder (Gelen kutusuna düşmesi için asıl yöntem)

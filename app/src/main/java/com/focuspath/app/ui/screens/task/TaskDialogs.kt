@@ -564,3 +564,51 @@ fun AppBlockerDialog(
         containerColor = MaterialTheme.colorScheme.surface
     )
 }
+
+@Composable
+fun AccessibilityDisclosureDialog(
+    isEnglish: Boolean,
+    onDismiss: () -> Unit,
+    onAccept: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Security, null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(8.dp))
+                Text(if (isEnglish) "Accessibility Permission" else "Erişilebilirlik İzni")
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = if (isEnglish)
+                        "FocusPath uses the Accessibility Service to help you stay focused by blocking distracting apps during your focus sessions."
+                    else
+                        "FocusPath, odaklanma seanslarınız sırasında dikkat dağıtıcı uygulamaları engelleyerek odaklanmanıza yardımcı olmak için Erişilebilirlik Hizmetini kullanır.",
+                    fontSize = 14.sp
+                )
+                Text(
+                    text = if (isEnglish)
+                        "How it works:\n• It detects which app is in the foreground.\n• If a blocked app is opened during focus, it returns you to FocusPath.\n• No personal or sensitive data is collected or shared."
+                    else
+                        "Nasıl çalışır:\n• Hangi uygulamanın ön planda olduğunu tespit eder.\n• Odaklanma sırasında engellenmiş bir uygulama açılırsa sizi FocusPath'e geri döndürür.\n• Hiçbir kişisel veya hassas veri toplanmaz veya paylaşılmaz.",
+                    fontSize = 13.sp,
+                    color = Color.Gray
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = onAccept) {
+                Text(if (isEnglish) "ACCEPT & ENABLE" else "KABUL ET VE AÇ")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(if (isEnglish) "NOT NOW" else "ŞİMDİ DEĞİL", color = Color.Gray)
+            }
+        },
+        containerColor = MaterialTheme.colorScheme.surface
+    )
+}
