@@ -1488,7 +1488,11 @@ class TaskViewModel @Inject constructor(
                                 viewModelScope.launch(Dispatchers.Main) {
                                     val toastMsg = if (msg.text.contains("Sana bir tepki gönderdi:")) {
                                         val emoji = msg.text.substringAfterLast(": ").trim()
-                                        "${msg.fromName} sana $emoji gönderdi!"
+                                        if (msg.from == userEmail.value) {
+                                            "Kendine $emoji gönderdin!"
+                                        } else {
+                                            "${msg.fromName} sana $emoji gönderdi!"
+                                        }
                                     } else {
                                         "${msg.fromName}: ${msg.text}"
                                     }
