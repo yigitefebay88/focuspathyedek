@@ -45,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -2284,6 +2285,14 @@ private fun OfficeTabFull(vm: TaskViewModel, isEnglish: Boolean, context: Contex
         }
     }
 
+    var showTeamDialog by remember { mutableStateOf(false) }
+
+    if (showTeamDialog) {
+        com.focuspath.app.ui.screens.task.TeamManagementDialog(vm, isEnglish) {
+            showTeamDialog = false
+        }
+    }
+
     val currentDensity = androidx.compose.ui.platform.LocalDensity.current
     val workersCopy = vm.workers.toList()
     val isFocusActive by vm.isFocusActive // Odanın ışık durumunu bu belirler
@@ -2302,9 +2311,44 @@ private fun OfficeTabFull(vm: TaskViewModel, isEnglish: Boolean, context: Contex
             Column {
                 Text(text = "YİME CENTER", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
                 Text(text = "LVL $officeLevel • $coins 🪙", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-            };
-            IconButton(onClick = { vm.resetOfficePositions() }) {
-                Icon(Icons.Default.RestartAlt, null, tint = AccentRed)
+            }
+            
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // SİNERJİ BONUSU GÖSTERGESİ
+                val isSynergy by vm.isTeamSynergyActive
+                if (isSynergy) {
+                    Surface(
+                        color = AccentYellow.copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, AccentYellow.copy(alpha = 0.5f)),
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Bolt, null, tint = AccentYellow, modifier = Modifier.size(14.dp))
+                            Text("x1.2 BONUS", fontSize = 8.sp, fontWeight = FontWeight.Black, color = AccentYellow)
+                        }
+                    }
+                }
+
+                // TAKIM MODU SWITCH
+                if (vm.userTeam.value != null) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(end = 4.dp)) {
+                        Text(if(isEnglish) "TEAM" else "TAKIM", fontSize = 7.sp, color = if(vm.isTeamOfisMode.value) MaterialTheme.colorScheme.primary else Color.Gray)
+                        Switch(
+                            checked = vm.isTeamOfisMode.value,
+                            onCheckedChange = { vm.toggleTeamOfficeMode(it) },
+                            modifier = Modifier.scale(0.6f).height(20.dp)
+                        )
+                    }
+                }
+                
+                IconButton(onClick = { showTeamDialog = true }) {
+                    Icon(Icons.Default.Groups, null, tint = if(vm.userTeam.value != null) MaterialTheme.colorScheme.primary else Color.Gray)
+                }
+
+                IconButton(onClick = { vm.resetOfficePositions() }) {
+                    Icon(Icons.Default.RestartAlt, null, tint = AccentRed)
+                }
             }
         }
         if (showLayoutDialog) { AlertDialog(onDismissRequest = { showLayoutDialog = false }, title = { Text("Ofis Düzenleri") }, text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { listOf("Yazılım Ofisi" to "💻", "Tasarım Ofisi" to "🎨", "Gaming Ofisi" to "🎮", "CEO Ofisi" to "🏆").forEach { (name, emoji) -> val hasSaved = vm.prefs.getString("office_layout_$name", null) != null ; Row(modifier = Modifier.fillMaxWidth().clickable { if (hasSaved) vm.loadLayout(name) else vm.saveCurrentLayout(name) ; showLayoutDialog = false }.padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Row(verticalAlignment = Alignment.CenterVertically) { Text(emoji, fontSize = 20.sp); Spacer(Modifier.width(12.dp)); Text(name, fontWeight = FontWeight.Bold) }; Text(if (hasSaved) "YÜKLE" else "KAYDET", color = if(hasSaved) MaterialTheme.colorScheme.primary else Color.Gray, fontSize = 10.sp) } } } }, confirmButton = { TextButton(onClick = { showLayoutDialog = false }) { Text("Kapat") } }) }
@@ -3415,56 +3459,117 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(0.3f))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(if(isEnglish) "TOP PLAYERS" else "LİDERLİK TABLOSU (TOP 3)", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                    var lbTabState by remember { mutableIntStateOf(0) }
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text(if(isEnglish) "LEADERBOARD" else "LİDERLİK TABLOSU", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                        Row {
+                            TextButton(onClick = { lbTabState = 0 }) {
+                                Text(if(isEnglish) "PLAYERS" else "OYUNCULAR", fontSize = 10.sp, color = if(lbTabState == 0) MaterialTheme.colorScheme.primary else Color.Gray)
+                            }
+                            TextButton(onClick = { lbTabState = 1 }) {
+                                Text(if(isEnglish) "TEAMS" else "TAKIMLAR", fontSize = 10.sp, color = if(lbTabState == 1) MaterialTheme.colorScheme.primary else Color.Gray)
+                            }
+                        }
+                    }
+                    
                     Spacer(Modifier.height(12.dp))
                     
-                    if (vm.isLeaderboardLoading.value && top3.isEmpty()) {
-                        Text(if(isEnglish) "Loading leaderboard..." else "Veriler yükleniyor...", fontSize = 12.sp, color = Color.Gray)
-                    } else if (top3.isEmpty()) {
-                        Text(if(isEnglish) "No data found yet." else "Henüz kimse yok.", fontSize = 12.sp, color = Color.Gray)
+                    if (lbTabState == 0) {
+                        // OYUNCULAR (TOP 3)
+                        if (vm.isLeaderboardLoading.value && top3.isEmpty()) {
+                            Text(if(isEnglish) "Loading players..." else "Oyuncular yükleniyor...", fontSize = 12.sp, color = Color.Gray)
+                        } else if (top3.isEmpty()) {
+                            Text(if(isEnglish) "No data found." else "Henüz oyuncu yok.", fontSize = 12.sp, color = Color.Gray)
+                        } else {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                                top3.forEachIndexed { index, user ->
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            ProfileImage(
+                                                photoUrl = user.photoUrl,
+                                                name = user.name,
+                                                email = user.email,
+                                                size = 48.dp,
+                                                border = BorderStroke(
+                                                    width = 2.dp,
+                                                    color = when(index) {
+                                                        0 -> Color(0xFFFFD700) // Gold
+                                                        1 -> Color(0xFFC0C0C0) // Silver
+                                                        else -> Color(0xFFCD7F32) // Bronze
+                                                    }
+                                                )
+                                            )
+                                            if (user.isFocusing) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(10.dp)
+                                                        .align(Alignment.BottomEnd)
+                                                        .background(TerminalGreen, CircleShape)
+                                                        .border(1.5.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                                                )
+                                            }
+                                        }
+                                        Spacer(Modifier.height(4.dp))
+                                        Text(
+                                            text = user.name.split(" ").firstOrNull() ?: "User",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Text(
+                                            text = "${user.score} XP",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontSize = 8.sp,
+                                            color = Color.Gray
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     } else {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                            top3.forEachIndexed { index, user ->
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        ProfileImage(
-                                            photoUrl = user.photoUrl,
-                                            name = user.name,
-                                            email = user.email,
-                                            size = 48.dp,
+                        // TAKIMLAR (TOP 3)
+                        val teamLb by vm.teamLeaderboard.collectAsState()
+                        val top3Teams = teamLb.take(3)
+                        
+                        if (top3Teams.isEmpty()) {
+                            Text(if(isEnglish) "No teams found." else "Henüz takım bulunamadı.", fontSize = 12.sp, color = Color.Gray)
+                        } else {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                                top3Teams.forEachIndexed { index, team ->
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Surface(
+                                            modifier = Modifier.size(48.dp),
+                                            shape = CircleShape,
+                                            color = Color.Black.copy(alpha = 0.4f),
                                             border = BorderStroke(
                                                 width = 2.dp,
                                                 color = when(index) {
-                                                    0 -> Color(0xFFFFD700) // Gold
-                                                    1 -> Color(0xFFC0C0C0) // Silver
-                                                    else -> Color(0xFFCD7F32) // Bronze
+                                                    0 -> Color(0xFFFFD700) 
+                                                    1 -> Color(0xFFC0C0C0) 
+                                                    else -> Color(0xFFCD7F32) 
                                                 }
                                             )
-                                        )
-                                        if (user.isFocusing) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(10.dp)
-                                                    .align(Alignment.BottomEnd)
-                                                    .background(TerminalGreen, CircleShape)
-                                                    .border(1.5.dp, MaterialTheme.colorScheme.surface, CircleShape)
-                                            )
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Text(team.name.take(1).uppercase(), fontWeight = FontWeight.Black, color = Color.White)
+                                            }
                                         }
+                                        Spacer(Modifier.height(4.dp))
+                                        Text(
+                                            text = team.name.uppercase(),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Text(
+                                            text = "${team.totalTeamXp} XP",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontSize = 8.sp,
+                                            color = Color.Gray
+                                        )
                                     }
-                                    Spacer(Modifier.height(4.dp))
-                                    Text(
-                                        text = user.name.split(" ").firstOrNull() ?: "User",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    Text(
-                                        text = "${user.score} XP",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontSize = 8.sp,
-                                        color = Color.Gray
-                                    )
                                 }
                             }
                         }

@@ -23,6 +23,7 @@ import com.focuspath.app.data.local.TaskDao
 import com.focuspath.app.data.local.TaskEntity
 import com.focuspath.app.data.local.FocusHistoryEntity
 import com.focuspath.app.data.model.LeaderboardUser
+import com.focuspath.app.data.model.Team
 import com.focuspath.app.data.remote.FocusPathApiService
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.firebase.auth.FirebaseAuth
@@ -146,6 +147,17 @@ class TaskViewModel @Inject constructor(
     private var liveFocusUpdateJob: kotlinx.coroutines.Job? = null
 
     val isLeaderboardLoading = mutableStateOf(false)
+    
+    private val _teamLeaderboard = MutableStateFlow<List<Team>>(emptyList())
+    val teamLeaderboard: StateFlow<List<Team>> = _teamLeaderboard.asStateFlow()
+    
+    // TEAM SYSTEM STATE
+    val userTeam = mutableStateOf<Team?>(null)
+    val teamMembers = mutableStateListOf<LeaderboardUser>()
+    val isTeamLoading = mutableStateOf(false)
+    val isTeamOfisMode = mutableStateOf(prefs.getBoolean("is_team_office_mode", false))
+    private var teamListener: com.google.firebase.firestore.ListenerRegistration? = null
+
     val dailyBriefingText = mutableStateOf<String?>(null)
     val isBriefingLoading = mutableStateOf(false)
     val showDailyBriefing = mutableStateOf(false)
@@ -532,6 +544,7 @@ class TaskViewModel @Inject constructor(
 
             fetchLeaderboard()
             fetchUserDataFromFirestore()
+            fetchUserTeam() // TAKIM VERİSİNİ ÇEK
             syncXpToFirestore() // Hemen senkronize et ki leaderboard boş kalmasın
             startFriendRequestListener()
             startFriendsListener()
@@ -891,47 +904,66 @@ class TaskViewModel @Inject constructor(
         // 4. ARKADAŞLARI AL (isFocusing olanlar, buddy hariç)
         val activeFriends = leaderboard.value.filter { it.email != currentEmail && it.email != buddyEmail && it.isFocusing }
         
-        // 5. KALAN YERLERE DÜNYADAN CANLI KİŞİLERİ AL
-        val availableLivePeers = livePeers.filter { lp -> !lp.isMe && lp.email != buddyEmail && !activeFriends.any { it.email == lp.email } }
+        val isTeamMode = isTeamOfisMode.value
+        val myTeamId = userTeam.value?.id
+
+        // 5. KALAN YERLERE DÜNYADAN CANLI KİŞİLERİ AL (Team Mode Açıksa sadece takım arkadaşlarını al)
+        val availableLivePeers = if (isTeamMode && myTeamId != null) {
+            livePeers.filter { lp -> 
+                !lp.isMe && lp.email != buddyEmail && 
+                leaderboard.value.find { it.email == lp.email }?.teamId == myTeamId 
+            }
+        } else if (isTeamMode) {
+            emptyList()
+        } else {
+            livePeers.filter { lp -> !lp.isMe && lp.email != buddyEmail && !activeFriends.any { it.email == lp.email } }
+        }
         
         val priorityList = mutableListOf<WorkerInfo>()
         if (me != null) priorityList.add(me)
         
         // BODY DOUBLING ARKADAŞINI BAŞA EKLE (Kendimizden hemen sonra)
         if (buddyUser != null) {
-            priorityList.add(WorkerInfo(
-                id = "buddy_${buddyUser.email}",
-                name = buddyUser.name,
-                photoUrl = buddyUser.photoUrl,
-                email = buddyUser.email,
-                deskId = "",
-                isFocusing = buddyUser.isFocusing,
-                currentAction = if (buddyUser.isFocusing) WorkerAction.WORKING else WorkerAction.IDLE,
-                isFriend = true,
-                isLiveUser = true,
-                latestEmoji = buddyUser.latestEmoji,
-                emojiTime = buddyUser.emojiTime,
-                interactionText = buddyUser.currentTaskTitle // Arkadaşın neye odaklandığını göster
-            ))
+            // Team modundaysak ve buddy takımda değilse göstermeyebiliriz (Tercihe bağlı)
+            val showBuddy = !isTeamMode || buddyUser.teamId == myTeamId
+            if (showBuddy) {
+                priorityList.add(WorkerInfo(
+                    id = "buddy_${buddyUser.email}",
+                    name = buddyUser.name,
+                    photoUrl = buddyUser.photoUrl,
+                    email = buddyUser.email,
+                    deskId = "",
+                    isFocusing = buddyUser.isFocusing,
+                    currentAction = if (buddyUser.isFocusing) WorkerAction.WORKING else WorkerAction.IDLE,
+                    isFriend = true,
+                    isLiveUser = true,
+                    latestEmoji = buddyUser.latestEmoji,
+                    emojiTime = buddyUser.emojiTime,
+                    interactionText = buddyUser.currentTaskTitle // Arkadaşın neye odaklandığını göster
+                ))
+            }
             buddyCurrentTask.value = buddyUser.currentTaskTitle
         } else {
             buddyCurrentTask.value = null
         }
 
         activeFriends.forEach { f ->
-            priorityList.add(WorkerInfo(
-                id = "friend_${f.email}",
-                name = f.name,
-                photoUrl = f.photoUrl,
-                email = f.email,
-                deskId = "",
-                isFocusing = true,
-                currentAction = WorkerAction.WORKING,
-                isFriend = true,
-                isLiveUser = true,
-                latestEmoji = f.latestEmoji,
-                emojiTime = f.emojiTime
-            ))
+            val showFriend = !isTeamMode || f.teamId == myTeamId
+            if (showFriend) {
+                priorityList.add(WorkerInfo(
+                    id = "friend_${f.email}",
+                    name = f.name,
+                    photoUrl = f.photoUrl,
+                    email = f.email,
+                    deskId = "",
+                    isFocusing = true,
+                    currentAction = WorkerAction.WORKING,
+                    isFriend = true,
+                    isLiveUser = true,
+                    latestEmoji = f.latestEmoji,
+                    emojiTime = f.emojiTime
+                ))
+            }
         }
         priorityList.addAll(availableLivePeers)
 
@@ -1434,6 +1466,172 @@ class TaskViewModel @Inject constructor(
     private val _directMessages = mutableStateListOf<DirectMessage>()
     val directMessages: List<DirectMessage> get() = _directMessages.sortedBy { it.timestamp }
 
+    fun toggleTeamOfficeMode(enabled: Boolean) {
+        isTeamOfisMode.value = enabled
+        prefs.edit().putBoolean("is_team_office_mode", enabled).apply()
+        // Ofisi hemen güncellemek için live listener'ı tetikleyebiliriz
+        val currentPeers = workers.toList()
+        updateWorkersWithLivePeers(currentPeers)
+    }
+
+    fun createTeam(teamName: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        val user = firebaseAuth.currentUser ?: return
+        val email = user.email?.lowercase() ?: return
+        isTeamLoading.value = true
+        
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val teamId = UUID.randomUUID().toString()
+                val inviteCode = (1..6).map { (('A'..'Z') + ('0'..'9')).random() }.joinToString("")
+                
+                val newTeam = Team(
+                    id = teamId,
+                    name = teamName,
+                    inviteCode = inviteCode,
+                    creatorUid = user.uid,
+                    memberEmails = listOf(email)
+                )
+                
+                firestore.collection("teams").document(teamId).set(newTeam).await()
+                
+                // Kullanıcı profilini güncelle (Hem UID hem Email dökümanını güncelle)
+                val updateMap = mapOf("teamId" to teamId)
+                firestore.collection("users").document(user.uid).set(updateMap, com.google.firebase.firestore.SetOptions.merge()).await()
+                if (user.email != null) {
+                    firestore.collection("users").document(user.email!!.lowercase()).set(updateMap, com.google.firebase.firestore.SetOptions.merge()).await()
+                }
+                firestore.collection("leaderboard").document(user.uid).set(updateMap, com.google.firebase.firestore.SetOptions.merge()).await()
+                
+                withContext(Dispatchers.Main) {
+                    isTeamLoading.value = false
+                    fetchUserTeam()
+                    onSuccess()
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("FocusPathTeam", "Create Team Error: ${e.message}")
+                withContext(Dispatchers.Main) {
+                    isTeamLoading.value = false
+                    onError(e.localizedMessage ?: "Takım oluşturulamadı")
+                }
+            }
+        }
+    }
+
+    fun joinTeam(inviteCode: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        val user = firebaseAuth.currentUser ?: return
+        val email = user.email?.lowercase() ?: return
+        val cleanCode = inviteCode.trim().uppercase()
+        isTeamLoading.value = true
+
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val teamSnapshot = firestore.collection("teams")
+                    .whereEqualTo("inviteCode", cleanCode)
+                    .get().await()
+
+                if (teamSnapshot.isEmpty) {
+                    throw Exception("Geçersiz davet kodu")
+                }
+
+                val teamDoc = teamSnapshot.documents[0]
+                val team = teamDoc.toObject(Team::class.java) ?: throw Exception("Takım verisi okunamadı")
+                
+                if (team.memberEmails.contains(email)) {
+                    throw Exception("Zaten bu takımdasınız")
+                }
+
+                val updatedMembers = team.memberEmails.toMutableList().apply { add(email) }
+                firestore.collection("teams").document(team.id).update("memberEmails", updatedMembers).await()
+
+                // Kullanıcı profilini güncelle (Hem UID hem Email dökümanını güncelle)
+                val updateMap = mapOf("teamId" to team.id)
+                firestore.collection("users").document(user.uid).set(updateMap, com.google.firebase.firestore.SetOptions.merge()).await()
+                if (user.email != null) {
+                    firestore.collection("users").document(user.email!!.lowercase()).set(updateMap, com.google.firebase.firestore.SetOptions.merge()).await()
+                }
+                firestore.collection("leaderboard").document(user.uid).set(updateMap, com.google.firebase.firestore.SetOptions.merge()).await()
+
+                withContext(Dispatchers.Main) {
+                    isTeamLoading.value = false
+                    fetchUserTeam()
+                    onSuccess()
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("FocusPathTeam", "Join Team Error: ${e.message}")
+                withContext(Dispatchers.Main) {
+                    isTeamLoading.value = false
+                    onError(e.localizedMessage ?: "Takıma katılım başarısız")
+                }
+            }
+        }
+    }
+
+    fun leaveTeam(onSuccess: () -> Unit) {
+        val user = firebaseAuth.currentUser ?: return
+        val email = user.email?.lowercase() ?: return
+        val currentTeamId = userTeam.value?.id ?: return
+        
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val teamDoc = firestore.collection("teams").document(currentTeamId).get().await()
+                val team = teamDoc.toObject(Team::class.java)
+                
+                if (team != null) {
+                    val updatedMembers = team.memberEmails.filter { it != email }
+                    if (updatedMembers.isEmpty()) {
+                        firestore.collection("teams").document(currentTeamId).delete().await()
+                    } else {
+                        firestore.collection("teams").document(currentTeamId).update("memberEmails", updatedMembers).await()
+                    }
+                }
+
+                // Kullanıcı profilinden takım ID'sini kaldır
+                val updateMap = mutableMapOf<String, Any?>("teamId" to null)
+                firestore.collection("users").document(user.uid).update(updateMap).await()
+                firestore.collection("leaderboard").document(user.uid).update(updateMap).await()
+
+                withContext(Dispatchers.Main) {
+                    userTeam.value = null
+                    teamMembers.clear()
+                    onSuccess()
+                }
+            } catch (e: Exception) {}
+        }
+    }
+
+    fun fetchUserTeam() {
+        val user = firebaseAuth.currentUser ?: return
+        
+        firestore.collection("users").document(user.uid).get().addOnSuccessListener { doc ->
+            val teamId = doc.getString("teamId")
+            if (teamId != null) {
+                listenToTeam(teamId)
+            }
+        }
+    }
+
+    private fun listenToTeam(teamId: String) {
+        teamListener?.remove()
+        teamListener = firestore.collection("teams").document(teamId)
+            .addSnapshotListener { snapshot, e ->
+                if (e != null) return@addSnapshotListener
+                
+                val team = snapshot?.toObject(Team::class.java)
+                userTeam.value = team
+                
+                if (team != null) {
+                    // Takım üyelerini getir
+                    firestore.collection("leaderboard")
+                        .whereIn("email", team.memberEmails)
+                        .addSnapshotListener { lbSnapshot, _ ->
+                            val members = lbSnapshot?.documents?.mapNotNull { it.toObject(LeaderboardUser::class.java) } ?: emptyList()
+                            teamMembers.clear()
+                            teamMembers.addAll(members)
+                        }
+                }
+            }
+    }
+
     fun fetchLeaderboard() {
         isLeaderboardLoading.value = true
         
@@ -1446,23 +1644,28 @@ class TaskViewModel @Inject constructor(
             }
         }
 
+        // KİŞİSEL LİDERLİK TABLOSU
         firestore.collection("leaderboard")
             .orderBy("score", com.google.firebase.firestore.Query.Direction.DESCENDING)
             .limit(30)
             .addSnapshotListener { snapshot, e ->
                 timeoutJob.cancel()
                 isLeaderboardLoading.value = false
-                
-                if (e != null) {
-                    android.util.Log.e("FocusPathFirestore", "Leaderboard fetch error: ${e.message}", e)
-                    return@addSnapshotListener
-                }
-                
                 if (snapshot != null) {
                     val users = snapshot.documents.mapNotNull { it.toObject(LeaderboardUser::class.java) }
                     _leaderboard.value = users
-                    // Veri geldiğinde ofis çalışanlarını güncelle
                     initializeWorkers()
+                }
+            }
+        
+        // TAKIM LİDERLİK TABLOSU
+        firestore.collection("teams")
+            .orderBy("totalTeamXp", com.google.firebase.firestore.Query.Direction.DESCENDING)
+            .limit(10)
+            .addSnapshotListener { snapshot, _ ->
+                if (snapshot != null) {
+                    val teams = snapshot.documents.mapNotNull { it.toObject(Team::class.java) }
+                    _teamLeaderboard.value = teams
                 }
             }
         
@@ -1857,7 +2060,67 @@ class TaskViewModel @Inject constructor(
         }
     }
 
-    fun addXp(amount: Int) { userXp.value += amount ; prefs.edit().putInt("user_xp", userXp.value).apply() ; syncXpToFirestore() ; syncProfileToFirestore() }
+    fun addXp(amount: Int) { 
+        val bonus = if (isTeamSynergyActive.value) (amount * 0.2f).toInt() else 0
+        val finalAmount = amount + bonus
+        
+        userXp.value += finalAmount 
+        prefs.edit().putInt("user_xp", userXp.value).apply() 
+        syncXpToFirestore() 
+        syncProfileToFirestore() 
+        
+        // Takım XP'sini de güncelle
+        updateTeamXp(finalAmount)
+    }
+
+    val isTeamSynergyActive = derivedStateOf {
+        val myTeamId = userTeam.value?.id
+        if (myTeamId == null || !isFocusActive.value) false
+        else teamMembers.any { it.email != userEmail.value && it.isFocusing }
+    }
+
+    private fun updateTeamXp(amount: Int) {
+        val teamId = userTeam.value?.id ?: return
+        val currentEmail = userEmail.value
+        
+        firestore.runTransaction { transaction ->
+            val teamRef = firestore.collection("teams").document(teamId)
+            val team = transaction.get(teamRef).toObject(Team::class.java) ?: return@runTransaction
+            
+            val newWeeklyXp = team.currentWeeklyXp + amount
+            val newTotalXp = team.totalTeamXp + amount
+            
+            // MVP Güncelleme (Bu hafta en çok katkı sağlayan)
+            // Not: Basitleştirmek için o an XP kazananı MVP adayı olarak kontrol ediyoruz
+            // Gerçek MVP mantığı için üyelerin katkılarını ayrı bir map'te tutmak daha iyi olur
+            // Ancak şu anki yapıda "Son büyük katkıyı yapan" veya "Lider" gibi davranabilir
+            
+            val updates = mutableMapOf<String, Any>(
+                "currentWeeklyXp" to newWeeklyXp,
+                "totalTeamXp" to newTotalXp
+            )
+            
+            // ROZET KONTROLÜ
+            val newBadges = team.badges.toMutableList()
+            if (newTotalXp >= 1000 && !newBadges.contains("startup")) {
+                newBadges.add("startup") // "Garaj Ruhu" Rozeti
+            }
+            if (newTotalXp >= 10000 && !newBadges.contains("unicorn")) {
+                newBadges.add("unicorn") // "Unicorn" Rozeti
+            }
+            if (team.memberEmails.size >= 5 && !newBadges.contains("social")) {
+                newBadges.add("social") // "Kalabalık Ekip" Rozeti
+            }
+            
+            if (newBadges.size > team.badges.size) {
+                updates["badges"] = newBadges
+            }
+            
+            transaction.update(teamRef, updates)
+        }.addOnSuccessListener {
+            android.util.Log.d("FocusPathTeam", "Team XP and Badges updated")
+        }
+    }
 
     fun recordFocusSession(minutes: Int) {
         val currentFocus = prefs.getInt("DAILY_FOCUS_CURRENT", 0) ; val newFocus = currentFocus + minutes

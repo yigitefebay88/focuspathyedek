@@ -14,5 +14,6 @@ data class LeaderboardUser(
     val latestEmoji: String? = null,
     val emojiTime: Long = 0L,
     val focusBuddyEmail: String? = null,
-    val currentTaskTitle: String? = null
+    val currentTaskTitle: String? = null,
+    val teamId: String? = null
 )

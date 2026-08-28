@@ -18,9 +18,9 @@
               <option name="connection">
                 <ConnectionSetting>
                   <option name="appId" value="com.focuspath.app" />
-                  <option name="mobileSdkAppId" value="1:177647940282:android:5e4281bfce583a8c2ac883" />
-                  <option name="projectId" value="focuspathh-1e8ee" />
-                  <option name="projectNumber" value="177647940282" />
+                  <option name="mobileSdkAppId" value="1:208111707825:android:d13578c70781486c726490" />
+                  <option name="projectId" value="focuspathson" />
+                  <option name="projectNumber" value="208111707825" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

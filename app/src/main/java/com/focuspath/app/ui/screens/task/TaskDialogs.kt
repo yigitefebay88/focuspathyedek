@@ -612,3 +612,185 @@ fun AccessibilityDisclosureDialog(
         containerColor = MaterialTheme.colorScheme.surface
     )
 }
+
+@Composable
+fun TeamManagementDialog(
+    vm: TaskViewModel,
+    isEnglish: Boolean,
+    onDismiss: () -> Unit
+) {
+    var teamNameInput by remember { mutableStateOf("") }
+    var joinCodeInput by remember { mutableStateOf("") }
+    val userTeam by vm.userTeam
+    val teamMembers = vm.teamMembers
+    val isTeamLoading by vm.isTeamLoading
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Groups, null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(8.dp))
+                Text(if (isEnglish) "TEAM MANAGEMENT" else "TAKIM YÖNETİMİ")
+            }
+        },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                if (isTeamLoading) {
+                    Box(Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                } else if (userTeam == null) {
+                    // Takımı Yoksa: Kur veya Katıl
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(if(isEnglish) "Create a Team" else "Takım Oluştur", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        OutlinedTextField(
+                            value = teamNameInput,
+                            onValueChange = { teamNameInput = it },
+                            placeholder = { Text(if(isEnglish) "Team Name" else "Takım Adı") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Button(
+                            onClick = { 
+                                if(teamNameInput.isNotBlank()) {
+                                    vm.createTeam(
+                                        teamNameInput, 
+                                        onSuccess = { Toast.makeText(context, "Takım başarıyla oluşturuldu!", Toast.LENGTH_SHORT).show() },
+                                        onError = { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
+                                    ) 
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(if(isEnglish) "CREATE" else "OLUŞTUR")
+                        }
+                    }
+
+                    HorizontalDivider(color = Color.Gray.copy(0.2f))
+
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(if(isEnglish) "Join a Team" else "Takıma Katıl", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        OutlinedTextField(
+                            value = joinCodeInput,
+                            onValueChange = { joinCodeInput = it },
+                            placeholder = { Text(if(isEnglish) "Invite Code (6 Chars)" else "Davet Kodu (6 Hane)") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Button(
+                            onClick = { 
+                                if(joinCodeInput.length == 6) {
+                                    vm.joinTeam(
+                                        joinCodeInput,
+                                        onSuccess = { Toast.makeText(context, "Takıma katıldınız!", Toast.LENGTH_SHORT).show() },
+                                        onError = { Toast.makeText(context, it, Toast.LENGTH_LONG).show() }
+                                    ) 
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(if(isEnglish) "JOIN" else "KATIL")
+                        }
+                    }
+                } else {
+                    // Takımı Varsa: Detayları Gör
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+                        ) {
+                            Column(Modifier.padding(12.dp)) {
+                                Text(userTeam!!.name.uppercase(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
+                                Spacer(Modifier.height(4.dp))
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(if(isEnglish) "Invite Code: " else "Davet Kodu: ", fontSize = 12.sp, color = Color.Gray)
+                                    Text(userTeam!!.inviteCode, fontWeight = FontWeight.Bold, color = AccentYellow)
+                                }
+                                
+                                Spacer(Modifier.height(12.dp))
+                                
+                                // TAKIM HEDEFİ İLERLEME
+                                val progress = (userTeam!!.currentWeeklyXp.toFloat() / userTeam!!.weeklyXpGoal).coerceIn(0f, 1f)
+                                Text(if(isEnglish) "WEEKLY TEAM GOAL" else "HAFTALIK TAKIM HEDEFİ", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                Spacer(Modifier.height(4.dp))
+                                LinearProgressIndicator(
+                                    progress = { progress },
+                                    modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    trackColor = Color.White.copy(alpha = 0.1f)
+                                )
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Text("${userTeam!!.currentWeeklyXp} XP", fontSize = 10.sp, color = Color.Gray)
+                                    Text("${userTeam!!.weeklyXpGoal} XP", fontSize = 10.sp, color = Color.Gray)
+                                }
+
+                                // TAKIM ROZETLERİ
+                                if (userTeam!!.badges.isNotEmpty()) {
+                                    Spacer(Modifier.height(12.dp))
+                                    Text(if(isEnglish) "TEAM BADGES" else "TAKIM ROZETLERİ", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = AccentYellow)
+                                    Row(modifier = Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        userTeam!!.badges.forEach { badge ->
+                                            val badgeInfo = when(badge) {
+                                                "startup" -> "🚀" to (if(isEnglish) "Startup" else "Girişim")
+                                                "unicorn" -> "🦄" to "Unicorn"
+                                                "social" -> "🤝" to (if(isEnglish) "Social" else "Sosyal")
+                                                else -> "🏅" to "Badge"
+                                            }
+                                            Surface(
+                                                color = Color.White.copy(alpha = 0.1f),
+                                                shape = RoundedCornerShape(8.dp),
+                                                border = BorderStroke(0.5.dp, AccentYellow.copy(0.3f))
+                                            ) {
+                                                Row(Modifier.padding(horizontal = 6.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                                                    Text(badgeInfo.first, fontSize = 12.sp)
+                                                    Spacer(Modifier.width(4.dp))
+                                                    Text(badgeInfo.second, fontSize = 9.sp, color = Color.White)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        Text(if(isEnglish) "MEMBERS" else "ÜYELER", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                        
+                        LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
+                            items(teamMembers) { member ->
+                                val isMvp = teamMembers.maxByOrNull { it.score }?.email == member.email && member.score > 0
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box {
+                                        ProfileImage(photoUrl = member.photoUrl, name = member.name, size = 24.dp)
+                                        if (isMvp) {
+                                            Text("👑", fontSize = 8.sp, modifier = Modifier.align(Alignment.TopEnd).offset(x = 4.dp, y = (-4).dp))
+                                        }
+                                    }
+                                    Spacer(Modifier.width(8.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(member.name, fontSize = 13.sp, color = if(isMvp) AccentYellow else Color.White)
+                                        if(isMvp) Text(if(isEnglish) "TEAM MVP" else "TAKIM LİDERİ", fontSize = 7.sp, color = AccentYellow.copy(0.7f), fontWeight = FontWeight.Bold)
+                                    }
+                                    Text("${member.score} XP", fontSize = 10.sp, color = MaterialTheme.colorScheme.primary)
+                                }
+                            }
+                        }
+
+                        Button(
+                            onClick = { vm.leaveTeam { Toast.makeText(context, "Takımdan ayrıldınız.", Toast.LENGTH_SHORT).show() } },
+                            colors = ButtonDefaults.buttonColors(containerColor = AccentRed.copy(0.8f)),
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                        ) {
+                            Text(if(isEnglish) "LEAVE TEAM" else "TAKIMDAN AYRIL", color = Color.White)
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(if(isEnglish) "CLOSE" else "KAPAT") }
+        }
+    )
+}
