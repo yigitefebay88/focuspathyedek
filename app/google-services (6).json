@@ -1,36 +1,26 @@
 {
   "project_info": {
-    "project_number": "177647940282",
-    "project_id": "focuspathh-1e8ee",
-    "storage_bucket": "focuspathh-1e8ee.firebasestorage.app"
+    "project_number": "208111707825",
+    "project_id": "focuspathson",
+    "storage_bucket": "focuspathson.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:177647940282:android:60ce7172681d9f932ac883",
+        "mobilesdk_app_id": "1:208111707825:android:d13578c70781486c726490",
         "android_client_info": {
           "package_name": "com.focuspath.app"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "177647940282-fiddhcmgr3bvcvgsqrj49ho727gkg62v.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBvEsZx44bioBf79Pmtbyc1bWFBlkUIf7w"
+          "current_key": "AIzaSyCUKcJHp1KnHX6wc-R1-cP9AmuLCJJ_kCQ"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "177647940282-fiddhcmgr3bvcvgsqrj49ho727gkg62v.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }

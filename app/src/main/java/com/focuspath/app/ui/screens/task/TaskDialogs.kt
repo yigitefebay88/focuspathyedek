@@ -320,7 +320,7 @@ fun LiveSessionDialog(
                                 Spacer(Modifier.width(16.dp))
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(user.name.uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                                    Text(if (isEnglish) "Status: DEEP_FOCUS" else "Durum: DERİN_ODAK", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp)
+                                    Text(if (isEnglish) "STATUS: DEEP_FOCUS" else "Durum: DERİN_ODAK", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp)
                                 }
                                 Icon(Icons.Default.Bolt, null, tint = AccentYellow, modifier = Modifier.size(16.dp))
                             }

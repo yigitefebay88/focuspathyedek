@@ -9,6 +9,8 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -134,7 +136,9 @@ fun CoolGoogleSignInButton(
     modifier: Modifier = Modifier,
     text: String = "Google ile Giriş Yap"
 ) {
-    var isPressed by remember { mutableStateOf(false) }
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.88f else 1f,
         animationSpec = spring(
@@ -149,26 +153,15 @@ fun CoolGoogleSignInButton(
     )
 
     Surface(
+        onClick = onClick,
         modifier = modifier
-            .graphicsLayer(scaleX = scale, scaleY = scale)
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onPress = {
-                        isPressed = true
-                        try {
-                            awaitRelease()
-                        } finally {
-                            isPressed = false
-                        }
-                    },
-                    onTap = { onClick() }
-                )
-            },
+            .graphicsLayer(scaleX = scale, scaleY = scale),
         shape = RoundedCornerShape(16.dp),
         color = Color.White,
         tonalElevation = elevation,
         shadowElevation = elevation,
-        border = BorderStroke(1.5.dp, Color(0xFF4285F4))
+        border = BorderStroke(1.5.dp, Color(0xFF4285F4)),
+        interactionSource = interactionSource
     ) {
         Row(
             modifier = Modifier
