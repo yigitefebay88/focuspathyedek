@@ -1046,11 +1046,57 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
 
     val totalCount = allTasksList.size ; val doneCount = allTasksList.count { it.isCompleted }
     val isMinimalist = vm.isMinimalistMode.value
+    val onboardingTasks = vm.onboardingTasks
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        // ONBOARDING TASKS
+        if (onboardingTasks.isNotEmpty() && !isMinimalist) {
+            item {
+                Text(
+                    text = if(isEnglish) "🚀 STARTER MISSIONS" else "🚀 BAŞLANGIÇ GÖREVLERİ",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = AccentYellow,
+                    fontWeight = FontWeight.Black,
+                    modifier = Modifier.padding(start = 4.dp, top = 8.dp)
+                )
+                androidx.compose.foundation.lazy.LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                ) {
+                    items(onboardingTasks) { task ->
+                        Card(
+                            modifier = Modifier.width(180.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.4f)),
+                            border = BorderStroke(1.dp, AccentYellow.copy(alpha = 0.3f))
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text(
+                                    text = if(isEnglish) task.titleEn else task.titleTr,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White,
+                                    maxLines = 2,
+                                    minLines = 2
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text("💰", fontSize = 10.sp)
+                                    Text("+${task.rewardCoins}", fontSize = 10.sp, color = AccentYellow, fontWeight = FontWeight.Bold)
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("⭐", fontSize = 10.sp)
+                                    Text("+${task.rewardXp}", fontSize = 10.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         item {
             if (!isMinimalist) {
                 Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(0.2f))) {

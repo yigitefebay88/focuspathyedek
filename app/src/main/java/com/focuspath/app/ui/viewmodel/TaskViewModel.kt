@@ -79,6 +79,15 @@ data class WorkerInfo(
     val isMe: Boolean = false
 )
 
+data class OnboardingTask(
+    val id: String,
+    val titleTr: String,
+    val titleEn: String,
+    val rewardCoins: Int,
+    val rewardXp: Int,
+    var isCompleted: Boolean = false
+)
+
 @HiltViewModel
 class TaskViewModel @Inject constructor(
     private val application: Application,
@@ -147,6 +156,9 @@ class TaskViewModel @Inject constructor(
     private var liveFocusUpdateJob: kotlinx.coroutines.Job? = null
 
     val isLeaderboardLoading = mutableStateOf(false)
+    
+    // ONBOARDING TASKS STATE
+    val onboardingTasks = mutableStateListOf<OnboardingTask>()
     
     private val _teamLeaderboard = MutableStateFlow<List<Team>>(emptyList())
     val teamLeaderboard: StateFlow<List<Team>> = _teamLeaderboard.asStateFlow()
@@ -572,6 +584,42 @@ class TaskViewModel @Inject constructor(
         initializeWorkers()
         startWorkerSimulation()
         syncTimerWithService()
+        loadOnboardingTasks()
+    }
+
+    private fun loadOnboardingTasks() {
+        val tasks = listOf(
+            OnboardingTask("profile_pic", "Profil fotoğrafı yükle", "Upload profile picture", 20, 50),
+            OnboardingTask("first_focus", "İlk 5 dakikalık odaklanmanı yap", "Complete first 5-min focus", 30, 100),
+            OnboardingTask("add_friend", "Bir arkadaş ekle", "Add a friend", 25, 75),
+            OnboardingTask("join_team", "Bir takıma katıl veya oluştur", "Join or create a team", 50, 150)
+        )
+        
+        tasks.forEach { task ->
+            task.isCompleted = prefs.getBoolean("onboarding_${task.id}", false)
+        }
+        
+        onboardingTasks.clear()
+        onboardingTasks.addAll(tasks.filter { !it.isCompleted })
+    }
+
+    fun completeOnboardingTask(id: String) {
+        val task = onboardingTasks.find { it.id == id } ?: return
+        if (!task.isCompleted) {
+            prefs.edit().putBoolean("onboarding_$id", true).apply()
+            addCoins(task.rewardCoins)
+            addXp(task.rewardXp)
+            onboardingTasks.remove(task)
+            
+            // Eğer hepsi bittiyse bir kutlama gösterilebilir
+            if (onboardingTasks.isEmpty()) {
+                viewModelScope.launch(Dispatchers.Main) {
+                    showConfetti.value = true
+                    delay(3000)
+                    showConfetti.value = false
+                }
+            }
+        }
     }
 
     fun updateUserName(newName: String) {
@@ -615,6 +663,7 @@ class TaskViewModel @Inject constructor(
 
                 withContext(Dispatchers.Main) {
                     Toast.makeText(application, "Profil fotoğrafı güncellendi.", Toast.LENGTH_SHORT).show()
+                    completeOnboardingTask("profile_pic") // GÖREVİ TAMAMLA
                 }
 
                 // 2. ARKA PLAN SENKRONİZASYONU (Firebase)
@@ -1506,6 +1555,7 @@ class TaskViewModel @Inject constructor(
                     isTeamLoading.value = false
                     fetchUserTeam()
                     onSuccess()
+                    completeOnboardingTask("join_team") // GÖREVİ TAMAMLA
                 }
             } catch (e: Exception) {
                 android.util.Log.e("FocusPathTeam", "Create Team Error: ${e.message}")
@@ -1555,6 +1605,7 @@ class TaskViewModel @Inject constructor(
                     isTeamLoading.value = false
                     fetchUserTeam()
                     onSuccess()
+                    completeOnboardingTask("join_team") // GÖREVİ TAMAMLA
                 }
             } catch (e: Exception) {
                 android.util.Log.e("FocusPathTeam", "Join Team Error: ${e.message}")
@@ -2123,6 +2174,9 @@ class TaskViewModel @Inject constructor(
     }
 
     fun recordFocusSession(minutes: Int) {
+        if (minutes >= 5) {
+            completeOnboardingTask("first_focus") // GÖREVİ TAMAMLA
+        }
         val currentFocus = prefs.getInt("DAILY_FOCUS_CURRENT", 0) ; val newFocus = currentFocus + minutes
         prefs.edit().putInt("DAILY_FOCUS_CURRENT", newFocus).apply()
         if (newFocus >= 30 && !prefs.getBoolean("DAILY_FOCUS_DONE", false)) { prefs.edit().putBoolean("DAILY_FOCUS_DONE", true).apply() ; addCoins(50) }
@@ -2369,7 +2423,10 @@ class TaskViewModel @Inject constructor(
             .collection("friend_requests")
             .document(currentUser.uid)
             .set(myData)
-            .addOnSuccessListener { onSuccess() }
+            .addOnSuccessListener { 
+                completeOnboardingTask("add_friend") // GÖREVİ TAMAMLA
+                onSuccess() 
+            }
             .addOnFailureListener { onError(it.localizedMessage ?: "Hata oluştu") }
     }
 
@@ -2401,6 +2458,7 @@ class TaskViewModel @Inject constructor(
                 db.collection("users").document(reqUser.email.lowercase()).collection("friends").document(currentUser.uid).set(myData)
                     .addOnSuccessListener {
                         userDocRef.collection("friend_requests").document(reqUser.uid).delete()
+                        completeOnboardingTask("add_friend") // GÖREVİ TAMAMLA
                         onSuccess()
                     }
             }
