@@ -182,7 +182,13 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
     var showLiveSession by rememberSaveable { mutableStateOf(false) }
     var selectedFocusSound by rememberSaveable { mutableStateOf("rain") }
     var dailyFocus by rememberSaveable { mutableStateOf("") }
-    var completedPomodorosToday by rememberSaveable { mutableStateOf(0) }
+    
+    val focusHistory by vm.getWeeklyHistory().collectAsState(initial = emptyList())
+    val todayStr = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date()) }
+    val todayHistory = focusHistory.find { it.date == todayStr }
+    val completedSessions = todayHistory?.sessionsCompleted ?: 0
+    val interruptedSessions = todayHistory?.sessionsInterrupted ?: 0
+
     var quoteHistory by rememberSaveable { mutableStateOf(listOf<String>()) }
     var showQuoteHistory by remember { mutableStateOf(false) }
     var showUpdateDialog by rememberSaveable { mutableStateOf(false) }
@@ -229,27 +235,7 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
         }
     }
 
-    DisposableEffect(context) {
-        val receiver = object : android.content.BroadcastReceiver() {
-            override fun onReceive(context: android.content.Context?, intent: android.content.Intent?) {
-                if (intent?.action == "com.focuspath.TIMER_UPDATE") {
-                    val mins = intent.getIntExtra("minutes", 1)
-                    vm.recordFocusSession(mins)
-                } else if (intent?.action == "com.focuspath.TIMER_FINISHED") {
-                    vm.recordSessionResult(true)
-                }
-            }
-        }
-        val filter = android.content.IntentFilter().apply {
-            addAction("com.focuspath.TIMER_UPDATE")
-            addAction("com.focuspath.TIMER_FINISHED")
-        }
-        ContextCompat.registerReceiver(context, receiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
-
-        onDispose {
-            try { context.unregisterReceiver(receiver) } catch (e: Exception) {}
-        }
-    }
+    // Timer Receiver MainActivity'e taşındı (Arka plan desteği için)
 
     LaunchedEffect(searchQuery) { vm.setSearchQuery(searchQuery) }
     LaunchedEffect(taskFilter) { vm.setTaskFilter(taskFilter) }
@@ -552,12 +538,12 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
                 label = "tabTransition"
             ) { targetSelectedTab ->
                 when (targetSelectedTab) {
-                    0 -> HomeTabFull(vm, allTasksList, lang, isEnglish, { showCertificate = it })
+                    0 -> HomeTabFull(vm, allTasksList, lang, isEnglish, totalFocusMins, completedSessions, interruptedSessions, { showCertificate = it })
                     1 -> TaskTabFull(vm, taskList, allTasksList, selectedDate, lang, isEnglish, greeting, currentQuote, haptic, context, isLandscape, { showClearDialog = true }, { showEditDialog = it }, { showDeleteConfirm = it }, { showReminderDialog = it }, { showQuoteHistory = true })
                     2 -> AiTabFull(vm, lang, isEnglish, context, chatHistory, isBotTyping, chatListState, taskList)
-                    3 -> CalendarTabFull(vm, lang, currentMonthName, selectedDay, allTasksList, { selectedDay = it }, isEnglish, context, timerRunning, isPomodoroMode, timeLeft, timeElapsed, pomodoroTotalMillis, selectedFocusSound, completedPomodorosToday, { vm.toggleTimer(context, it) }, { vm.isPomodoroMode.value = it }, { vm.pomodoroTotalMillis.longValue = it ; vm.timeLeft.longValue = it }, { selectedFocusSound = it }, { showZenMode = true })
+                    3 -> CalendarTabFull(vm, lang, currentMonthName, selectedDay, allTasksList, { selectedDay = it }, isEnglish, context, timerRunning, isPomodoroMode, timeLeft, timeElapsed, pomodoroTotalMillis, selectedFocusSound, completedSessions, { vm.toggleTimer(context, it) }, { vm.isPomodoroMode.value = it }, { vm.pomodoroTotalMillis.longValue = it ; vm.timeLeft.longValue = it }, { selectedFocusSound = it }, { showZenMode = true })
                     5 -> SettingsTabFull(vm, lang, isEnglish, onLoginClick, { isEnglish = !isEnglish })
-                    4 -> OfficeTabFull(vm, isEnglish, context, allTasksList, completedPomodorosToday, { showLiveSession = true }) { showDirectChat = it }
+                    4 -> OfficeTabFull(vm, isEnglish, context, allTasksList, completedSessions, { showLiveSession = true }) { showDirectChat = it }
                 }
             }
         }
@@ -3533,21 +3519,14 @@ private fun isSameDay(millis1: Long, millis2: Long): Boolean {
     }
 
 @Composable
-private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map<String, String>, isEnglish: Boolean, onShowCertificate: (Boolean) -> Unit) {
-    val focusHistory by vm.getWeeklyHistory().collectAsState(initial = emptyList())
+private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map<String, String>, isEnglish: Boolean, totalFocusMinutes: Int, completedSessions: Int, interruptedSessions: Int, onShowCertificate: (Boolean) -> Unit) {
     val leaderboard by vm.leaderboard.collectAsState()
     
     val onlineCount = leaderboard.count { it.isFocusing }
     val top3 = leaderboard.take(3)
     
-    val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-    val todayHistory = focusHistory.find { it.date == todayStr }
-    
     val totalCoins = vm.userCoins.value
     val totalXp = vm.userXp.value
-    
-    val completedSessions = todayHistory?.sessionsCompleted ?: 0
-    val interruptedSessions = todayHistory?.sessionsInterrupted ?: 0
     
     // Bugünün başlangıcını bul (00:00:00)
     val startOfToday = Calendar.getInstance().apply {
@@ -3739,11 +3718,12 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
                             Spacer(Modifier.height(8.dp))
                             
                             val isCertificateUnlocked = totalXp >= 500
+                            
                             TextButton(
                                 onClick = { if(isCertificateUnlocked) onShowCertificate(true) },
                                 contentPadding = PaddingValues(0.dp),
                                 modifier = Modifier.height(24.dp),
-                                enabled = true // Tıklanabilir kalsın ki mesajı görebilsin veya efekt verebilelim
+                                enabled = true
                             ) {
                                 Icon(
                                     Icons.Default.Verified, 
@@ -3754,7 +3734,7 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
                                 Spacer(Modifier.width(4.dp))
                                 Text(
                                     text = if(isCertificateUnlocked) (if(isEnglish) "View Certificate" else "Sertifikayı Gör") 
-                                           else (if(isEnglish) "Unlocks at 500 XP" else "500 XP'de Açılır"), 
+                                           else (if(isEnglish) "$totalXp/500 XP" else "$totalXp/500 XP"), 
                                     fontSize = 10.sp, 
                                     fontWeight = FontWeight.Bold, 
                                     color = if(isCertificateUnlocked) com.focuspath.app.util.FocusRank.getColor(totalXp.toLong()) else Color.Gray

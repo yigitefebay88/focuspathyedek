@@ -93,10 +93,27 @@ class MainActivity : ComponentActivity(), BillingProvider {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
+        vm = androidx.lifecycle.ViewModelProvider(this)[TaskViewModel::class.java]
         enableEdgeToEdge()
+        
+        // Timer Broadcast Receiver - Arka planda çalışırken de XP/Coin kaydı için
+        val filter = android.content.IntentFilter().apply {
+            addAction("com.focuspath.TIMER_UPDATE")
+            addAction("com.focuspath.TIMER_FINISHED")
+        }
+        val receiver = object : android.content.BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: android.content.Intent?) {
+                if (intent?.action == "com.focuspath.TIMER_UPDATE") {
+                    val mins = intent.getIntExtra("minutes", 1)
+                    vm.recordFocusSession(mins)
+                } else if (intent?.action == "com.focuspath.TIMER_FINISHED") {
+                    vm.recordSessionResult(true)
+                }
+            }
+        }
+        androidx.core.content.ContextCompat.registerReceiver(this, receiver, filter, androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED)
 
         setContent {
-            vm = androidx.lifecycle.viewmodel.compose.viewModel()
             vm.billingProvider = this
 
             billingManager = BillingManager(this) {

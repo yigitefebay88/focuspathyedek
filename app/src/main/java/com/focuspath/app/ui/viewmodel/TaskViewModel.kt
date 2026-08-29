@@ -244,6 +244,22 @@ class TaskViewModel @Inject constructor(
     fun recordSessionResult(completed: Boolean) {
         if (completed) {
             updateTodayHistory(sessionsComp = 1)
+            
+            // Pomodoro modu aktifse ve tamamlandıysa ödül ver
+            if (isPomodoroMode.value) {
+                val rewardXp = 50
+                val rewardCoins = 20
+                
+                addXp(rewardXp)
+                addCoins(rewardCoins)
+                
+                // Başarı durumunu kullanıcıya bildir (Konfeti vb.)
+                viewModelScope.launch(Dispatchers.Main) {
+                    showConfetti.value = true
+                    kotlinx.coroutines.delay(4000)
+                    showConfetti.value = false
+                }
+            }
         } else {
             updateTodayHistory(sessionsInt = 1)
         }
@@ -2265,6 +2281,7 @@ class TaskViewModel @Inject constructor(
     }
 
     fun recordFocusSession(minutes: Int) {
+        android.util.Log.d("FocusPath", "Recording focus session: $minutes minutes")
         if (minutes >= 5) {
             completeOnboardingTask("first_focus") // GÖREVİ TAMAMLA
             // Sürpriz kutu ihtimali (Örn: 25 dk ve üzeri seanslarda %100, daha azında ihtimal)
