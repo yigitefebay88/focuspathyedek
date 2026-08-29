@@ -345,6 +345,12 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
         vm.checkAndGenerateBriefing(isEnglish)
     }
 
+    LaunchedEffect(vm.showConfetti.value) {
+        if (vm.showConfetti.value) {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        }
+    }
+
     Scaffold(
         topBar = {
             Column {
@@ -525,12 +531,15 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
             AnimatedContent(
                 targetState = selectedTab,
                 transitionSpec = {
+                    val springSpec = spring<IntOffset>(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow)
+                    val fadeSpec = tween<Float>(durationMillis = 300)
+                    
                     if (targetState > initialState) {
-                        (slideInHorizontally { width -> width } + fadeIn()).togetherWith(
-                            slideOutHorizontally { width -> -width } + fadeOut())
+                        (slideInHorizontally(animationSpec = springSpec) { width -> width } + fadeIn(animationSpec = fadeSpec)).togetherWith(
+                            slideOutHorizontally(animationSpec = springSpec) { width -> -width } + fadeOut(animationSpec = fadeSpec))
                     } else {
-                        (slideInHorizontally { width -> -width } + fadeIn()).togetherWith(
-                            slideOutHorizontally { width -> width } + fadeOut())
+                        (slideInHorizontally(animationSpec = springSpec) { width -> -width } + fadeIn(animationSpec = fadeSpec)).togetherWith(
+                            slideOutHorizontally(animationSpec = springSpec) { width -> width } + fadeOut(animationSpec = fadeSpec))
                     }.using(
                         SizeTransform(clip = false)
                     )
@@ -1073,48 +1082,54 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
     val totalCount = allTasksList.size ; val doneCount = allTasksList.count { it.isCompleted }
     val isMinimalist = vm.isMinimalistMode.value
     val onboardingTasks = vm.onboardingTasks
+    
+    // Smooth scrolling physics
+    val flingBehavior = androidx.compose.foundation.gestures.ScrollableDefaults.flingBehavior()
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        flingBehavior = flingBehavior
     ) {
         // ONBOARDING TASKS
         if (onboardingTasks.isNotEmpty() && !isMinimalist) {
-            item {
-                Text(
-                    text = if(isEnglish) "🚀 STARTER MISSIONS" else "🚀 BAŞLANGIÇ GÖREVLERİ",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = AccentYellow,
-                    fontWeight = FontWeight.Black,
-                    modifier = Modifier.padding(start = 4.dp, top = 8.dp)
-                )
-                androidx.compose.foundation.lazy.LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
-                ) {
-                    items(onboardingTasks) { task ->
-                        Card(
-                            modifier = Modifier.width(180.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.4f)),
-                            border = BorderStroke(1.dp, AccentYellow.copy(alpha = 0.3f))
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Text(
-                                    text = if(isEnglish) task.titleEn else task.titleTr,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White,
-                                    maxLines = 2,
-                                    minLines = 2
-                                )
-                                Spacer(Modifier.height(8.dp))
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("💰", fontSize = 10.sp)
-                                    Text("+${task.rewardCoins}", fontSize = 10.sp, color = AccentYellow, fontWeight = FontWeight.Bold)
-                                    Spacer(Modifier.width(8.dp))
-                                    Text("⭐", fontSize = 10.sp)
-                                    Text("+${task.rewardXp}", fontSize = 10.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+            item(key = "onboarding_section") {
+                Column(modifier = Modifier.animateItemPlacement()) {
+                    Text(
+                        text = if(isEnglish) "🚀 STARTER MISSIONS" else "🚀 BAŞLANGIÇ GÖREVLERİ",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AccentYellow,
+                        fontWeight = FontWeight.Black,
+                        modifier = Modifier.padding(start = 4.dp, top = 8.dp)
+                    )
+                    androidx.compose.foundation.lazy.LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                    ) {
+                        items(onboardingTasks, key = { it.titleEn }) { task ->
+                            Card(
+                                modifier = Modifier.width(180.dp).animateItemPlacement(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.4f)),
+                                border = BorderStroke(1.dp, AccentYellow.copy(alpha = 0.3f))
+                            ) {
+                                Column(modifier = Modifier.padding(12.dp)) {
+                                    Text(
+                                        text = if(isEnglish) task.titleEn else task.titleTr,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
+                                        maxLines = 2,
+                                        minLines = 2
+                                    )
+                                    Spacer(Modifier.height(8.dp))
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text("💰", fontSize = 10.sp)
+                                        Text("+${task.rewardCoins}", fontSize = 10.sp, color = AccentYellow, fontWeight = FontWeight.Bold)
+                                        Spacer(Modifier.width(8.dp))
+                                        Text("⭐", fontSize = 10.sp)
+                                        Text("+${task.rewardXp}", fontSize = 10.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                                    }
                                 }
                             }
                         }
@@ -1123,9 +1138,9 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
             }
         }
 
-        item {
+        item(key = "calendar_selector") {
             if (!isMinimalist) {
-                Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(0.2f))) {
+                Card(modifier = Modifier.fillMaxWidth().animateItemPlacement(), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(0.2f))) {
                     Row(modifier = Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement = Arrangement.SpaceAround) {
                         for (i in -3..3) {
                             val cal = Calendar.getInstance().apply { add(Calendar.DAY_OF_MONTH, i) }
@@ -1154,10 +1169,10 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
             }
         }
 
-        item {
+        item(key = "daily_planner") {
             if (!isMinimalist) {
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().animateItemPlacement(),
                     shape = RoundedCornerShape(12.dp),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
                 ) {
@@ -1202,8 +1217,8 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
             }
         }
 
-        item {
-            Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(0.3f))) {
+        item(key = "greeting_card") {
+            Card(modifier = Modifier.fillMaxWidth().animateItemPlacement(), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(0.3f))) {
                 Row(modifier = Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(text = greeting, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold), color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -1250,10 +1265,10 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
             }
         }
 
-        item {
+        item(key = "progress_indicator") {
             if (totalCount > 0) {
                 val progress = doneCount.toFloat() / totalCount.toFloat()
-                Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
+                Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp).animateItemPlacement()) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("İlerleme", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
                         Text("${(progress * 100).toInt()}%", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
@@ -1264,8 +1279,8 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
             }
         }
 
-        item {
-            Column {
+        item(key = "add_task_form") {
+            Column(modifier = Modifier.animateItemPlacement()) {
                 OutlinedTextField(value = tabTaskInput, onValueChange = { tabTaskInput = it }, label = { Text(if(isEnglish) "Task Title" else "Görev Başlığı") }, modifier = Modifier.fillMaxWidth(), singleLine = true, keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next))
                 Spacer(Modifier.height(8.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1409,15 +1424,26 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
 
         items(taskList, key = { it.id }) { task ->
             Card(
-                modifier = Modifier.fillMaxWidth().animateItemPlacement().pointerInput(task) {
-                    detectTapGestures(onLongPress = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onShowEditDialog(task) })
-                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .animateItemPlacement(
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioLowBouncy,
+                            stiffness = Spring.StiffnessMediumLow
+                        )
+                    )
+                    .pointerInput(task) {
+                        detectTapGestures(onLongPress = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onShowEditDialog(task) })
+                    },
                 border = BorderStroke(1.dp, if (task.isCompleted) Color.Gray.copy(alpha = 0.2f) else if(task.priority == 2) AccentRed.copy(0.5f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
             ) {
                 Row(modifier = Modifier.fillMaxWidth().padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(
                         checked = task.isCompleted, 
-                        onCheckedChange = { vm.toggleTask(task) },
+                        onCheckedChange = { 
+                            vm.toggleTask(task)
+                            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                        },
                         enabled = !task.isCompleted
                     )
                     Spacer(Modifier.width(6.dp))
@@ -3548,8 +3574,10 @@ private fun isSameDay(millis1: Long, millis2: Long): Boolean {
 
     }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map<String, String>, isEnglish: Boolean, totalFocusMinutes: Int, completedSessions: Int, interruptedSessions: Int, onShowCertificate: (Boolean) -> Unit) {
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     val leaderboard by vm.leaderboard.collectAsState()
     
     val onlineCount = leaderboard.count { it.isFocusing }
@@ -3572,8 +3600,8 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        item {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        item(key = "home_header") {
+            Row(modifier = Modifier.fillMaxWidth().animateItemPlacement(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val showHomeProfile = vm.isLoggedIn.value || vm.userPhotoUrl.value != null
                     if (showHomeProfile) {
@@ -3613,9 +3641,9 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
             }
         }
 
-        item {
+        item(key = "home_leaderboard") {
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().animateItemPlacement(),
                 shape = RoundedCornerShape(16.dp),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(0.3f))
             ) {
@@ -3739,9 +3767,9 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
             }
         }
 
-        item {
+        item(key = "home_rewards") {
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().animateItemPlacement(),
                 shape = RoundedCornerShape(16.dp),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(0.3f))
             ) {
@@ -3763,7 +3791,12 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
                             val isCertificateUnlocked = totalXp >= 500
                             
                             TextButton(
-                                onClick = { if(isCertificateUnlocked) onShowCertificate(true) },
+                                onClick = { 
+                                    if(isCertificateUnlocked) {
+                                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                                        onShowCertificate(true) 
+                                    }
+                                },
                                 contentPadding = PaddingValues(0.dp),
                                 modifier = Modifier.height(24.dp),
                                 enabled = true
@@ -3794,9 +3827,9 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
             }
         }
 
-        item {
+        item(key = "home_sessions") {
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().animateItemPlacement(),
                 shape = RoundedCornerShape(16.dp),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(0.3f))
             ) {
@@ -3833,9 +3866,9 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
             }
         }
 
-        item {
+        item(key = "home_reminders") {
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().animateItemPlacement(),
                 shape = RoundedCornerShape(16.dp),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(0.3f))
             ) {
@@ -3865,7 +3898,7 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
             }
         }
 
-        item {
+        item(key = "home_motivation") {
             val quotes = listOf(
                 "Focus on being productive instead of busy.",
                 "Your focus determines your reality.",
@@ -3885,7 +3918,7 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
             val currentQuoteText = if (isEnglish) quotes[hourIndex] else quotesTr[hourIndex]
 
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().animateItemPlacement(),
                 shape = RoundedCornerShape(16.dp),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
             ) {
@@ -3918,7 +3951,7 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
                 }
             }
         }
-        item { Spacer(Modifier.height(80.dp)) }
+        item(key = "home_spacer") { Spacer(Modifier.height(80.dp).animateItemPlacement()) }
     }
 }
 

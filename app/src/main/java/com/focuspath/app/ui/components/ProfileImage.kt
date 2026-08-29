@@ -48,7 +48,7 @@ fun ProfileImage(
             .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center
     ) {
-        var isError by remember { mutableStateOf(false) }
+        var isError by remember(photoUrl) { mutableStateOf(false) }
         
         if (!photoUrl.isNullOrBlank() && !isError) {
             AsyncImage(
