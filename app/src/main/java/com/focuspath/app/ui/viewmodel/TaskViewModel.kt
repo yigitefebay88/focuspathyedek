@@ -2497,7 +2497,7 @@ class TaskViewModel @Inject constructor(
         } 
     }
 
-    fun loginEmail(email: String, pass: String, onSuccess: () -> Unit, onError: (String) -> Unit) { 
+    fun loginEmail(email: String, pass: String, saveCredentials: Boolean = false, onSuccess: () -> Unit, onError: (String) -> Unit) { 
         viewModelScope.launch { 
             try { 
                 android.util.Log.d("FocusPathAuth", "Email login starting for: $email")
@@ -2505,6 +2505,20 @@ class TaskViewModel @Inject constructor(
                 val user = result.user
                 
                 if (user != null) {
+                    if (saveCredentials) {
+                        prefs.edit().apply {
+                            putString("saved_email", email)
+                            putString("saved_password", pass)
+                            putBoolean("remember_me", true)
+                        }.apply()
+                    } else {
+                        prefs.edit().apply {
+                            remove("saved_email")
+                            remove("saved_password")
+                            remove("remember_me")
+                        }.apply()
+                    }
+
                     isLoggedIn.value = true 
                     userEmail.value = user.email ?: "" 
                     userName.value = user.displayName ?: user.email?.split("@")?.get(0) ?: "User"

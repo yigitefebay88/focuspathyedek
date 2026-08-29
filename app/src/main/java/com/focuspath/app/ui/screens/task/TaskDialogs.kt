@@ -350,8 +350,9 @@ fun AuthDialog(
     lang: Map<String, String>,
     onDismiss: () -> Unit
 ) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf(vm.prefs.getString("saved_email", "") ?: "") }
+    var password by remember { mutableStateOf(vm.prefs.getString("saved_password", "") ?: "") }
+    var rememberMe by remember { mutableStateOf(vm.prefs.getBoolean("remember_me", false)) }
     var isRegister by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf("") }
     var infoMessage by remember { mutableStateOf("") }
@@ -366,6 +367,16 @@ fun AuthDialog(
                 OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("E-posta") }, modifier = Modifier.fillMaxWidth())
                 if (!isResetPassword) {
                     OutlinedTextField(value = password, onValueChange = { password = it }, label = { Text("Şifre") }, modifier = Modifier.fillMaxWidth(), visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation())
+                    
+                    if (!isRegister) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.clickable { rememberMe = !rememberMe }.padding(vertical = 4.dp)
+                        ) {
+                            Checkbox(checked = rememberMe, onCheckedChange = { rememberMe = it })
+                            Text("Beni Hatırla", fontSize = 12.sp, color = Color.Gray)
+                        }
+                    }
                 }
                 
                 if (error.isNotEmpty()) { Text(error, color = Color.Red, fontSize = 12.sp) }
@@ -405,7 +416,7 @@ fun AuthDialog(
                     if (isRegister) {
                         vm.registerEmail(email, password, onSuccess = { onDismiss() }, onError = { error = it })
                     } else {
-                        vm.loginEmail(email, password, onSuccess = { onDismiss() }, onError = { error = it })
+                        vm.loginEmail(email, password, saveCredentials = rememberMe, onSuccess = { onDismiss() }, onError = { error = it })
                     }
                 }
             }) { Text(if (isResetPassword) "Gönder" else if (isRegister) "Kayıt Ol" else "Giriş Yap") }
