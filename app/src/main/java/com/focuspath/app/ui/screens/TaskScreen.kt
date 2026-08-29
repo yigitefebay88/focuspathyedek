@@ -1404,7 +1404,11 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
                 border = BorderStroke(1.dp, if (task.isCompleted) Color.Gray.copy(alpha = 0.2f) else if(task.priority == 2) AccentRed.copy(0.5f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
             ) {
                 Row(modifier = Modifier.fillMaxWidth().padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = task.isCompleted, onCheckedChange = { vm.toggleTask(task) })
+                    Checkbox(
+                        checked = task.isCompleted, 
+                        onCheckedChange = { vm.toggleTask(task) },
+                        enabled = !task.isCompleted
+                    )
                     Spacer(Modifier.width(6.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(text = task.title, style = MaterialTheme.typography.bodyMedium.copy(textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None), maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -2966,7 +2970,8 @@ fun MonotaskingDialog(vm: TaskViewModel, isEnglish: Boolean) {
                 Button(
                     onClick = { vm.toggleTask(task) ; vm.isMonotasking.value = false },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    enabled = !task.isCompleted
                 ) {
                     Icon(Icons.Default.Check, null)
                     Spacer(Modifier.width(8.dp))

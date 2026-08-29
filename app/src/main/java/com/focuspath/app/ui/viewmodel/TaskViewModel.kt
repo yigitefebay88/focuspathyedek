@@ -255,6 +255,7 @@ class TaskViewModel @Inject constructor(
                 
                 // Başarı durumunu kullanıcıya bildir (Konfeti vb.)
                 viewModelScope.launch(Dispatchers.Main) {
+                    playTickSound()
                     showConfetti.value = true
                     kotlinx.coroutines.delay(4000)
                     showConfetti.value = false
@@ -725,6 +726,7 @@ class TaskViewModel @Inject constructor(
             // Eğer hepsi bittiyse bir kutlama gösterilebilir
             if (onboardingTasks.isEmpty()) {
                 viewModelScope.launch(Dispatchers.Main) {
+                    playTickSound()
                     showConfetti.value = true
                     delay(3000)
                     showConfetti.value = false
@@ -893,11 +895,11 @@ class TaskViewModel @Inject constructor(
 
     private fun setupSoundPool() {
         val attributes = AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_MEDIA)
-            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+            .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
+            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
             .build()
         soundPool = SoundPool.Builder()
-            .setMaxStreams(5)
+            .setMaxStreams(10)
             .setAudioAttributes(attributes)
             .build()
 
@@ -984,8 +986,8 @@ class TaskViewModel @Inject constructor(
 
     fun playTickSound() {
         if (dragonSoundId != 0) {
-            // Yeni dragon sesini çalıyoruz
-            soundPool?.play(dragonSoundId, 1.0f, 1.0f, 2, 0, 1.0f)
+            // Başarı sesini çal (Daha yüksek öncelik ve temiz ses için)
+            soundPool?.play(dragonSoundId, 1.0f, 1.0f, 5, 0, 1.0f)
         }
     }
 
@@ -2190,6 +2192,8 @@ class TaskViewModel @Inject constructor(
     }
 
     fun toggleTask(task: TaskEntity) {
+        if (task.isCompleted) return // Zaten tamamlanmış görevlerin tikini geri kaldırmayı engelle
+        
         viewModelScope.launch(Dispatchers.IO) {
             val updatedTask = task.copy(isCompleted = !task.isCompleted)
             taskDao.updateTask(updatedTask)
@@ -2208,6 +2212,7 @@ class TaskViewModel @Inject constructor(
                 
                 // DOPAMINE REWARD
                 viewModelScope.launch(Dispatchers.Main) {
+                    playTickSound()
                     showConfetti.value = true
                     delay(3000)
                     showConfetti.value = false
