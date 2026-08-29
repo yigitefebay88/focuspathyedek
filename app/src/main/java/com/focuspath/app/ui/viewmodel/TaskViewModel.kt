@@ -121,7 +121,7 @@ class TaskViewModel @Inject constructor(
     val blockedApps = mutableStateListOf<String>().apply {
         addAll(prefs.getStringSet("blocked_apps", emptySet()) ?: emptySet())
     }
-    val isFocusActive = mutableStateOf(prefs.getBoolean("is_focus_active", false))
+    val isFocusActive = mutableStateOf(false) // Uygulama açılışında varsayılan olarak kapalı, servis kontrolüyle açılacak
     
     // TIMER STATE (Moved from TaskScreen to ViewModel for performance and persistence)
     val timerRunning = mutableStateOf(false)
@@ -838,9 +838,14 @@ class TaskViewModel @Inject constructor(
         
         if (hasActiveSession) {
             timerRunning.value = true
+            isFocusActive.value = true
             isPomodoroMode.value = prefs.getBoolean("TIMER_IS_POMODORO", true)
             pomodoroTotalMillis.longValue = prefs.getLong("TIMER_INITIAL_DURATION", 25 * 60 * 1000L)
-            timeLeft.longValue = targetEnd - System.currentTimeMillis()
+            timeLeft.longValue = if (isPomodoroMode.value) (targetEnd - System.currentTimeMillis()) else com.focuspath.app.service.FocusService.currentTime
+        } else {
+            // Aktif seans yoksa tüm durumları temizle
+            isFocusActive.value = false
+            timerRunning.value = false
         }
 
         timerSyncJob?.cancel()
@@ -849,9 +854,10 @@ class TaskViewModel @Inject constructor(
                 delay(1000L)
                 if (timerRunning.value) {
                     if (isPomodoroMode.value) {
-                        timeLeft.longValue = FocusService.currentTime
-                        if (!FocusService.isRunning) {
+                        timeLeft.longValue = com.focuspath.app.service.FocusService.currentTime
+                        if (!com.focuspath.app.service.FocusService.isRunning) {
                             timerRunning.value = false
+                            isFocusActive.value = false
                         }
                     } else {
                         timeElapsed.longValue = FocusService.currentTime
