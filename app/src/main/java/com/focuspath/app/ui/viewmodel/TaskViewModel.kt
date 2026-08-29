@@ -2414,12 +2414,23 @@ class TaskViewModel @Inject constructor(
     fun toggleTheme() { isDarkMode.value = !isDarkMode.value ; prefs.edit().putBoolean("is_dark_mode", isDarkMode.value).apply() }
 
     fun buyItem(id: String, cost: Int) {
-        if (userCoins.value >= cost && !unlockedItems.contains(id)) {
+        if (unlockedItems.contains(id)) return
+        
+        if (userCoins.value >= cost) {
             addCoins(-cost)
             unlockedItems.add(id)
             prefs.edit().putStringSet("unlocked_items", unlockedItems.toSet()).apply()
             // Hemen ofise ekle
             toggleItemVisibility(id, Offset(0f, 0f))
+            
+            viewModelScope.launch(Dispatchers.Main) {
+                Toast.makeText(application, "Yeni eşya kilidi açıldı! 🎁", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            viewModelScope.launch(Dispatchers.Main) {
+                val needed = cost - userCoins.value
+                Toast.makeText(application, "Yetersiz altın! $needed altın daha gerekiyor. 💰", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
