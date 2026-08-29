@@ -1487,6 +1487,10 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
         }
         item { Spacer(Modifier.height(80.dp)) } // Bottom bar için boşluk
     }
+
+    if (showTomorrowDialog) {
+        TomorrowPlanningDialog(vm, isEnglish) { showTomorrowDialog = false }
+    }
 }
 
 @Composable
