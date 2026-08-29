@@ -88,6 +88,14 @@ data class OnboardingTask(
     var isCompleted: Boolean = false
 )
 
+data class MysteryBoxReward(
+    val type: String, // "COINS", "PLANT_XP", "ITEM"
+    val amount: Int = 0,
+    val itemId: String? = null,
+    val title: String,
+    val icon: String
+)
+
 @HiltViewModel
 class TaskViewModel @Inject constructor(
     private val application: Application,
@@ -159,6 +167,11 @@ class TaskViewModel @Inject constructor(
     
     // ONBOARDING TASKS STATE
     val onboardingTasks = mutableStateListOf<OnboardingTask>()
+
+    // FOCUS TREE STATE
+    val plantLevel = mutableIntStateOf(prefs.getInt("plant_level", 1))
+    val plantGrowthXp = mutableIntStateOf(prefs.getInt("plant_growth_xp", 0))
+    val lastPlantCheckTime = mutableLongStateOf(prefs.getLong("last_plant_check", System.currentTimeMillis()))
     
     private val _teamLeaderboard = MutableStateFlow<List<Team>>(emptyList())
     val teamLeaderboard: StateFlow<List<Team>> = _teamLeaderboard.asStateFlow()
@@ -169,6 +182,10 @@ class TaskViewModel @Inject constructor(
     val isTeamLoading = mutableStateOf(false)
     val isTeamOfisMode = mutableStateOf(prefs.getBoolean("is_team_office_mode", false))
     private var teamListener: com.google.firebase.firestore.ListenerRegistration? = null
+
+    // MYSTERY BOX STATE
+    val showMysteryBox = mutableStateOf(false)
+    val mysteryBoxReward = mutableStateOf<MysteryBoxReward?>(null)
 
     val dailyBriefingText = mutableStateOf<String?>(null)
     val isBriefingLoading = mutableStateOf(false)
@@ -585,6 +602,80 @@ class TaskViewModel @Inject constructor(
         startWorkerSimulation()
         syncTimerWithService()
         loadOnboardingTasks()
+        checkPlantHealth()
+    }
+
+    private fun checkPlantHealth() {
+        val now = System.currentTimeMillis()
+        val dayInMillis = 24 * 60 * 60 * 1000L
+        val diff = now - lastPlantCheckTime.longValue
+        
+        if (diff > 2 * dayInMillis) {
+            // 2 gün girmemişse 1 seviye düşebilir (En az 1)
+            val levelsToDrop = (diff / (2 * dayInMillis)).toInt()
+            plantLevel.intValue = (plantLevel.intValue - levelsToDrop).coerceAtLeast(1)
+            prefs.edit().putInt("plant_level", plantLevel.intValue).apply()
+        }
+        lastPlantCheckTime.longValue = now
+        prefs.edit().putLong("last_plant_check", now).apply()
+    }
+
+    private fun growPlant(minutes: Int) {
+        // Her 10 dakika odaklanma 10 XP verir
+        val growthAmount = minutes
+        plantGrowthXp.intValue += growthAmount
+        
+        val xpNeeded = plantLevel.intValue * 100 // Her seviye için daha çok XP
+        if (plantGrowthXp.intValue >= xpNeeded) {
+            plantGrowthXp.intValue -= xpNeeded
+            plantLevel.intValue = (plantLevel.intValue + 1).coerceAtMost(10)
+            prefs.edit().putInt("plant_level", plantLevel.intValue).apply()
+        }
+        prefs.edit().putInt("plant_growth_xp", plantGrowthXp.intValue).apply()
+        syncProfileToFirestore() // Takıma/Leaderboard'a da yansısın (İsteğe bağlı, team modelinde yok şuan)
+    }
+
+    fun generateMysteryBox() {
+        val rand = (0..100).random()
+        val reward = when {
+            rand < 50 -> MysteryBoxReward("COINS", 50, null, "50 Altın", "💰")
+            rand < 80 -> MysteryBoxReward("COINS", 150, null, "150 Altın", "💰")
+            rand < 95 -> MysteryBoxReward("PLANT_XP", 200, null, "Bitki Süper Gübresi", "🧪")
+            else -> {
+                val items = listOf("lava_lamp_1", "arcade_1", "cat_1", "robot_1", "neon_sign_1")
+                val item = items.random()
+                MysteryBoxReward("ITEM", 0, item, "Nadir Eşya: $item", "🎁")
+            }
+        }
+        mysteryBoxReward.value = reward
+        showMysteryBox.value = true
+    }
+
+    fun claimMysteryBoxReward() {
+        val reward = mysteryBoxReward.value ?: return
+        when (reward.type) {
+            "COINS" -> addCoins(reward.amount)
+            "PLANT_XP" -> {
+                plantGrowthXp.intValue += reward.amount
+                val xpNeeded = plantLevel.intValue * 100
+                if (plantGrowthXp.intValue >= xpNeeded) {
+                    plantGrowthXp.intValue -= xpNeeded
+                    plantLevel.intValue = (plantLevel.intValue + 1).coerceAtMost(10)
+                }
+                prefs.edit().putInt("plant_growth_xp", plantGrowthXp.intValue).apply()
+                prefs.edit().putInt("plant_level", plantLevel.intValue).apply()
+            }
+            "ITEM" -> {
+                reward.itemId?.let { id ->
+                    if (!unlockedItems.contains(id)) {
+                        unlockedItems.add(id)
+                        prefs.edit().putStringSet("unlocked_items", unlockedItems.toSet()).apply()
+                    }
+                }
+            }
+        }
+        showMysteryBox.value = false
+        mysteryBoxReward.value = null
     }
 
     private fun loadOnboardingTasks() {
@@ -2176,7 +2267,14 @@ class TaskViewModel @Inject constructor(
     fun recordFocusSession(minutes: Int) {
         if (minutes >= 5) {
             completeOnboardingTask("first_focus") // GÖREVİ TAMAMLA
+            // Sürpriz kutu ihtimali (Örn: 25 dk ve üzeri seanslarda %100, daha azında ihtimal)
+            if (minutes >= 20) {
+                generateMysteryBox()
+            } else if ((0..100).random() < minutes * 4) {
+                generateMysteryBox()
+            }
         }
+        growPlant(minutes) // BİTKİYİ BÜYÜT
         val currentFocus = prefs.getInt("DAILY_FOCUS_CURRENT", 0) ; val newFocus = currentFocus + minutes
         prefs.edit().putInt("DAILY_FOCUS_CURRENT", newFocus).apply()
         if (newFocus >= 30 && !prefs.getBoolean("DAILY_FOCUS_DONE", false)) { prefs.edit().putBoolean("DAILY_FOCUS_DONE", true).apply() ; addCoins(50) }

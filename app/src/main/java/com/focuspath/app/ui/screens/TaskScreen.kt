@@ -658,6 +658,46 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
         }
     }
 
+    if (vm.showMysteryBox.value) {
+        val reward = vm.mysteryBoxReward.value
+        AlertDialog(
+            onDismissRequest = { },
+            title = { 
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("🎁", fontSize = 24.sp)
+                    Spacer(Modifier.width(8.dp))
+                    Text(if(isEnglish) "SURPRISE BOX!" else "SÜRPRİZ KUTU!") 
+                }
+            },
+            text = {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                    Text(if(isEnglish) "Great focus session! You found a reward:" else "Harika odaklandın! Bir ödül buldun:", textAlign = TextAlign.Center)
+                    Spacer(Modifier.height(16.dp))
+                    Surface(
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                        shape = RoundedCornerShape(16.dp),
+                        border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+                    ) {
+                        Column(modifier = Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(reward?.icon ?: "✨", fontSize = 48.sp)
+                            Spacer(Modifier.height(8.dp))
+                            Text(reward?.title ?: "", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { vm.claimMysteryBoxReward() },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(if(isEnglish) "COLLECT REWARD" else "ÖDÜLÜ AL")
+                }
+            },
+            shape = RoundedCornerShape(28.dp)
+        )
+    }
+
     if (showUpdateDialog) {
         AlertDialog(
             onDismissRequest = { showUpdateDialog = false },
@@ -2322,6 +2362,53 @@ fun BoxScope.WorkerModel(worker: WorkerInfo, fixedRotationX: Float, selectedBudd
 }
 
 @Composable
+fun PlantModel(level: Int, modifier: Modifier = Modifier) {
+    Box(modifier = modifier.size(24.dp)) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+            
+            // Saksı
+            drawRoundRect(
+                color = Color(0xFF5D4037),
+                topLeft = Offset(w * 0.2f, h * 0.6f),
+                size = Size(w * 0.6f, h * 0.35f),
+                cornerRadius = CornerRadius(4f, 4f)
+            )
+            
+            // Bitki Büyüme Evreleri
+            val plantColor = if (level > 5) Color(0xFF2E7D32) else Color(0xFF4CAF50)
+            
+            when {
+                level <= 2 -> { // Filiz
+                    drawRect(color = plantColor, topLeft = Offset(w * 0.45f, h * 0.4f), size = Size(w * 0.1f, h * 0.25f))
+                    drawArc(color = plantColor, startAngle = 180f, sweepAngle = 90f, useCenter = true, topLeft = Offset(w * 0.25f, h * 0.35f), size = Size(w * 0.3f, h * 0.2f))
+                }
+                level <= 5 -> { // Küçük Bitki
+                    drawRect(color = plantColor, topLeft = Offset(w * 0.45f, h * 0.2f), size = Size(w * 0.1f, h * 0.45f))
+                    drawCircle(color = plantColor, radius = w * 0.15f, center = Offset(w * 0.35f, h * 0.4f))
+                    drawCircle(color = plantColor, radius = w * 0.15f, center = Offset(w * 0.65f, h * 0.3f))
+                }
+                level <= 8 -> { // Çiçekli Bitki
+                    drawRect(color = plantColor, topLeft = Offset(w * 0.45f, h * 0.1f), size = Size(w * 0.1f, h * 0.55f))
+                    repeat(3) { i ->
+                        drawCircle(color = plantColor, radius = w * 0.18f, center = Offset(w * (0.3f + i * 0.2f), h * (0.2f + i * 0.15f)))
+                    }
+                    // Çiçek
+                    drawCircle(color = Color.Yellow, radius = w * 0.1f, center = Offset(w * 0.5f, h * 0.15f))
+                }
+                else -> { // Küçük Ağaç
+                    drawRect(color = Color(0xFF3E2723), topLeft = Offset(w * 0.42f, h * 0.1f), size = Size(w * 0.16f, h * 0.55f))
+                    repeat(5) { i ->
+                        drawCircle(color = Color(0xFF1B5E20), radius = w * 0.22f, center = Offset(w * (0.2f + (i % 3) * 0.3f), h * (0.1f + (i / 2) * 0.2f)))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun OfficeTabFull(vm: TaskViewModel, isEnglish: Boolean, context: Context, allTasksList: List<TaskEntity>, completedPomodorosToday: Int, onShowLiveSession: () -> Unit, onPeerClick: (String) -> Unit) {
     var showWeeklyAnalytics by rememberSaveable { mutableStateOf(false) }
 
@@ -2539,6 +2626,12 @@ private fun OfficeTabFull(vm: TaskViewModel, isEnglish: Boolean, context: Contex
                                 Box(modifier = Modifier.align(Alignment.TopCenter).offset(y = (-30).dp).width(44.dp).height(32.dp)) {
                                     val isAnyWorkerFocusing = workersCopy.any { it.deskId == deskId && it.isFocusing }
                                     Box(modifier = Modifier.align(Alignment.BottomCenter).offset(y = 12.dp).size(16.dp, 8.dp).background(Color(0xFF1A1A1A), RoundedCornerShape(2.dp))); Box(modifier = Modifier.align(Alignment.BottomCenter).offset(y = 4.dp).size(4.dp, 12.dp).background(Color(0xFF111111))); Box(modifier = Modifier.fillMaxSize().offset(x = 2.dp, y = 2.dp).background(Color.Black, RoundedCornerShape(4.dp))); Box(modifier = Modifier.fillMaxSize().background(Color(0xFF121212), RoundedCornerShape(4.dp)).border(1.dp, Color(0xFF333333), RoundedCornerShape(4.dp))) { Box(modifier = Modifier.fillMaxSize().padding(2.dp).background(Color.Black, RoundedCornerShape(2.dp))) { Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(MaterialTheme.colorScheme.primary.copy(alpha = if(isAnyWorkerFocusing) 0.6f else 0.3f), Color.Transparent, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))))); if(isAnyWorkerFocusing) { Text(text = workersCopy.find { it.deskId == deskId }?.monitorContent ?: "...", color = TerminalGreen.copy(0.7f), fontSize = 5.sp, modifier = Modifier.padding(2.dp).align(Alignment.Center)) } } }
+                                }
+
+                                // FOCUS TREE (Sadece kullanıcının masasında)
+                                val isMyDesk = workersCopy.any { it.deskId == deskId && it.isMe }
+                                if (isMyDesk) {
+                                    PlantModel(level = vm.plantLevel.intValue, modifier = Modifier.align(Alignment.TopEnd).offset(x = (-8).dp, y = (-20).dp))
                                 }
 
                                 // Çalışanlar (Masada Olanlar) - Z-INDEX: Masa karakterin arkasında kalsın (Y-sıralaması Box içinde)
