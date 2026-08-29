@@ -1207,9 +1207,20 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
                 Row(modifier = Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(text = greeting, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold), color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        if (vm.isLoggedIn.value) {
+                        
+                        val showInfo = vm.isLoggedIn.value || vm.userXp.value > 0
+                        if (showInfo) {
                             Column {
-                                Text(text = "${vm.userEmail.value} | ${com.focuspath.app.util.FocusRank.getTitle(vm.userXp.value.toLong(), isEnglish)} / ${vm.userXp.value}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                val userTitle = com.focuspath.app.util.FocusRank.getTitle(vm.userXp.value.toLong(), isEnglish)
+                                val statusText = if (vm.isLoggedIn.value) "${vm.userEmail.value} | $userTitle" else (if(isEnglish) "Offline | $userTitle" else "Çevrimdışı | $userTitle")
+                                
+                                Text(
+                                    text = "$statusText / ${vm.userXp.value}", 
+                                    style = MaterialTheme.typography.labelSmall, 
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f), 
+                                    maxLines = 1, 
+                                    overflow = TextOverflow.Ellipsis
+                                )
                                 if (!isMinimalist) {
                                     Spacer(Modifier.height(4.dp))
                                     val xpProgress = (vm.userXp.value % 100) / 100f
@@ -1950,7 +1961,10 @@ private fun SettingsTabFull(vm: TaskViewModel, lang: Map<String, String>, isEngl
             Spacer(Modifier.height(12.dp)); Text(text = (if(isEnglish) "Alarm Volume: " else "Alarm Ses Seviyesi: ") + "${(vm.alarmVolume.floatValue * 100).toInt()}%", style = MaterialTheme.typography.labelSmall, color = Color.Gray); Slider(value = vm.alarmVolume.floatValue, onValueChange = { vm.setAlarmVolume(it) }, valueRange = 0f..1f, colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f), activeTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f))); Spacer(Modifier.height(12.dp)); Text(if(isEnglish) "Alarm Sound" else "Alarm Sesi", style = MaterialTheme.typography.labelSmall, color = Color.Gray); Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) { listOf("default" to "🎶", "beep" to "🔔", "alarm" to "🚨").forEach { (id, icon) -> Surface(onClick = { vm.setAlarmSound(id) }, shape = RoundedCornerShape(12.dp), color = if (vm.alarmSound.value == id) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant.copy(0.3f), border = BorderStroke(1.dp, if (vm.alarmSound.value == id) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else Color.Gray.copy(0.2f)), modifier = Modifier.size(48.dp)) { Box(contentAlignment = Alignment.Center) { Text(icon, fontSize = 20.sp, modifier = Modifier.alpha(if(vm.alarmSound.value == id) 1f else 0.5f)) } } } } } };         Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(lang["account"] ?: "", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f))
-                if (vm.isLoggedIn.value) {
+                
+                val showProfile = vm.isLoggedIn.value || vm.userPhotoUrl.value != null
+                
+                if (showProfile) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -1961,32 +1975,43 @@ private fun SettingsTabFull(vm: TaskViewModel, lang: Map<String, String>, isEngl
                                 photoUrl = vm.userPhotoUrl.value,
                                 name = vm.userName.value,
                                 email = vm.userEmail.value,
-                                size = 48.dp
+                                size = 48.dp,
+                                border = if (!vm.isLoggedIn.value) BorderStroke(1.dp, Color.Gray) else null
                             )
                             Spacer(Modifier.width(12.dp))
                             Column {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(vm.userName.value, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
-                                    IconButton(onClick = { 
-                                        newNameInput = vm.userName.value
-                                        showNameEditDialog = true 
-                                    }, modifier = Modifier.size(24.dp)) {
-                                        Icon(Icons.Default.Edit, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+                                    Text(vm.userName.value, fontWeight = FontWeight.Bold, color = if (vm.isLoggedIn.value) MaterialTheme.colorScheme.onSurface else Color.Gray, fontSize = 14.sp)
+                                    if (vm.isLoggedIn.value) {
+                                        IconButton(onClick = { 
+                                            newNameInput = vm.userName.value
+                                            showNameEditDialog = true 
+                                        }, modifier = Modifier.size(24.dp)) {
+                                            Icon(Icons.Default.Edit, null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+                                        }
                                     }
                                 }
-                                Text(vm.userEmail.value, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), fontSize = 11.sp)
+                                Text(if (vm.isLoggedIn.value) vm.userEmail.value else (if(isEnglish) "OFFLINE SESSION" else "ÇEVRİMDIŞI OTURUM"), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), fontSize = 11.sp)
                             }
                         }
                         
-                        if (vm.isUploadingProfile.value) {
-                            CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                        if (vm.isLoggedIn.value) {
+                            if (vm.isUploadingProfile.value) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                            } else {
+                                TextButton(onClick = { galleryLauncher.launch("image/*") }) {
+                                    Text(if (isEnglish) "Change" else "Değiştir", fontSize = 12.sp)
+                                }
+                            }
                         } else {
-                            TextButton(onClick = { galleryLauncher.launch("image/*") }) {
-                                Text(if (isEnglish) "Change" else "Değiştir", fontSize = 12.sp)
+                            Button(onClick = onLoginClick, shape = RoundedCornerShape(8.dp)) {
+                                Text(lang["login"] ?: "Login", fontSize = 11.sp)
                             }
                         }
                     }
-                    Button(onClick = { vm.logoutGoogle(context) }, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().padding(top = 12.dp), colors = ButtonDefaults.buttonColors(containerColor = AccentRed.copy(alpha = 0.8f))) { Text(lang["logout"] ?: "", color = Color.White) }
+                    if (vm.isLoggedIn.value) {
+                        Button(onClick = { vm.logoutGoogle(context) }, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().padding(top = 12.dp), colors = ButtonDefaults.buttonColors(containerColor = AccentRed.copy(alpha = 0.8f))) { Text(lang["logout"] ?: "", color = Color.White) }
+                    }
                 } else {
                     Button(onClick = onLoginClick, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth().padding(top = 8.dp), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f))) { Text(lang["login"] ?: "Giriş Yap / Kayıt Ol", color = Color.Black) }
                 }
@@ -3549,12 +3574,25 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
     ) {
         item {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = lang["home"] ?: "Ana Sayfa",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val showHomeProfile = vm.isLoggedIn.value || vm.userPhotoUrl.value != null
+                    if (showHomeProfile) {
+                        ProfileImage(
+                            photoUrl = vm.userPhotoUrl.value,
+                            name = vm.userName.value,
+                            email = vm.userEmail.value,
+                            size = 32.dp,
+                            border = if (!vm.isLoggedIn.value) BorderStroke(1.dp, Color.Gray.copy(alpha = 0.5f)) else null
+                        )
+                        Spacer(Modifier.width(12.dp))
+                    }
+                    Text(
+                        text = lang["home"] ?: "Ana Sayfa",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
                 
                 Surface(
                     color = TerminalGreen.copy(alpha = 0.1f),

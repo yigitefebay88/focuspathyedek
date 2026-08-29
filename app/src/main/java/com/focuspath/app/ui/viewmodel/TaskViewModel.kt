@@ -766,7 +766,7 @@ class TaskViewModel @Inject constructor(
                 // UI ve Cache'i anında yerel dosya ile güncelle
                 // Cache busting için zaman damgası ekliyoruz
                 val timestamp = System.currentTimeMillis()
-                val cacheBustedPath = "$localPath?t=$timestamp"
+                val cacheBustedPath = "file://$localPath?t=$timestamp"
                 
                 userPhotoUrl.value = cacheBustedPath
                 prefs.edit()
@@ -810,6 +810,11 @@ class TaskViewModel @Inject constructor(
                             
                             // Auth nesnesini tazele ki yeni URL görünsün
                             user.reload().await()
+                            
+                            // UI'ı bulut URL'i ile güncelle (Opsiyonel ama daha sağlıklı)
+                            withContext(Dispatchers.Main) {
+                                userPhotoUrl.value = finalPhotoUrl
+                            }
                             
                             // Liderlik tablosunu tamamen güncelle
                             syncXpToFirestore() 
@@ -1480,6 +1485,11 @@ class TaskViewModel @Inject constructor(
             officeLevel.value = cloudOfficeLevel
             prefs.edit().putInt("office_level", cloudOfficeLevel).apply()
         }
+        val cloudIsPremium = doc.getBoolean("is_premium") ?: false
+        if (cloudIsPremium && !isPremium.value) {
+            isPremium.value = true
+            prefs.edit().putBoolean("is_premium", true).apply()
+        }
         val cloudUnlocked = doc.get("unlocked_items") as? List<String>
         if (cloudUnlocked != null) {
             cloudUnlocked.forEach { item ->
@@ -1497,7 +1507,8 @@ class TaskViewModel @Inject constructor(
                 val localUpdateTime = prefs.getLong("profile_last_local_update", 0L)
                 
                 // Sadece buluttaki veri daha yeniyse (veya yerelde hiç yoksa) kabul et
-                if (cloudSyncTime > localUpdateTime || userPhotoUrl.value == null) {
+                if (cloudSyncTime > localUpdateTime || userPhotoUrl.value.isNullOrBlank()) {
+                    android.util.Log.d("FocusPathAuth", "Applying cloud photo: $cloudPhoto")
                     userPhotoUrl.value = cloudPhoto
                     prefs.edit().putString("user_photo_url", cloudPhoto).apply()
                 }
@@ -1526,6 +1537,7 @@ class TaskViewModel @Inject constructor(
             "lifetime_coins" to lifetimeCoins.value,
             "office_level" to officeLevel.value,
             "unlocked_items" to unlockedItems.toList(),
+            "is_premium" to isPremium.value,
             "last_sync" to System.currentTimeMillis()
         )
         // Hem UID hem Email ile dokümanı güncelleyelim ki uyuşmazlıklar tamamen ortadan kalksın
@@ -2445,15 +2457,23 @@ class TaskViewModel @Inject constructor(
                 isLoggedIn.value = true 
                 userEmail.value = user.email ?: "" 
                 userName.value = user.displayName ?: "ANONYMOUS" 
-                userPhotoUrl.value = user.photoUrl?.toString()
+                
+                // Hemen Firebase Auth'daki resmi al (Varsa)
+                user.photoUrl?.let { 
+                    userPhotoUrl.value = it.toString() 
+                }
+
                 prefs.edit().apply {
                     putString("user_name", userName.value)
                     putString("user_photo_url", userPhotoUrl.value)
                 }.apply()
                 
                 syncXpToFirestore() 
+                fetchUserDataFromFirestore() // Buluttaki verileri (Firestore) hemen geri getir (XP, Coin, Foto vb.)
                 fetchLeaderboard() 
                 startFriendRequestListener()
+                startFriendsListener()
+                startLiveFocusListener()
                 onSuccess(user.email ?: "")
             } catch (e: Exception) { 
                 android.util.Log.e("FocusPathAuth", "Firebase login error", e)
@@ -2467,13 +2487,13 @@ class TaskViewModel @Inject constructor(
             friendRequestRegistration?.remove()
             firebaseAuth.signOut() 
             isLoggedIn.value = false 
+            
+            // Kimlik ve ilerleme bilgilerini yerelde TUTUYORUZ (Kullanıcının isteği üzerine)
+            // Böylece oturum kapansa bile ana sayfadaki profil ve başarılar görünmeye devam eder.
+            // Sadece hassas canlı bağlantıları temizliyoruz.
             userEmail.value = "" 
-            userName.value = "ANONYMOUS"
-            userPhotoUrl.value = null
-            prefs.edit().apply {
-                remove("user_name")
-                remove("user_photo_url")
-            }.apply()
+            
+            android.util.Log.d("FocusPathAuth", "Oturum kapatıldı, yerel veriler korundu.")
         } 
     }
 
@@ -2488,7 +2508,11 @@ class TaskViewModel @Inject constructor(
                     isLoggedIn.value = true 
                     userEmail.value = user.email ?: "" 
                     userName.value = user.displayName ?: user.email?.split("@")?.get(0) ?: "User"
-                    userPhotoUrl.value = user.photoUrl?.toString()
+                    
+                    // Hemen Firebase Auth'daki resmi al (Varsa)
+                    user.photoUrl?.let { 
+                        userPhotoUrl.value = it.toString() 
+                    }
                     
                     prefs.edit().apply {
                         putString("user_name", userName.value)
@@ -2498,9 +2522,11 @@ class TaskViewModel @Inject constructor(
                     android.util.Log.d("FocusPathAuth", "Email login successful: ${user.email}")
                     
                     syncXpToFirestore() 
-                    fetchLeaderboard() 
                     fetchUserDataFromFirestore()
+                    fetchLeaderboard() 
                     startFriendRequestListener()
+                    startFriendsListener()
+                    startLiveFocusListener()
                     onSuccess()
                 } else {
                     throw Exception("Kullanıcı oluşturulamadı.")
@@ -2538,6 +2564,8 @@ class TaskViewModel @Inject constructor(
                 syncXpToFirestore() 
                 fetchLeaderboard() 
                 startFriendRequestListener()
+                startFriendsListener()
+                startLiveFocusListener()
                 onSuccess() 
             } catch (e: Exception) { 
                 android.util.Log.e("FocusPathAuth", "Registration error", e)
