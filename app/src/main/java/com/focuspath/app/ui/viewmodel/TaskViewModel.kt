@@ -263,6 +263,10 @@ class TaskViewModel @Inject constructor(
         } else {
             updateTodayHistory(sessionsInt = 1)
         }
+        
+        // Odaklanma durumunu ve zamanlayıcıyı kapat
+        setFocusActive(false)
+        timerRunning.value = false
     }
 
     fun addBrainDumpNote(note: String) {
