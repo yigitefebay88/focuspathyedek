@@ -126,7 +126,6 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
     val chatListState = rememberLazyListState()
     val focusActive by vm.isFocusActive
     var isEnglish by rememberSaveable { mutableStateOf(false) }
-    var showCoffeeBreak by rememberSaveable { mutableStateOf(false) }
 
     // Persistent Notification logic in ViewModel or simple UI check
     if (focusActive) {
@@ -593,11 +592,11 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
         DecisionSpinnerDialog(vm, isEnglish)
     }
 
-    if (showCoffeeBreak) {
+    if (vm.showCoffeeBreak.value) {
         AlertDialog(
-            onDismissRequest = { showCoffeeBreak = false },
+            onDismissRequest = { vm.showCoffeeBreak.value = false },
             confirmButton = {
-                Button(onClick = { showCoffeeBreak = false }, shape = RoundedCornerShape(12.dp)) {
+                Button(onClick = { vm.showCoffeeBreak.value = false }, shape = RoundedCornerShape(12.dp)) {
                     Text(if(isEnglish) "BACK TO WORK" else "ÇALIŞMAYA DÖN")
                 }
             },

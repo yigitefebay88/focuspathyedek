@@ -186,6 +186,7 @@ class TaskViewModel @Inject constructor(
     // MYSTERY BOX STATE
     val showMysteryBox = mutableStateOf(false)
     val mysteryBoxReward = mutableStateOf<MysteryBoxReward?>(null)
+    val showCoffeeBreak = mutableStateOf(false)
 
     val dailyBriefingText = mutableStateOf<String?>(null)
     val isBriefingLoading = mutableStateOf(false)
@@ -256,6 +257,19 @@ class TaskViewModel @Inject constructor(
                 addXp(rewardXp)
                 addCoins(rewardCoins)
                 
+                // İlk odaklanma görevini tamamla
+                completeOnboardingTask("first_focus")
+
+                // Sürpriz kutu veya Kahve molası mantığı
+                val totalMins = (pomodoroTotalMillis.longValue / 60000).toInt()
+                val rand = (0..100).random()
+                
+                if (totalMins >= 20 || (totalMins >= 5 && rand < totalMins * 4)) {
+                    generateMysteryBox()
+                } else {
+                    showCoffeeBreak.value = true
+                }
+
                 // Başarı durumunu kullanıcıya bildir (Konfeti vb.)
                 viewModelScope.launch(Dispatchers.Main) {
                     playTickSound()
@@ -2325,15 +2339,7 @@ class TaskViewModel @Inject constructor(
 
     fun recordFocusSession(minutes: Int) {
         android.util.Log.d("FocusPath", "Recording focus session: $minutes minutes")
-        if (minutes >= 5) {
-            completeOnboardingTask("first_focus") // GÖREVİ TAMAMLA
-            // Sürpriz kutu ihtimali (Örn: 25 dk ve üzeri seanslarda %100, daha azında ihtimal)
-            if (minutes >= 20) {
-                generateMysteryBox()
-            } else if ((0..100).random() < minutes * 4) {
-                generateMysteryBox()
-            }
-        }
+        
         growPlant(minutes) // BİTKİYİ BÜYÜT
         val currentFocus = prefs.getInt("DAILY_FOCUS_CURRENT", 0) ; val newFocus = currentFocus + minutes
         prefs.edit().putInt("DAILY_FOCUS_CURRENT", newFocus).apply()
