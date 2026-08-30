@@ -3645,6 +3645,43 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
             }
         }
 
+        // DAILY CHALLENGE CARD
+        val yesterdayMins = vm.yesterdayFocusMins.intValue
+        val targetMins = vm.todayChallengeTarget.intValue
+        if (yesterdayMins > 0) {
+            item(key = "daily_challenge") {
+                Card(
+                    modifier = Modifier.fillMaxWidth().animateItemPlacement(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = AccentYellow.copy(alpha = 0.05f)),
+                    border = BorderStroke(1.dp, AccentYellow.copy(alpha = 0.2f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("🎯", fontSize = 24.sp)
+                        Spacer(Modifier.width(16.dp))
+                        Column {
+                            Text(
+                                text = if (isEnglish) "DAILY CHALLENGE" else "GÜNLÜK MEYDAN OKUMA",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = AccentYellow,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = if (isEnglish) 
+                                    "Yesterday you focused for $yesterdayMins min. Can we beat $targetMins min today?" 
+                                    else "Dün $yesterdayMins dakika odaklandın. Bugün $targetMins dakikayı geçebilir miyiz?",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
         item(key = "home_leaderboard") {
             Card(
                 modifier = Modifier.fillMaxWidth().animateItemPlacement(),

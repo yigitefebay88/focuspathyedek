@@ -190,6 +190,9 @@ class TaskViewModel @Inject constructor(
     val dailyBriefingText = mutableStateOf<String?>(null)
     val isBriefingLoading = mutableStateOf(false)
     val showDailyBriefing = mutableStateOf(false)
+    
+    val yesterdayFocusMins = mutableIntStateOf(0)
+    val todayChallengeTarget = mutableIntStateOf(0)
 
     private val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     private val todayStr = sdf.format(Date())
@@ -624,6 +627,19 @@ class TaskViewModel @Inject constructor(
         syncTimerWithService()
         loadOnboardingTasks()
         checkPlantHealth()
+        fetchYesterdayStats()
+    }
+
+    private fun fetchYesterdayStats() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val cal = Calendar.getInstance()
+            cal.add(Calendar.DAY_OF_YEAR, -1)
+            val yesterdayStr = sdf.format(cal.time)
+            val history = taskDao.getFocusHistoryByDate(yesterdayStr)
+            
+            yesterdayFocusMins.intValue = history?.totalFocusMinutes ?: 0
+            todayChallengeTarget.intValue = yesterdayFocusMins.intValue + 1
+        }
     }
 
     private fun checkPlantHealth() {
