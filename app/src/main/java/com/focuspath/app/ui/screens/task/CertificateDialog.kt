@@ -1,5 +1,16 @@
 package com.focuspath.app.ui.screens.task
 
+import android.content.ClipData
+import android.content.Context
+import android.content.Intent
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.pdf.PdfDocument
+import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -282,131 +293,147 @@ private fun saveCertificateAsPdf(
     isEnglish: Boolean,
     isSharing: Boolean = false
 ): File? {
-    val pdfDocument = android.graphics.pdf.PdfDocument()
-    val pageInfo = android.graphics.pdf.PdfDocument.PageInfo.Builder(595, 842, 1).create() // A4 Size
+    val pdfDocument = PdfDocument()
+    val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create() // A4 Size
     val page = pdfDocument.startPage(pageInfo)
     val canvas = page.canvas
-    val paint = android.graphics.Paint()
+    val paint = Paint()
 
-    // Background
-    paint.color = android.graphics.Color.parseColor("#FCF8F3")
-    canvas.drawRect(0f, 0f, 595f, 842f, paint)
+    try {
+        // Background
+        paint.color = android.graphics.Color.parseColor("#FCF8F3")
+        canvas.drawRect(0f, 0f, 595f, 842f, paint)
 
-    // Border
-    val rankColorInt = android.graphics.Color.argb(
-        255,
-        (FocusRank.getColor(xp).red * 255).toInt(),
-        (FocusRank.getColor(xp).green * 255).toInt(),
-        (FocusRank.getColor(xp).blue * 255).toInt()
-    )
-    paint.color = rankColorInt
-    paint.style = android.graphics.Paint.Style.STROKE
-    paint.strokeWidth = 20f
-    canvas.drawRect(20f, 20f, 575f, 822f, paint)
+        // Border
+        val rankColor = FocusRank.getColor(xp)
+        val rankColorInt = android.graphics.Color.argb(
+            255,
+            (rankColor.red * 255).toInt(),
+            (rankColor.green * 255).toInt(),
+            (rankColor.blue * 255).toInt()
+        )
+        paint.color = rankColorInt
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = 20f
+        canvas.drawRect(20f, 20f, 575f, 822f, paint)
 
-    // Content
-    paint.style = android.graphics.Paint.Style.FILL
-    paint.textAlign = android.graphics.Paint.Align.CENTER
-    paint.isFakeBoldText = true
+        // Content
+        paint.style = Paint.Style.FILL
+        paint.textAlign = Paint.Align.CENTER
+        paint.isFakeBoldText = true
 
-    // Header
-    paint.textSize = 24f
-    paint.color = android.graphics.Color.parseColor("#2C3E50")
-    canvas.drawText(if(isEnglish) "CERTIFICATE OF DISCIPLINE" else "USTUN DISIPLIN SERTIFIKASI", 297f, 150f, paint)
-
-    // Name
-    val nameUpper = name.uppercase()
-    if (nameUpper.length > 20) {
+        // Header
         paint.textSize = 24f
-    } else {
-        paint.textSize = 32f
-    }
-    paint.color = android.graphics.Color.BLACK
-    canvas.drawText(nameUpper, 297f, 300f, paint)
+        paint.color = android.graphics.Color.parseColor("#2C3E50")
+        canvas.drawText(if(isEnglish) "CERTIFICATE OF DISCIPLINE" else "USTUN DISIPLIN SERTIFIKASI", 297f, 150f, paint)
 
-    // Body
-    paint.textSize = 16f
-    paint.isFakeBoldText = false
-    paint.color = android.graphics.Color.DKGRAY
-    val body1 = if(isEnglish) "has demonstrated exceptional focus and productivity," else "olaganustu odaklanma ve uretkenlik gostererek"
-    val body2 = if(isEnglish) "achieving the esteemed rank of" else "su unvana layik gorulmustur:"
-    canvas.drawText(body1, 297f, 380f, paint)
-    canvas.drawText(body2, 297f, 410f, paint)
-
-    // Rank
-    paint.textSize = 28f
-    paint.isFakeBoldText = true
-    paint.color = rankColorInt
-    canvas.drawText(FocusRank.getTitle(xp, isEnglish).uppercase(), 297f, 480f, paint)
-
-    // Stats
-    paint.textSize = 14f
-    paint.isFakeBoldText = true
-    paint.color = android.graphics.Color.BLACK
-    
-    val statsStr = if(isEnglish) 
-        "Tasks Completed: $tasksDone | Lifetime XP: $xp" 
-        else "Tamamlanan Gorev: $tasksDone | Toplam XP: $xp"
-    canvas.drawText(statsStr, 297f, 550f, paint)
-
-    // QR Code for Verification
-    drawQrCode(canvas, 257f, 600f, 80f, rankColorInt)
-    paint.textSize = 8f
-    paint.isFakeBoldText = false
-    canvas.drawText(if(isEnglish) "VERIFICATION ID: ${xp}-${System.currentTimeMillis()/100000}" else "DOGRULAMA NO: ${xp}-${System.currentTimeMillis()/100000}", 297f, 695f, paint)
-
-    // Seal and Footer
-    paint.color = rankColorInt
-    canvas.drawCircle(80f, 750f, 30f, paint)
-    paint.color = android.graphics.Color.WHITE
-    paint.textSize = 18f
-    paint.isFakeBoldText = true
-    canvas.drawText("FP", 80f, 756f, paint)
-
-    paint.color = android.graphics.Color.BLACK
-    paint.textSize = 10f
-    paint.isFakeBoldText = false
-    val dateStr = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date())
-    canvas.drawText("Date: $dateStr", 297f, 760f, paint)
-    canvas.drawText("Authorized By: FocusPath AI", 500f, 760f, paint)
-
-    pdfDocument.finishPage(page)
-
-    val fileName = "FocusPath_Certificate_${name.replace(" ", "_")}.pdf"
-    
-    val targetFile = if (isSharing) {
-        File(context.cacheDir, fileName)
-    } else {
-        // Save to Downloads
-        val values = android.content.ContentValues().apply {
-            put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-            put(android.provider.MediaStore.MediaColumns.MIME_TYPE, "application/pdf")
-            put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, android.os.Environment.DIRECTORY_DOWNLOADS)
+        // Name
+        val nameUpper = name.uppercase()
+        if (nameUpper.length > 20) {
+            paint.textSize = 24f
+        } else {
+            paint.textSize = 32f
         }
-        val uri = context.contentResolver.insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
-        uri?.let {
-            context.contentResolver.openOutputStream(it)?.use { outputStream ->
-                pdfDocument.writeTo(outputStream)
-            }
-            if (!isSharing) {
-                android.widget.Toast.makeText(context, if(isEnglish) "PDF saved to Downloads" else "PDF İndirilenler klasörüne kaydedildi", android.widget.Toast.LENGTH_LONG).show()
+        paint.color = android.graphics.Color.BLACK
+        canvas.drawText(nameUpper, 297f, 300f, paint)
+
+        // Body
+        paint.textSize = 16f
+        paint.isFakeBoldText = false
+        paint.color = android.graphics.Color.DKGRAY
+        val body1 = if(isEnglish) "has demonstrated exceptional focus and productivity," else "olaganustu odaklanma ve uretkenlik gostererek"
+        val body2 = if(isEnglish) "achieving the esteemed rank of" else "su unvana layik gorulmustur:"
+        canvas.drawText(body1, 297f, 380f, paint)
+        canvas.drawText(body2, 297f, 410f, paint)
+
+        // Rank
+        paint.textSize = 28f
+        paint.isFakeBoldText = true
+        paint.color = rankColorInt
+        canvas.drawText(FocusRank.getTitle(xp, isEnglish).uppercase(), 297f, 480f, paint)
+
+        // Stats
+        paint.textSize = 14f
+        paint.isFakeBoldText = true
+        paint.color = android.graphics.Color.BLACK
+        
+        val statsStr = if(isEnglish) 
+            "Tasks Completed: $tasksDone | Lifetime XP: $xp" 
+            else "Tamamlanan Gorev: $tasksDone | Toplam XP: $xp"
+        canvas.drawText(statsStr, 297f, 550f, paint)
+
+        // QR Code for Verification
+        drawQrCode(canvas, 257f, 600f, 80f, rankColorInt)
+        paint.textSize = 8f
+        paint.isFakeBoldText = false
+        canvas.drawText(if(isEnglish) "VERIFICATION ID: ${xp}-${System.currentTimeMillis()/100000}" else "DOGRULAMA NO: ${xp}-${System.currentTimeMillis()/100000}", 297f, 695f, paint)
+
+        // Seal and Footer
+        paint.color = rankColorInt
+        canvas.drawCircle(80f, 750f, 30f, paint)
+        paint.color = android.graphics.Color.WHITE
+        paint.textSize = 18f
+        paint.isFakeBoldText = true
+        canvas.drawText("FP", 80f, 756f, paint)
+
+        paint.color = android.graphics.Color.BLACK
+        paint.textSize = 10f
+        paint.isFakeBoldText = false
+        val dateStr = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault()).format(Date())
+        canvas.drawText("Date: $dateStr", 297f, 760f, paint)
+        canvas.drawText("Authorized By: FocusPath AI", 500f, 760f, paint)
+
+        pdfDocument.finishPage(page)
+
+        // Sanitize name for filename
+        val safeName = name.replace(Regex("[^a-zA-Z0-9]"), "_")
+        val fileName = "FocusPath_Certificate_${safeName}.pdf"
+        
+        val targetFile = if (isSharing) {
+            File(context.cacheDir, fileName)
+        } else {
+            // Save to Downloads
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val values = android.content.ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+                    put(MediaStore.MediaColumns.MIME_TYPE, "application/pdf")
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                }
+                val uri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+                uri?.let {
+                    context.contentResolver.openOutputStream(it)?.use { outputStream ->
+                        pdfDocument.writeTo(outputStream)
+                    }
+                    Toast.makeText(context, if(isEnglish) "PDF saved to Downloads" else "PDF İndirilenler klasörüne kaydedildi", Toast.LENGTH_LONG).show()
+                }
+                null
+            } else {
+                // Legacy saving for API < 29
+                val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                val file = File(downloadsDir, fileName)
+                FileOutputStream(file).use { pdfDocument.writeTo(it) }
+                Toast.makeText(context, if(isEnglish) "PDF saved to Downloads" else "PDF İndirilenler klasörüne kaydedildi", Toast.LENGTH_LONG).show()
+                null
             }
         }
-        null
-    }
-    
-    if (isSharing && targetFile != null) {
-        FileOutputStream(targetFile).use { pdfDocument.writeTo(it) }
-    }
+        
+        if (isSharing && targetFile != null) {
+            FileOutputStream(targetFile).use { pdfDocument.writeTo(it) }
+        }
 
-    pdfDocument.close()
-    return targetFile
+        return targetFile
+    } catch (e: Exception) {
+        android.util.Log.e("Certificate", "Error saving PDF: ${e.message}")
+        return null
+    } finally {
+        pdfDocument.close()
+    }
 }
 
-private fun drawQrCode(canvas: android.graphics.Canvas, x: Float, y: Float, size: Float, color: Int) {
-    val paint = android.graphics.Paint().apply {
+private fun drawQrCode(canvas: Canvas, x: Float, y: Float, size: Float, color: Int) {
+    val paint = Paint().apply {
         this.color = color
-        style = android.graphics.Paint.Style.FILL
+        style = Paint.Style.FILL
     }
     val cellSize = size / 21f
     
@@ -430,7 +457,7 @@ private fun drawQrCode(canvas: android.graphics.Canvas, x: Float, y: Float, size
     }
 }
 
-private fun drawFinderPattern(canvas: android.graphics.Canvas, x: Float, y: Float, cellSize: Float, paint: android.graphics.Paint) {
+private fun drawFinderPattern(canvas: Canvas, x: Float, y: Float, cellSize: Float, paint: Paint) {
     val oldColor = paint.color
     canvas.drawRect(x, y, x + 7 * cellSize, y + 7 * cellSize, paint)
     paint.color = android.graphics.Color.WHITE
@@ -439,17 +466,38 @@ private fun drawFinderPattern(canvas: android.graphics.Canvas, x: Float, y: Floa
     canvas.drawRect(x + 2 * cellSize, y + 2 * cellSize, x + 5 * cellSize, y + 5 * cellSize, paint)
 }
 
-private fun shareCertificate(context: android.content.Context, name: String, xp: Long, focusMins: Int, tasksDone: Int, isEnglish: Boolean) {
-    val file = saveCertificateAsPdf(context, name, xp, focusMins, tasksDone, isEnglish, isSharing = true)
-    if (file != null && file.exists()) {
-        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-        val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-            type = "application/pdf"
-            putExtra(android.content.Intent.EXTRA_STREAM, uri)
-            putExtra(android.content.Intent.EXTRA_SUBJECT, if(isEnglish) "My FocusPath Discipline Certificate" else "FocusPath Disiplin Sertifikam")
-            putExtra(android.content.Intent.EXTRA_TEXT, if(isEnglish) "I just earned my $xp XP certificate on FocusPath! Check out my progress." else "FocusPath'te $xp XP sertifikamı aldım! İlerlememe göz atın.")
-            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+private fun shareCertificate(context: Context, name: String, xp: Long, focusMins: Int, tasksDone: Int, isEnglish: Boolean) {
+    try {
+        val file = saveCertificateAsPdf(context, name, xp, focusMins, tasksDone, isEnglish, isSharing = true)
+        if (file != null && file.exists()) {
+            // Manifest'teki com.focuspath.app.fileprovider ile tam eşleşmeli
+            val authority = "com.focuspath.app.fileprovider"
+            val uri = FileProvider.getUriForFile(context, authority, file)
+            
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "application/pdf"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                putExtra(Intent.EXTRA_SUBJECT, if(isEnglish) "FocusPath Certificate" else "FocusPath Sertifikası")
+                putExtra(Intent.EXTRA_TEXT, if(isEnglish) "Check out my focus progress!" else "Odaklanma ilerlememe göz at!")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                // Yeni Android sürümleri için kritik: Yetkiyi ClipData ile de aktar
+                clipData = ClipData.newRawUri(null, uri)
+            }
+            
+            val chooser = Intent.createChooser(intent, if(isEnglish) "Share via" else "Şununla Paylaş")
+            // Çökmeyi engellemek için flag ekle
+            chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            
+            try {
+                context.startActivity(chooser)
+            } catch (e: Exception) {
+                Toast.makeText(context, if(isEnglish) "No app found to share PDF" else "PDF paylaşacak uygulama bulunamadı", Toast.LENGTH_LONG).show()
+            }
+        } else {
+            Toast.makeText(context, if(isEnglish) "Error generating file" else "Dosya oluşturma hatası", Toast.LENGTH_SHORT).show()
         }
-        context.startActivity(android.content.Intent.createChooser(intent, if(isEnglish) "Share Certificate" else "Sertifikayı Paylaş"))
+    } catch (e: Exception) {
+        android.util.Log.e("Certificate", "Share error: ${e.message}")
+        Toast.makeText(context, "Error: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
     }
 }
