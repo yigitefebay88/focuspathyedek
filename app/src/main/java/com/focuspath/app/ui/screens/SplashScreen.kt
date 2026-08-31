@@ -66,7 +66,7 @@ fun SplashScreen(terminalColor: Color, onStartClick: () -> Unit) {
             // SLOGANLAR (Yükleme çubuğunun tam üstüne çekildi)
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                verticalArrangement = Arrangement.spacedBy(5.dp)
             ) {
                 Text(
                     text = "DAHA İYİ ODAKLAN",
@@ -100,7 +100,7 @@ fun SplashScreen(terminalColor: Color, onStartClick: () -> Unit) {
                 )
             }
 
-            Spacer(Modifier.height(90.dp)) // Metni biraz daha yukarı aldım (54 -> 90)
+            Spacer(Modifier.height(40.dp)) // Metni biraz aşağı aldım (90 -> 40)
 
             Text(
                 text = "Sistem Hazırlanıyor...",
