@@ -2405,8 +2405,14 @@ class TaskViewModel @Inject constructor(
     }
 
     fun addXp(amount: Int) { 
-        val bonus = if (isTeamSynergyActive.value) (amount * 0.2f).toInt() else 0
-        val finalAmount = amount + bonus
+        val isSynergy = isTeamSynergyActive.value
+        val hasNeon = visibleItems.contains("neon_sign_1")
+        
+        var bonusMultiplier = 0f
+        if (isSynergy) bonusMultiplier += 0.2f
+        if (hasNeon) bonusMultiplier += 0.05f // Neon Tabela %5 XP Bonusu verir
+        
+        val finalAmount = (amount * (1f + bonusMultiplier)).toInt()
         
         userXp.value += finalAmount 
         prefs.edit().putInt("user_xp", userXp.value).apply() 

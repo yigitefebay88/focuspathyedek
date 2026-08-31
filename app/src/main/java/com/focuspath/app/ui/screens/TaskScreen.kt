@@ -2779,10 +2779,16 @@ private fun OfficeTabFull(vm: TaskViewModel, isEnglish: Boolean, context: Contex
                             .align(Alignment.Center)
                             .offset { 
                                 if (isWallItem) {
-                                    // Duvara yapıştır (Arka duvar y = -wallHalfSize)
+                                    // X moves left/right. Y is fixed at back wall.
                                     IntOffset((savedPos.x * currentDensity.density).toInt(), (-dynamicFloorSize/2 * currentDensity.density).toInt())
                                 } else {
                                     IntOffset((savedPos.x * currentDensity.density).toInt(), (savedPos.y * currentDensity.density).toInt())
+                                }
+                            }
+                            .graphicsLayer {
+                                if (isWallItem) {
+                                    // Move UP the wall based on savedPos.y (Dragging down on floor -> moves UP on wall)
+                                    translationY = (savedPos.y * currentDensity.density) - 100f // Base height offset
                                 }
                             }
                             .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
@@ -2843,19 +2849,29 @@ private fun OfficeTabFull(vm: TaskViewModel, isEnglish: Boolean, context: Contex
                                 }
                             } else if (id == "neon_sign_1") {
                                 // 3D NEON TABELA: Duvarda parlar
+                                val flickerTransition = rememberInfiniteTransition()
+                                val flickerAlpha by flickerTransition.animateFloat(
+                                    initialValue = 0.8f, targetValue = 1f,
+                                    animationSpec = infiniteRepeatable(tween(100), RepeatMode.Reverse)
+                                )
+                                
                                 Box(modifier = Modifier
                                     .size(100.dp, 40.dp)
                                     .graphicsLayer {
                                         rotationX = -90f
                                         transformOrigin = TransformOrigin(0.5f, 1f)
+                                        alpha = flickerAlpha
                                     }
                                     .background(Color.Black.copy(0.8f), RoundedCornerShape(8.dp))
                                     .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp)),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     // Neon Işığı (Glow) - DAHA GÜÇLÜ
-                                    Box(modifier = Modifier.fillMaxSize().background(Brush.radialGradient(listOf(MaterialTheme.colorScheme.primary.copy(0.6f), Color.Transparent))))
-                                    Text("FOCUS", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black, fontSize = 14.sp)
+                                    Box(modifier = Modifier.fillMaxSize().background(Brush.radialGradient(listOf(MaterialTheme.colorScheme.primary.copy(0.4f), Color.Transparent))))
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text("FOCUS", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black, fontSize = 16.sp)
+                                        Text("+5% XP BOOST", color = MaterialTheme.colorScheme.primary.copy(0.7f), fontSize = 6.sp, fontWeight = FontWeight.Bold)
+                                    }
                                 }
                             } else if (id == "lamp_1") {
                                 // MASA LAMBASI IŞIĞI - DAHA GÜÇLÜ
