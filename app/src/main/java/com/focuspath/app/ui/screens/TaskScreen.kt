@@ -544,7 +544,7 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
                 label = "tabTransition"
             ) { targetSelectedTab ->
                 when (targetSelectedTab) {
-                    0 -> HomeTabFull(vm, allTasksList, lang, isEnglish, totalFocusMins, completedSessions, interruptedSessions, { showCertificate = it })
+                    0 -> HomeTabFull(vm, allTasksList, lang, isEnglish, totalFocusMins, completedSessions, interruptedSessions, { selectedTab = it }, { showCertificate = it })
                     1 -> TaskTabFull(vm, taskList, allTasksList, selectedDate, lang, isEnglish, greeting, currentQuote, haptic, context, isLandscape, { showClearDialog = true }, { showEditDialog = it }, { showDeleteConfirm = it }, { showReminderDialog = it }, { showQuoteHistory = true })
                     2 -> AiTabFull(vm, lang, isEnglish, context, chatHistory, isBotTyping, chatListState, taskList)
                     3 -> CalendarTabFull(vm, lang, currentMonthName, selectedDay, allTasksList, { selectedDay = it }, isEnglish, context, timerRunning, isPomodoroMode, timeLeft, timeElapsed, pomodoroTotalMillis, selectedFocusSound, completedSessions, { vm.toggleTimer(context, it) }, { vm.isPomodoroMode.value = it }, { vm.pomodoroTotalMillis.longValue = it ; vm.timeLeft.longValue = it }, { selectedFocusSound = it }, { showZenMode = true })
@@ -3619,7 +3619,8 @@ private fun isSameDay(millis1: Long, millis2: Long): Boolean {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map<String, String>, isEnglish: Boolean, totalFocusMinutes: Int, completedSessions: Int, interruptedSessions: Int, onShowCertificate: (Boolean) -> Unit) {
+private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map<String, String>, isEnglish: Boolean, totalFocusMinutes: Int, completedSessions: Int, interruptedSessions: Int, onTabChange: (Int) -> Unit, onShowCertificate: (Boolean) -> Unit) {
+    val context = LocalContext.current
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     val leaderboard by vm.leaderboard.collectAsState()
     
@@ -3933,14 +3934,36 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
                     
                     if (interruptedSessions > 0) {
                         Spacer(Modifier.height(12.dp))
-                        Text(
-                            if(isEnglish) "Don't let interruptions stop you! Every minute counts." else "Yarım kalanlar seni durdurmasın! Her dakika değerlidir.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.Gray,
-                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = if(isEnglish) "You have interrupted sessions." else "Yarım kalan seansların var.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Gray,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Button(
+                                onClick = { 
+                                    vm.startRecoverySession(context)
+                                    onTabChange(3) // Takvim/Timer tabına at
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                modifier = Modifier.height(32.dp)
+                            ) {
+                                Text(
+                                    if(isEnglish) "RECOVER" else "TELAFİ ET", 
+                                    color = MaterialTheme.colorScheme.primary, 
+                                    fontSize = 10.sp, 
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
                     }
                 }
             }

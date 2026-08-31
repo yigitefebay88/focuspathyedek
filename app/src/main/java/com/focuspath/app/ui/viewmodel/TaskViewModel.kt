@@ -266,6 +266,40 @@ class TaskViewModel @Inject constructor(
         found
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
+    val isRecoverMode = mutableStateOf(false)
+
+    fun startRecoverySession(context: Context) {
+        // Telafi modu aktifleşir ve zamanlayıcıyı 5 dakikaya kurup başlatır
+        isRecoverMode.value = true
+        isPomodoroMode.value = true
+        pomodoroTotalMillis.longValue = 5 * 60000L
+        timeLeft.longValue = 5 * 60000L
+        toggleTimer(context, true)
+        
+        Toast.makeText(application, "Telafi Modu: 5 Dakika Odaklan!", Toast.LENGTH_SHORT).show()
+    }
+
+    fun recoverSession() {
+        val date = todayStr
+        viewModelScope.launch(Dispatchers.IO) {
+            val updated = taskDao.recoverInterruptedSession(date)
+            if (updated > 0) {
+                // Telafi ödülü (Normalin yarısı kadar)
+                addXp(10)
+                addCoins(10)
+                
+                viewModelScope.launch(Dispatchers.Main) {
+                    isRecoverMode.value = false
+                    Toast.makeText(application, "Seans Başarıyla Telafi Edildi! 🛡️", Toast.LENGTH_SHORT).show()
+                    playTickSound()
+                    showConfetti.value = true
+                    delay(3000)
+                    showConfetti.value = false
+                }
+            }
+        }
+    }
+
     fun recordSessionResult(completed: Boolean) {
         // ÇİFT KAYIT KORUMASI: Eğer zamanlayıcı zaten durmuşsa tekrar işlem yapma
         if (!timerRunning.value && !isTimerPaused.value && completed) return
@@ -278,6 +312,12 @@ class TaskViewModel @Inject constructor(
         setFocusActive(false)
 
         if (completed) {
+            // EĞER TELAFİ MODUNDAYSA ÖZEL İŞLEM YAP
+            if (isRecoverMode.value) {
+                recoverSession()
+                return // Normal seans ödüllerini verme, telafi ödülünü ver
+            }
+
             // 1. ANINDA GÖRSEL BİLDİRİM
             viewModelScope.launch(Dispatchers.Main) {
                 Toast.makeText(application, "Seans Tamamlandı! 🎉 +1", Toast.LENGTH_SHORT).show()

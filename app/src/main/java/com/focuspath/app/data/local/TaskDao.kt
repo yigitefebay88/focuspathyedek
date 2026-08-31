@@ -42,6 +42,9 @@ interface TaskDao {
     @Query("UPDATE focus_history SET totalFocusMinutes = totalFocusMinutes + :mins, tasksCompleted = tasksCompleted + :tasks, sessionsCompleted = sessionsCompleted + :sessions, sessionsInterrupted = sessionsInterrupted + :interrupted WHERE date = :date")
     suspend fun updateFocusHistoryAtomic(date: String, mins: Int, tasks: Int, sessions: Int, interrupted: Int): Int
 
+    @Query("UPDATE focus_history SET sessionsCompleted = sessionsCompleted + 1, sessionsInterrupted = sessionsInterrupted - 1 WHERE date = :date AND sessionsInterrupted > 0")
+    suspend fun recoverInterruptedSession(date: String): Int
+
     @Query("SELECT SUM(totalFocusMinutes) FROM focus_history")
     fun getTotalFocusMinutes(): Flow<Int?>
 
