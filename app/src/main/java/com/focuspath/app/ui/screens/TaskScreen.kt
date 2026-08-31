@@ -1112,29 +1112,46 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
                     ) {
-                        items(onboardingTasks, key = { it.titleEn }) { task ->
+                        items(onboardingTasks, key = { it.id }) { task ->
                             Card(
                                 modifier = Modifier.width(180.dp).animateItemPlacement(),
                                 shape = RoundedCornerShape(12.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.4f)),
-                                border = BorderStroke(1.dp, AccentYellow.copy(alpha = 0.3f))
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if(task.isCompleted) Color.Black.copy(alpha = 0.2f) else Color.Black.copy(alpha = 0.4f)
+                                ),
+                                border = BorderStroke(1.dp, if(task.isCompleted) Color.Green.copy(0.3f) else AccentYellow.copy(alpha = 0.3f))
                             ) {
                                 Column(modifier = Modifier.padding(12.dp)) {
-                                    Text(
-                                        text = if(isEnglish) task.titleEn else task.titleTr,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.White,
-                                        maxLines = 2,
-                                        minLines = 2
-                                    )
-                                    Spacer(Modifier.height(8.dp))
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text("💰", fontSize = 10.sp)
-                                        Text("+${task.rewardCoins}", fontSize = 10.sp, color = AccentYellow, fontWeight = FontWeight.Bold)
-                                        Spacer(Modifier.width(8.dp))
-                                        Text("⭐", fontSize = 10.sp)
-                                        Text("+${task.rewardXp}", fontSize = 10.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                                        Text(
+                                            text = if(isEnglish) task.titleEn else task.titleTr,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if(task.isCompleted) Color.Gray else Color.White,
+                                            modifier = Modifier.weight(1f),
+                                            maxLines = 2,
+                                            minLines = 2
+                                        )
+                                        if (task.isCompleted) {
+                                            Icon(Icons.Default.CheckCircle, null, tint = Color.Green, modifier = Modifier.size(16.dp))
+                                        }
+                                    }
+                                    Spacer(Modifier.height(8.dp))
+                                    if (task.isCompleted) {
+                                        Text(
+                                            text = if(isEnglish) "COMPLETED" else "TAMAMLANDI",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = Color.Green,
+                                            fontWeight = FontWeight.Black
+                                        )
+                                    } else {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text("💰", fontSize = 10.sp)
+                                            Text("+${task.rewardCoins}", fontSize = 10.sp, color = AccentYellow, fontWeight = FontWeight.Bold)
+                                            Spacer(Modifier.width(8.dp))
+                                            Text("⭐", fontSize = 10.sp)
+                                            Text("+${task.rewardXp}", fontSize = 10.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                                        }
                                     }
                                 }
                             }

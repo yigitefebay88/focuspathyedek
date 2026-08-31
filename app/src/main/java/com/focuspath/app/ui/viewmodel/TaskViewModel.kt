@@ -802,7 +802,7 @@ class TaskViewModel @Inject constructor(
         }
         
         onboardingTasks.clear()
-        onboardingTasks.addAll(tasks.filter { !it.isCompleted })
+        onboardingTasks.addAll(tasks) // Artık filtrelemiyoruz, hepsi görünecek
     }
 
     fun completeOnboardingTask(id: String) {
@@ -811,7 +811,11 @@ class TaskViewModel @Inject constructor(
             prefs.edit().putBoolean("onboarding_$id", true).apply()
             addCoins(task.rewardCoins)
             addXp(task.rewardXp)
-            onboardingTasks.remove(task)
+            task.isCompleted = true // Listeden silme yerine durumunu güncelle
+            
+            // Reaktif güncellemeyi tetiklemek için listeyi tazele
+            val idx = onboardingTasks.indexOf(task)
+            if (idx != -1) onboardingTasks[idx] = task.copy(isCompleted = true)
             
             // Eğer hepsi bittiyse bir kutlama gösterilebilir
             if (onboardingTasks.isEmpty()) {
