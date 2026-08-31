@@ -290,8 +290,8 @@ class TaskViewModel @Inject constructor(
             updateTodayHistory(sessionsComp = 1)
             
             if (isPomodoroMode.value) {
-                addXp(25) // Seans ödülü (50'den 25'e dengelendi)
-                addCoins(15)
+                addXp(10) // Seans ödülü (25'ten 10'a düşürüldü)
+                addCoins(10)
                 completeOnboardingTask("first_focus")
 
                 // Sürpriz kutu veya Kahve molası
@@ -2357,18 +2357,20 @@ class TaskViewModel @Inject constructor(
     }
 
     fun toggleTask(task: TaskEntity) {
-        if (task.isCompleted) return // Zaten tamamlanmış görevlerin tikini geri kaldırmayı engelle
+        if (task.isCompleted) return 
         
         viewModelScope.launch(Dispatchers.IO) {
-            val updatedTask = task.copy(isCompleted = !task.isCompleted)
+            val updatedTask = task.copy(isCompleted = true)
             taskDao.updateTask(updatedTask)
             syncTaskToFirestore(updatedTask)
             if (updatedTask.isCompleted) { 
-                val xpBase = 10
+                val xpBase = 5 // Temel görev XP'si 10'dan 5'e düşürüldü
                 val coinBase = task.rewardCoins.coerceAtLeast(5)
                 
-                addXp((xpBase * dopamineMultiplier.floatValue).toInt())
-                addCoins((coinBase * dopamineMultiplier.floatValue).toInt())
+                // Çarpan etkisini XP'de biraz daha hafiflet
+                val xpMultiplier = if(dopamineMultiplier.floatValue > 1.5f) 1.5f else dopamineMultiplier.floatValue
+                addXp((xpBase * xpMultiplier).toInt())
+                addCoins(coinBase)
                 
                 // Haftalık karne için kaydet
                 updateTodayHistory(tasksDone = 1)
