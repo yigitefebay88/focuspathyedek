@@ -489,7 +489,10 @@ fun ArcherGame(vm: TaskViewModel, onExit: () -> Unit) {
     LaunchedEffect(shotsLeft) { 
         if (shotsLeft > 0) { 
             while (!isFiring) { 
-                delay(16); targetX += (0.02f + (score * 0.005f)) * direction; 
+                delay(16)
+                // Hız artışını dengeledik (0.005f -> 0.0004f) ve maksimum hız sınırı koyduk (0.12f)
+                val currentSpeed = (0.02f + (score * 0.0004f)).coerceAtMost(0.12f)
+                targetX += currentSpeed * direction; 
                 if (targetX > 0.8f || targetX < -0.8f) direction *= -1 
             } 
         } else {
@@ -1163,7 +1166,17 @@ fun PatternRepeatGame(vm: TaskViewModel, onExit: () -> Unit) {
 @Composable
 fun RingNailGame(vm: TaskViewModel, onExit: () -> Unit) {
     var nailY by remember { mutableFloatStateOf(0f) } ; var ringX by remember { mutableFloatStateOf(0f) } ; var ringDir by remember { mutableIntStateOf(1) } ; var isFalling by remember { mutableStateOf(false) } ; var attempts by remember { mutableIntStateOf(5) } ; var score by remember { mutableIntStateOf(0) }
-    LaunchedEffect(attempts, isFalling) { if (attempts > 0 && !isFalling) { while (!isFalling) { delay(16); ringX += (0.015f + (score * 0.002f)) * ringDir; if (ringX > 0.8f || ringX < -0.8f) ringDir *= -1 } } }
+    LaunchedEffect(attempts, isFalling) { 
+        if (attempts > 0 && !isFalling) { 
+            while (!isFalling) { 
+                delay(16)
+                // Hız artışını dengeledik (0.002f -> 0.0005f) ve maksimum hız sınırı koyduk (0.1f)
+                val currentSpeed = (0.015f + (score * 0.0005f)).coerceAtMost(0.1f)
+                ringX += currentSpeed * ringDir
+                if (ringX > 0.8f || ringX < -0.8f) ringDir *= -1 
+            } 
+        } 
+    }
     LaunchedEffect(isFalling) { if (isFalling) { while (nailY < 0.85f) { delay(10); nailY += 0.05f }; if (kotlin.math.abs(0f - ringX) < 0.15f) score += 40 ; delay(1000); isFalling = false; nailY = 0f; attempts-- } }
     if (attempts == 0 && !isFalling) { GameResult(vm, score, "Halka ve Çivi") { vm.addCoins(score / 10); onExit() } }
     else {

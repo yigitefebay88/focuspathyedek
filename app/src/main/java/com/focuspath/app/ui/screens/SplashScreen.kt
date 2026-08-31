@@ -28,16 +28,16 @@ fun SplashScreen(terminalColor: Color, onStartClick: () -> Unit) {
     Box(
         modifier = Modifier.fillMaxSize().background(Color.Black)
     ) {
-        // GPT GÖRSELİ (Aşağı doğru büyütüldü, zoom yapılmadı)
+        // GPT GÖRSELİ (Ekrana Tam Sığdırıldı)
         AsyncImage(
             model = R.drawable.gpt_image,
             contentDescription = null,
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.65f) // Ekranın %65'ini kaplayacak şekilde aşağı uzatıldı
-                .align(Alignment.TopStart),
-            contentScale = ContentScale.FillWidth, // Genişliğe göre sığdır, zoom yapma
-            alpha = 0.9f
+                .fillMaxHeight(0.7f) // Görselin çok yayılmasını engellemek için yükseklik sınırı
+                .align(Alignment.TopCenter),
+            contentScale = ContentScale.Fit, // Görseli kırpma, tamamını göster
+            alpha = 0.85f
         )
 
         // KARARTMA VE GRADYAN (Metinlerin okunması için optimize edildi)
@@ -55,27 +55,26 @@ fun SplashScreen(terminalColor: Color, onStartClick: () -> Unit) {
                 )
         )
 
-        // İÇERİK (Sloganlar)
+        // EN ALTTAKİ YÜKLENİYOR VE SLOGAN BÖLÜMÜ
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
+                .padding(bottom = 60.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Bottom
         ) {
-            // SLOGANLAR (Aşağıya kaydırıldı ve belirgin)
+            // SLOGANLAR (Yükleme çubuğunun tam üstüne çekildi)
             Column(
-                modifier = Modifier.offset(y = 120.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Text(
                     text = "DAHA İYİ ODAKLAN",
                     color = Color.White,
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 2.sp,
-                        fontSize = 24.sp
+                        letterSpacing = 1.sp,
+                        fontSize = 20.sp // Biraz büyütüldü (18 -> 20)
                     ),
                     textAlign = TextAlign.Center
                 )
@@ -84,8 +83,8 @@ fun SplashScreen(terminalColor: Color, onStartClick: () -> Unit) {
                     color = terminalColor,
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 2.sp,
-                        fontSize = 24.sp
+                        letterSpacing = 1.sp,
+                        fontSize = 20.sp // Biraz büyütüldü (18 -> 20)
                     ),
                     textAlign = TextAlign.Center
                 )
@@ -94,24 +93,17 @@ fun SplashScreen(terminalColor: Color, onStartClick: () -> Unit) {
                     color = Color.White,
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 2.sp,
-                        fontSize = 24.sp
+                        letterSpacing = 1.sp,
+                        fontSize = 20.sp // Biraz büyütüldü (18 -> 20)
                     ),
                     textAlign = TextAlign.Center
                 )
             }
-        }
 
-        // EN ALTTAKİ YÜKLENİYOR BÖLÜMÜ
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(bottom = 80.dp), // Biraz daha yukarı aldım ki en alta yapışmasın
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Bottom
-        ) {
+            Spacer(Modifier.height(90.dp)) // Metni biraz daha yukarı aldım (54 -> 90)
+
             Text(
-                text = "Yükleniyor...",
+                text = "Sistem Hazırlanıyor...",
                 color = Color.White.copy(alpha = 0.8f),
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontWeight = FontWeight.Bold,
