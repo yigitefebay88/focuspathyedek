@@ -392,14 +392,12 @@ class MainActivity : ComponentActivity(), BillingProvider {
 
                 // 3. ACHIEVEMENT (BAŞARIMLAR) DIALOG
                 if (showAchievementDialogState.value) {
-                    val userCoinsVal = vm.userCoins.value
-                    val lifetimeCoinsVal = vm.lifetimeCoins.value // Ömür boyu kazanılan
+                    val lifetimeCoinsVal = vm.lifetimeCoins.value
                     val userXpVal = vm.userXp.value
 
                     val achievements = listOf(
                         AchievementItem("İlk Adım", "Uygulamaya giriş yap ve ilk seansını başlat.", true, "🏆"),
                         AchievementItem("Para Avcısı", "Toplamda 100 altına ulaş.", lifetimeCoinsVal >= 100, "💰"),
-                        AchievementItem("Zengin Odak", "Toplamda 1000 altına ulaş.", lifetimeCoinsVal >= 1000, "💎"),
                         AchievementItem("Deneyimli Hacker", "500 Şirket Puanına ulaş.", userXpVal >= 500, "💻"),
                         AchievementItem("Sistem Yetkilisi", "Kurucu Ortak rütbesine yüksel.", userXpVal >= 2000, "👑")
                     )
