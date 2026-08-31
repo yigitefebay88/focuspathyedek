@@ -6,6 +6,7 @@ import android.content.Intent
 import android.widget.Toast
 import android.media.AudioAttributes
 import android.media.SoundPool
+import android.media.MediaPlayer
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -118,6 +119,8 @@ class TaskViewModel @Inject constructor(
     val userCoins = mutableStateOf(prefs.getInt("user_coins", 0))
     val lifetimeCoins = mutableStateOf(prefs.getInt("lifetime_coins", 0))
     val officeLevel = mutableStateOf(prefs.getInt("office_level", 1))
+    val dailyFocusMinutes = mutableIntStateOf(prefs.getInt("DAILY_FOCUS_CURRENT", 0))
+    val totalFocusMinutesCloud = mutableIntStateOf(prefs.getInt("total_focus_minutes_cloud", 0))
     val blockedApps = mutableStateListOf<String>().apply {
         addAll(prefs.getStringSet("blocked_apps", emptySet()) ?: emptySet())
     }
@@ -125,6 +128,7 @@ class TaskViewModel @Inject constructor(
     
     // TIMER STATE (Moved from TaskScreen to ViewModel for performance and persistence)
     val timerRunning = mutableStateOf(false)
+    val isTimerPaused = mutableStateOf(false)
     val timeLeft = mutableLongStateOf(25 * 60 * 1000L)
     val timeElapsed = mutableLongStateOf(0L)
     val pomodoroTotalMillis = mutableLongStateOf(25 * 60 * 1000L)
@@ -195,8 +199,8 @@ class TaskViewModel @Inject constructor(
     val yesterdayFocusMins = mutableIntStateOf(0)
     val todayChallengeTarget = mutableIntStateOf(0)
 
-    private val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-    private val todayStr = sdf.format(Date())
+    private val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+    private val todayStr: String get() = synchronized(sdf) { sdf.format(Date()) }
 
     fun checkAndGenerateBriefing(isEnglish: Boolean) {
         val lastDate = prefs.getString("last_briefing_date", "")
@@ -230,61 +234,91 @@ class TaskViewModel @Inject constructor(
 
     fun getWeeklyHistory(): Flow<List<FocusHistoryEntity>> {
         val cal = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -7) }
-        return taskDao.getFocusHistory(sdf.format(cal.time))
+        val start = synchronized(sdf) { sdf.format(cal.time) }
+        return taskDao.getFocusHistory(start)
     }
 
     private fun updateTodayHistory(focusMins: Int = 0, tasksDone: Int = 0, sessionsComp: Int = 0, sessionsInt: Int = 0) {
+        val dateToUpdate = todayStr 
+        android.util.Log.d("FocusPathStats", "Updating history for $dateToUpdate: mins=$focusMins, tasks=$tasksDone, sessions=$sessionsComp")
+        
         viewModelScope.launch(Dispatchers.IO) {
-            val current = taskDao.getFocusHistoryByDate(todayStr) ?: FocusHistoryEntity(todayStr)
-            taskDao.insertFocusHistory(current.copy(
-                totalFocusMinutes = current.totalFocusMinutes + focusMins,
-                tasksCompleted = current.tasksCompleted + tasksDone,
-                sessionsCompleted = current.sessionsCompleted + sessionsComp,
-                sessionsInterrupted = current.sessionsInterrupted + sessionsInt
-            ))
+            val updated = taskDao.updateFocusHistoryAtomic(dateToUpdate, focusMins, tasksDone, sessionsComp, sessionsInt)
+            if (updated == 0) {
+                android.util.Log.d("FocusPathStats", "Row not found, inserting new row for $dateToUpdate")
+                taskDao.insertFocusHistory(FocusHistoryEntity(
+                    date = dateToUpdate,
+                    totalFocusMinutes = focusMins,
+                    tasksCompleted = tasksDone,
+                    sessionsCompleted = sessionsComp,
+                    sessionsInterrupted = sessionsInt
+                ))
+            } else {
+                android.util.Log.d("FocusPathStats", "Atomic update successful for $dateToUpdate")
+            }
         }
     }
 
+    val todayStats = getWeeklyHistory().map { list ->
+        val now = todayStr
+        val found = list.find { it.date == now }
+        android.util.Log.d("FocusPathStats", "todayStats sync: ${if (found != null) "Found ${found.sessionsCompleted} sessions" else "No data for $now"}")
+        found
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
     fun recordSessionResult(completed: Boolean) {
+        // ÇİFT KAYIT KORUMASI: Eğer zamanlayıcı zaten durmuşsa tekrar işlem yapma
+        if (!timerRunning.value && !isTimerPaused.value && completed) return
+        
+        android.util.Log.d("FocusPathStats", "recordSessionResult entry: completed=$completed")
+        
+        // Önce durumları kapat ki tekrar tetiklenmesin
+        timerRunning.value = false
+        isTimerPaused.value = false
+        setFocusActive(false)
+
         if (completed) {
+            // 1. ANINDA GÖRSEL BİLDİRİM
+            viewModelScope.launch(Dispatchers.Main) {
+                Toast.makeText(application, "Seans Tamamlandı! 🎉 +1", Toast.LENGTH_SHORT).show()
+                playTickSound()
+            }
+
+            val activeMonotask = monotask.value
+            
+            // 2. OTURUM VE GÖREV İSTATİSTİĞİ
             updateTodayHistory(sessionsComp = 1)
             
-            // Pomodoro modu aktifse ve tamamlandıysa ödül ver
             if (isPomodoroMode.value) {
-                val rewardXp = 50
-                val rewardCoins = 20
-                
-                addXp(rewardXp)
-                addCoins(rewardCoins)
-                
-                // İlk odaklanma görevini tamamla
+                addXp(25) // Seans ödülü (50'den 25'e dengelendi)
+                addCoins(15)
                 completeOnboardingTask("first_focus")
 
-                // Sürpriz kutu veya Kahve molası mantığı
+                // Sürpriz kutu veya Kahve molası
                 val totalMins = (pomodoroTotalMillis.longValue / 60000).toInt()
-                val rand = (0..100).random()
-                
-                if (totalMins >= 20 || (totalMins >= 5 && rand < totalMins * 4)) {
+                if (totalMins >= 20 || (0..100).random() < totalMins * 4) {
                     generateMysteryBox()
                 } else {
                     showCoffeeBreak.value = true
                 }
 
-                // Başarı durumunu kullanıcıya bildir (Konfeti vb.)
                 viewModelScope.launch(Dispatchers.Main) {
-                    playTickSound()
                     showConfetti.value = true
-                    kotlinx.coroutines.delay(4000)
+                    delay(4000)
                     showConfetti.value = false
                 }
+            }
+
+            // 3. GÖREV TAMAMLAMA (Eğer görev seçiliyse ödülünü ver)
+            if (activeMonotask != null && !activeMonotask.isCompleted) {
+                toggleTask(activeMonotask) // Bu fonksiyon hem XP verir hem tasksDone artırır
+            } else {
+                // Görev seçili değilse bile "biten" sayısını artır
+                updateTodayHistory(tasksDone = 1)
             }
         } else {
             updateTodayHistory(sessionsInt = 1)
         }
-        
-        // Odaklanma durumunu ve zamanlayıcıyı kapat
-        setFocusActive(false)
-        timerRunning.value = false
     }
 
     fun addBrainDumpNote(note: String) {
@@ -583,20 +617,45 @@ class TaskViewModel @Inject constructor(
     private var soundPool: SoundPool? = null
     private var keyboardSoundId: Int = 0
     private var mouseSoundId: Int = 0
-    private var rainSoundId: Int = 0
-    private var fireplaceSoundId: Int = 0
     private var dragonSoundId: Int = 0
     private var keyboardStreamId: Int = 0
     private var mouseStreamId: Int = 0
-    private var rainStreamId: Int = 0
-    private var fireplaceStreamId: Int = 0
+
+    private var rainPlayer: MediaPlayer? = null
+    private var fireplacePlayer: MediaPlayer? = null
 
     val isRainEnabled = mutableStateOf(prefs.getBoolean("is_rain_enabled", false))
     val isFireplaceEnabled = mutableStateOf(prefs.getBoolean("is_fireplace_enabled", false))
 
+    // SHARED PREFERENCES LISTENER FOR REAL-TIME SYNC
+    private val prefsListener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { sharedPrefs, key ->
+        when (key) {
+            "user_xp" -> {
+                val newXp = sharedPrefs.getInt("user_xp", userXp.value)
+                if (userXp.value != newXp) {
+                    userXp.value = newXp
+                    android.util.Log.d("FocusPathStats", "XP Synced from Prefs: $newXp")
+                }
+            }
+            "user_coins" -> {
+                val newCoins = sharedPrefs.getInt("user_coins", userCoins.value)
+                if (userCoins.value != newCoins) {
+                    userCoins.value = newCoins
+                    android.util.Log.d("FocusPathStats", "Coins Synced from Prefs: $newCoins")
+                }
+            }
+            "office_level" -> officeLevel.value = sharedPrefs.getInt("office_level", officeLevel.value)
+            "is_premium" -> isPremium.value = sharedPrefs.getBoolean("is_premium", isPremium.value)
+        }
+    }
+
     init {
         setupSoundPool()
         checkRemoteUpdate()
+        
+        // Register listener for reactive stats
+        prefs.registerOnSharedPreferenceChangeListener(prefsListener)
+        
         firebaseAuth.currentUser?.let { user ->
             isLoggedIn.value = true
             userEmail.value = user.email?.lowercase() ?: ""
@@ -642,6 +701,7 @@ class TaskViewModel @Inject constructor(
         loadOnboardingTasks()
         checkPlantHealth()
         fetchYesterdayStats()
+        updateAmbientSounds() // Başlangıçta sesleri kontrol et
     }
 
     private fun fetchYesterdayStats() {
@@ -879,10 +939,12 @@ class TaskViewModel @Inject constructor(
             isPomodoroMode.value = prefs.getBoolean("TIMER_IS_POMODORO", true)
             pomodoroTotalMillis.longValue = prefs.getLong("TIMER_INITIAL_DURATION", 25 * 60 * 1000L)
             timeLeft.longValue = if (isPomodoroMode.value) (targetEnd - System.currentTimeMillis()) else com.focuspath.app.service.FocusService.currentTime
+            updateAmbientSounds() // Oturumu geri yüklerken sesleri aç
         } else {
             // Aktif seans yoksa tüm durumları temizle
             isFocusActive.value = false
             timerRunning.value = false
+            updateAmbientSounds() // Sesleri kapat
         }
 
         timerSyncJob?.cancel()
@@ -895,6 +957,7 @@ class TaskViewModel @Inject constructor(
                         if (!com.focuspath.app.service.FocusService.isRunning) {
                             timerRunning.value = false
                             isFocusActive.value = false
+                            updateAmbientSounds() // Zamanlayıcı bitince sesleri kapat
                         }
                     } else {
                         timeElapsed.longValue = FocusService.currentTime
@@ -905,27 +968,52 @@ class TaskViewModel @Inject constructor(
     }
 
     fun toggleTimer(context: Context, running: Boolean) {
-        timerRunning.value = running
-        val intent = Intent(context, FocusService::class.java).apply {
-            action = if (running) FocusService.ACTION_START else FocusService.ACTION_STOP
-            putExtra(FocusService.EXTRA_IS_POMODORO, isPomodoroMode.value)
-            putExtra(FocusService.EXTRA_DURATION, pomodoroTotalMillis.longValue)
-        }
-        
         if (running) {
+            // BAŞLAT VEYA DEVAM ET
+            val isResume = isTimerPaused.value
+            timerRunning.value = true
+            isTimerPaused.value = false
+            
+            val intent = Intent(context, FocusService::class.java).apply {
+                action = if (isResume) FocusService.ACTION_RESUME else FocusService.ACTION_START
+                putExtra(FocusService.EXTRA_IS_POMODORO, isPomodoroMode.value)
+                putExtra(FocusService.EXTRA_DURATION, if (isResume) timeLeft.longValue else pomodoroTotalMillis.longValue)
+            }
+            
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)
             } else {
                 context.startService(intent)
             }
+            
+            setFocusActive(true, if(isResume) System.currentTimeMillis() + timeLeft.longValue else System.currentTimeMillis() + pomodoroTotalMillis.longValue)
         } else {
-            if (isPomodoroMode.value && timeLeft.longValue > 1000) {
-                recordSessionResult(false)
+            // DURAKLAT
+            timerRunning.value = false
+            isTimerPaused.value = true
+            
+            val intent = Intent(context, FocusService::class.java).apply {
+                action = FocusService.ACTION_PAUSE
             }
-            context.stopService(intent)
+            context.startService(intent)
+            setFocusActive(false)
+        }
+    }
+
+    fun abandonSession(context: Context) {
+        if (isPomodoroMode.value && (timerRunning.value || isTimerPaused.value)) {
+            recordSessionResult(false) // Yarım kaldı olarak kaydet
         }
         
-        setFocusActive(running, if(running) System.currentTimeMillis() + pomodoroTotalMillis.longValue else 0L)
+        timerRunning.value = false
+        isTimerPaused.value = false
+        timeLeft.longValue = pomodoroTotalMillis.longValue
+        
+        val intent = Intent(context, FocusService::class.java).apply {
+            action = FocusService.ACTION_STOP
+        }
+        context.stopService(intent)
+        setFocusActive(false)
     }
 
     private fun setupSoundPool() {
@@ -945,9 +1033,27 @@ class TaskViewModel @Inject constructor(
 
         keyboardSoundId = soundPool?.load(application, com.focuspath.app.R.raw.keyboard_tap, 1) ?: 0
         mouseSoundId = soundPool?.load(application, com.focuspath.app.R.raw.mouse_click, 1) ?: 0
-        rainSoundId = soundPool?.load(application, com.focuspath.app.R.raw.rain, 1) ?: 0
-        fireplaceSoundId = soundPool?.load(application, com.focuspath.app.R.raw.fireplace, 1) ?: 0
         dragonSoundId = soundPool?.load(application, com.focuspath.app.R.raw.dragon_correct, 1) ?: 0
+        
+        // Rain Player Setup
+        try {
+            rainPlayer = MediaPlayer.create(application, com.focuspath.app.R.raw.rain).apply {
+                isLooping = true
+                setVolume(0.45f, 0.45f)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("FocusPathSound", "Rain player error: ${e.message}")
+        }
+
+        // Fireplace Player Setup
+        try {
+            fireplacePlayer = MediaPlayer.create(application, com.focuspath.app.R.raw.fireplace).apply {
+                isLooping = true
+                setVolume(0.55f, 0.55f)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("FocusPathSound", "Fireplace player error: ${e.message}")
+        }
     }
 
     fun toggleRain() {
@@ -963,34 +1069,33 @@ class TaskViewModel @Inject constructor(
     }
 
     fun updateAmbientSounds() {
-        val sp = soundPool ?: return
         val isActive = isFocusActive.value
 
         // RAIN
-        if (isRainEnabled.value && isActive) {
-            if (rainStreamId == 0 && rainSoundId != 0) {
-                rainStreamId = sp.play(rainSoundId, 0.45f, 0.45f, 1, -1, 1.0f)
-            } else if (rainStreamId != 0) {
-                sp.resume(rainStreamId)
+        try {
+            if (isRainEnabled.value && isActive) {
+                if (rainPlayer?.isPlaying == false) {
+                    rainPlayer?.start()
+                }
+            } else {
+                if (rainPlayer?.isPlaying == true) {
+                    rainPlayer?.pause()
+                }
             }
-        } else {
-            if (rainStreamId != 0) {
-                sp.pause(rainStreamId)
-            }
-        }
+        } catch (e: Exception) {}
 
         // FIREPLACE
-        if (isFireplaceEnabled.value && isActive) {
-            if (fireplaceStreamId == 0 && fireplaceSoundId != 0) {
-                fireplaceStreamId = sp.play(fireplaceSoundId, 0.55f, 0.55f, 1, -1, 1.0f)
-            } else if (fireplaceStreamId != 0) {
-                sp.resume(fireplaceStreamId)
+        try {
+            if (isFireplaceEnabled.value && isActive) {
+                if (fireplacePlayer?.isPlaying == false) {
+                    fireplacePlayer?.start()
+                }
+            } else {
+                if (fireplacePlayer?.isPlaying == true) {
+                    fireplacePlayer?.pause()
+                }
             }
-        } else {
-            if (fireplaceStreamId != 0) {
-                sp.pause(fireplaceStreamId)
-            }
-        }
+        } catch (e: Exception) {}
     }
 
     fun playKeyboardSound(play: Boolean) {
@@ -1236,11 +1341,19 @@ class TaskViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
+        prefs.unregisterOnSharedPreferenceChangeListener(prefsListener)
         friendRequestRegistration?.remove()
         liveFocusRegistration?.remove()
         updateLiveFocusStatus(false)
         soundPool?.release()
         soundPool = null
+        
+        try {
+            rainPlayer?.release()
+            rainPlayer = null
+            fireplacePlayer?.release()
+            fireplacePlayer = null
+        } catch (e: Exception) {}
     }
 
     private fun updateFriendWorkers() {
@@ -1528,6 +1641,16 @@ class TaskViewModel @Inject constructor(
                 }
             }
             prefs.edit().putStringSet("unlocked_items", unlockedItems.toSet()).apply()
+        }
+        
+        // Cloud'daki toplam odaklanma süresini yerel bugün kaydıyla senkronize et
+        val cloudTotalFocus = doc.getLong("total_focus_minutes")?.toInt() ?: 0
+        if (cloudTotalFocus > 0) {
+            totalFocusMinutesCloud.intValue = cloudTotalFocus
+            prefs.edit().putInt("total_focus_minutes_cloud", cloudTotalFocus).apply()
+            
+            // Eğer yerel verilerimiz eksikse, buluttaki toplamı baz alarak yerel bugün kaydını güçlendir
+            updateTodayHistory(focusMins = 0) // Bugünün kaydını oluştur/getir
         }
         
         // Photo and Name sync
@@ -2339,6 +2462,9 @@ class TaskViewModel @Inject constructor(
 
     fun recordFocusSession(minutes: Int) {
         android.util.Log.d("FocusPath", "Recording focus session: $minutes minutes")
+        
+        // State'i anında güncelle ki UI recompose olsun
+        dailyFocusMinutes.intValue += minutes
         
         growPlant(minutes) // BİTKİYİ BÜYÜT
         val currentFocus = prefs.getInt("DAILY_FOCUS_CURRENT", 0) ; val newFocus = currentFocus + minutes

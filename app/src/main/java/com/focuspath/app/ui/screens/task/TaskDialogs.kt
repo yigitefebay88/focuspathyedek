@@ -596,41 +596,72 @@ fun AccessibilityDisclosureDialog(
         onDismissRequest = onDismiss,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Security, null, tint = MaterialTheme.colorScheme.primary)
+                Icon(Icons.Default.PrivacyTip, null, tint = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.width(8.dp))
-                Text(if (isEnglish) "Accessibility Permission" else "Erişilebilirlik İzni")
+                Text(if (isEnglish) "Prominent Disclosure" else "Belirgin Açıklama")
             }
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text(
                     text = if (isEnglish)
-                        "FocusPath uses the Accessibility Service to help you stay focused by blocking distracting apps during your focus sessions."
+                        "To provide the App Blocker feature, FocusPath needs to use the Accessibility API."
                     else
-                        "FocusPath, odaklanma seanslarınız sırasında dikkat dağıtıcı uygulamaları engelleyerek odaklanmanıza yardımcı olmak için Erişilebilirlik Hizmetini kullanır.",
-                    fontSize = 14.sp
+                        "Uygulama Engelleyici özelliğini sağlamak için FocusPath'in Erişilebilirlik API'sini kullanması gerekir.",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
                 )
+                
                 Text(
                     text = if (isEnglish)
-                        "How it works:\n• It detects which app is in the foreground.\n• If a blocked app is opened during focus, it returns you to FocusPath.\n• No personal or sensitive data is collected or shared."
+                        "How FocusPath uses the Accessibility API:\n\n" +
+                        "• Monitoring foreground apps: We use this service to detect when a blacklisted distracting app is opened during your focus sessions.\n" +
+                        "• Automated blocking: If a distracting app is detected, FocusPath will automatically bring itself to the foreground to help you stay on track.\n\n" +
+                        "Data Privacy:\n" +
+                        "• No personal or sensitive user data is collected.\n" +
+                        "• No data is shared with third parties.\n" +
+                        "• This service is only active during focus sessions."
                     else
-                        "Nasıl çalışır:\n• Hangi uygulamanın ön planda olduğunu tespit eder.\n• Odaklanma sırasında engellenmiş bir uygulama açılırsa sizi FocusPath'e geri döndürür.\n• Hiçbir kişisel veya hassas veri toplanmaz veya paylaşılmaz.",
-                    fontSize = 13.sp,
-                    color = Color.Gray
+                        "FocusPath Erişilebilirlik API'sini nasıl kullanır:\n\n" +
+                        "• Ön plandaki uygulamaları izleme: Bu hizmeti, odaklanma seanslarınız sırasında kara listedeki dikkat dağıtıcı bir uygulamanın ne zaman açıldığını tespit etmek için kullanırız.\n" +
+                        "• Otomatik engelleme: Dikkat dağıtıcı bir uygulama tespit edilirse, FocusPath yolda kalmanıza yardımcı olmak için kendisini otomatik olarak ön plana çıkaracaktır.\n\n" +
+                        "Veri Gizliliği:\n" +
+                        "• Hiçbir kişisel veya hassas kullanıcı verisi toplanmaz.\n" +
+                        "• Hiçbir veri üçüncü taraflarla paylaşılmaz.\n" +
+                        "• Bu hizmet yalnızca odaklanma seansları sırasında aktiftir.",
+                    fontSize = 14.sp,
+                    lineHeight = 18.sp
                 )
             }
         },
         confirmButton = {
-            Button(onClick = onAccept) {
-                Text(if (isEnglish) "ACCEPT & ENABLE" else "KABUL ET VE AÇ")
+            Button(
+                onClick = onAccept,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(if (isEnglish) "I AGREE" else "KABUL EDİYORUM")
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(if (isEnglish) "NOT NOW" else "ŞİMDİ DEĞİL", color = Color.Gray)
+            Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(if (isEnglish) "NO THANKS" else "HAYIR, TEŞEKKÜRLER", color = Color.Gray)
+                }
+                
+                Text(
+                    text = if(isEnglish) "By clicking I AGREE, you consent to the use of this service." else "KABUL EDİYORUM butonuna tıklayarak bu hizmetin kullanımına izin vermiş olursunuz.",
+                    fontSize = 10.sp,
+                    color = Color.Gray,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
             }
         },
-        containerColor = MaterialTheme.colorScheme.surface
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(20.dp)
     )
 }
 

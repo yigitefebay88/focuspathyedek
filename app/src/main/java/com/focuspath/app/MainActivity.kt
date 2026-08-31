@@ -90,6 +90,8 @@ class MainActivity : ComponentActivity(), BillingProvider {
         var showGamesDialogState = mutableStateOf(false)
     }
 
+    private var timerReceiver: android.content.BroadcastReceiver? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
@@ -101,17 +103,24 @@ class MainActivity : ComponentActivity(), BillingProvider {
             addAction("com.focuspath.TIMER_UPDATE")
             addAction("com.focuspath.TIMER_FINISHED")
         }
-        val receiver = object : android.content.BroadcastReceiver() {
+        timerReceiver = object : android.content.BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: android.content.Intent?) {
+                android.util.Log.d("FocusPathReceiver", "Broadcast Received: ${intent?.action}")
                 if (intent?.action == "com.focuspath.TIMER_UPDATE") {
                     val mins = intent.getIntExtra("minutes", 1)
                     vm.recordFocusSession(mins)
                 } else if (intent?.action == "com.focuspath.TIMER_FINISHED") {
+                    android.util.Log.d("FocusPathReceiver", "Timer Finished, calling recordSessionResult")
                     vm.recordSessionResult(true)
                 }
             }
         }
-        androidx.core.content.ContextCompat.registerReceiver(this, receiver, filter, androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED)
+        androidx.core.content.ContextCompat.registerReceiver(
+            this, 
+            timerReceiver!!, 
+            filter, 
+            androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
+        )
 
         setContent {
             vm.billingProvider = this
@@ -1001,6 +1010,12 @@ class MainActivity : ComponentActivity(), BillingProvider {
                 }
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        timerReceiver?.let { unregisterReceiver(it) }
+        timerReceiver = null
     }
 
     override fun startPurchaseFlow() {

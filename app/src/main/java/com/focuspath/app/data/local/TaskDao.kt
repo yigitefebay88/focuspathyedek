@@ -36,6 +36,12 @@ interface TaskDao {
     @Query("SELECT * FROM focus_history WHERE date = :date LIMIT 1")
     suspend fun getFocusHistoryByDate(date: String): FocusHistoryEntity?
 
+    @Query("SELECT * FROM focus_history WHERE date = :date LIMIT 1")
+    fun getFocusHistoryByDateFlow(date: String): Flow<FocusHistoryEntity?>
+
+    @Query("UPDATE focus_history SET totalFocusMinutes = totalFocusMinutes + :mins, tasksCompleted = tasksCompleted + :tasks, sessionsCompleted = sessionsCompleted + :sessions, sessionsInterrupted = sessionsInterrupted + :interrupted WHERE date = :date")
+    suspend fun updateFocusHistoryAtomic(date: String, mins: Int, tasks: Int, sessions: Int, interrupted: Int): Int
+
     @Query("SELECT SUM(totalFocusMinutes) FROM focus_history")
     fun getTotalFocusMinutes(): Flow<Int?>
 

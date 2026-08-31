@@ -154,22 +154,6 @@ fun CertificateDialog(
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            val hours = totalFocusMinutes / 60
-                            val mins = totalFocusMinutes % 60
-                            val focusText = if (hours > 0) "${hours}h ${mins}m" else "${mins}m"
-                            Text(
-                                text = focusText,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.Black,
-                                fontSize = 16.sp
-                            )
-                            Text(
-                                text = if(isEnglish) "Total Focus" else "Toplam Odak",
-                                fontSize = 10.sp,
-                                color = Color.Gray
-                            )
-                        }
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 text = "$totalTasksCompleted",
                                 fontWeight = FontWeight.Bold,
@@ -359,14 +343,10 @@ private fun saveCertificateAsPdf(
     paint.textSize = 14f
     paint.isFakeBoldText = true
     paint.color = android.graphics.Color.BLACK
-    val h = focusMins / 60
-    val m = focusMins % 60
-    val focusTimeStr = if (h > 0) "${h}h ${m}m" else "${m}m"
-    val focusTimeStrTr = if (h > 0) "${h}s ${m}d" else "${m}d"
     
     val statsStr = if(isEnglish) 
-        "Total Focus: $focusTimeStr | Tasks Completed: $tasksDone | Lifetime XP: $xp" 
-        else "Toplam Odak: $focusTimeStrTr | Tamamlanan Gorev: $tasksDone | Toplam XP: $xp"
+        "Tasks Completed: $tasksDone | Lifetime XP: $xp" 
+        else "Tamamlanan Gorev: $tasksDone | Toplam XP: $xp"
     canvas.drawText(statsStr, 297f, 550f, paint)
 
     // QR Code for Verification

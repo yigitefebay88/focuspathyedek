@@ -28,6 +28,8 @@ class FocusService : Service() {
         // Actions
         const val ACTION_START = "ACTION_START"
         const val ACTION_STOP = "ACTION_STOP"
+        const val ACTION_PAUSE = "ACTION_PAUSE"
+        const val ACTION_RESUME = "ACTION_RESUME"
         
         // Extras
         const val EXTRA_IS_POMODORO = "EXTRA_IS_POMODORO"
@@ -71,6 +73,20 @@ class FocusService : Service() {
                 completionPlayer = null
                 stopFocus()
             }
+            ACTION_PAUSE -> {
+                prefs.edit().remove("TIMER_TARGET_END").apply()
+                isRunning = false
+                timerJob?.cancel()
+                updateNotification("DURAKLATILDI - " + formatTime(currentTime))
+            }
+            ACTION_RESUME -> {
+                val duration = intent.getLongExtra(EXTRA_DURATION, timeLeftMillis)
+                val targetEndTime = System.currentTimeMillis() + duration
+                prefs.edit()
+                    .putLong("TIMER_TARGET_END", targetEndTime)
+                    .apply()
+                startFocus(duration)
+            }
             null -> {
                 // Servis sistem tarafından yeniden başlatıldıysa (Sticky)
                 val targetEnd = prefs.getLong("TIMER_TARGET_END", 0L)
@@ -94,15 +110,25 @@ class FocusService : Service() {
         currentTime = if (isPomodoro) timeLeftMillis else 0L
         
         timerJob = serviceScope.launch {
+            var lastRecordedMinute = if (isPomodoro) (timeLeftMillis / 60000) else 0L
+            
             while (isRunning) {
                 delay(1000)
                 if (isPomodoro) {
                     timeLeftMillis -= 1000
                     currentTime = timeLeftMillis
+                    
+                    val currentMinute = timeLeftMillis / 60000
+                    if (currentMinute < lastRecordedMinute) {
+                        sendUpdateBroadcast(1)
+                        lastRecordedMinute = currentMinute
+                    }
+
                     if (timeLeftMillis <= 0) {
                         getSharedPreferences("focuspath_prefs", android.content.Context.MODE_PRIVATE)
                             .edit().remove("TIMER_TARGET_END").apply()
                         isRunning = false
+                        
                         sendCompletionBroadcast()
                         showFinalNotification()
                         toggleDnd(false)
@@ -111,10 +137,12 @@ class FocusService : Service() {
                 } else {
                     timeElapsedMillis += 1000
                     currentTime = timeElapsedMillis
-                }
-                
-                if (currentTime > 0 && currentTime % 60000 == 0L) {
-                    sendUpdateBroadcast(1)
+                    
+                    val elapsedMinutes = timeElapsedMillis / 60000
+                    if (elapsedMinutes > lastRecordedMinute) {
+                        sendUpdateBroadcast(1)
+                        lastRecordedMinute = elapsedMinutes
+                    }
                 }
                 
                 // Widget'ı güncelle
@@ -245,7 +273,11 @@ class FocusService : Service() {
     }
 
     private fun sendCompletionBroadcast() {
-        sendBroadcast(Intent("com.focuspath.TIMER_FINISHED"))
+        val intent = Intent("com.focuspath.TIMER_FINISHED").apply {
+            setPackage(packageName) // Sadece bu uygulama yakalasın
+        }
+        sendBroadcast(intent)
+        android.util.Log.d("FocusService", "Completion Broadcast Sent")
     }
 
     override fun onBind(intent: Intent?): IBinder? = null

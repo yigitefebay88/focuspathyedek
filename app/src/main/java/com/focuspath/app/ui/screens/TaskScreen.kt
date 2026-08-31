@@ -182,11 +182,9 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
     var selectedFocusSound by rememberSaveable { mutableStateOf("rain") }
     var dailyFocus by rememberSaveable { mutableStateOf("") }
     
-    val focusHistory by vm.getWeeklyHistory().collectAsState(initial = emptyList())
-    val todayStr = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date()) }
-    val todayHistory = focusHistory.find { it.date == todayStr }
-    val completedSessions = todayHistory?.sessionsCompleted ?: 0
-    val interruptedSessions = todayHistory?.sessionsInterrupted ?: 0
+    val todayStats by vm.todayStats.collectAsState()
+    val completedSessions = todayStats?.sessionsCompleted ?: 0
+    val interruptedSessions = todayStats?.sessionsInterrupted ?: 0
 
     var quoteHistory by rememberSaveable { mutableStateOf(listOf<String>()) }
     var showQuoteHistory by remember { mutableStateOf(false) }
@@ -1000,10 +998,19 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
     }
 
     if (showCertificate) {
+        // En güncel veriyi sağlamak için: 
+        // 1. Yerel DB sum
+        // 2. Bugün ViewModel'da biriken (Reaktif state)
+        // 3. Cloud'dan gelen toplam (Başka cihazlar veya reinstall durumu için)
+        val currentDayMins = vm.dailyFocusMinutes.intValue
+        val cloudTotal = vm.totalFocusMinutesCloud.intValue
+        
+        val finalFocusMins = maxOf(totalFocusMins, currentDayMins, cloudTotal)
+        
         com.focuspath.app.ui.screens.task.CertificateDialog(
             userName = vm.userName.value,
             totalXp = vm.userXp.value.toLong(),
-            totalFocusMinutes = totalFocusMins,
+            totalFocusMinutes = finalFocusMins,
             totalTasksCompleted = totalTasksDone,
             isEnglish = isEnglish,
             onDismiss = { showCertificate = false }
