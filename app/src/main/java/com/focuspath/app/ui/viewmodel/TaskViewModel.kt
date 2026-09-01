@@ -301,8 +301,9 @@ class TaskViewModel @Inject constructor(
     }
 
     fun recordSessionResult(completed: Boolean) {
-        // ÇİFT KAYIT KORUMASI: Eğer zamanlayıcı zaten durmuşsa tekrar işlem yapma
-        if (!timerRunning.value && !isTimerPaused.value && completed) return
+        // ÇİFT KAYIT KORUMASI: Eğer zamanlayıcı zaten durmuşsa ve seans tamamlanmamışsa (iptal) tekrar işlem yapma
+        // Seans tamamlandığında (completed=true), servis bizden önce timerRunning'i kapatmış olabilir, bu yüzden izin veriyoruz.
+        if (!timerRunning.value && !isTimerPaused.value && !completed) return
         
         android.util.Log.d("FocusPathStats", "recordSessionResult entry: completed=$completed")
         
@@ -622,7 +623,11 @@ class TaskViewModel @Inject constructor(
         snapshotFlow { userPhotoUrl.value }
     ) { users, localPhoto ->
         users.map { user ->
-            if (user.email == userEmail.value && user.email.isNotBlank()) {
+            // Daha agresif e-posta ve UID eşleşmesi
+            val isMe = user.uid == firebaseAuth.currentUser?.uid || 
+                       (user.email.isNotBlank() && user.email.equals(userEmail.value, ignoreCase = true))
+            
+            if (isMe) {
                 user.copy(photoUrl = localPhoto)
             } else {
                 user
@@ -898,22 +903,23 @@ class TaskViewModel @Inject constructor(
                 }
 
                 // UI ve Cache'i anında yerel dosya ile güncelle
-                // Cache busting için zaman damgası ekliyoruz
                 val timestamp = System.currentTimeMillis()
-                val cacheBustedPath = "file://$localPath?t=$timestamp"
+                val cacheBustedPath = "file://$localPath"
                 
-                userPhotoUrl.value = cacheBustedPath
+                // KRİTİK: Zaman damgasını HEMEN güncelle ki senkronizasyon kilitlensin
                 prefs.edit()
                     .putString("user_photo_url", localPath)
                     .putLong("profile_last_local_update", timestamp)
                     .apply()
+                
+                userPhotoUrl.value = cacheBustedPath
 
                 withContext(Dispatchers.Main) {
                     Toast.makeText(application, "Profil fotoğrafı güncellendi.", Toast.LENGTH_SHORT).show()
                     completeOnboardingTask("profile_pic") // GÖREVİ TAMAMLA
                 }
 
-                // 2. ARKA PLAN SENKRONİZASYONU (Firebase)
+                // 2. ARKA PLAN SENKRONİZASYONU (Firebase Storage)
                 isUploadingProfile.value = true
                 
                 launch(Dispatchers.IO) {
@@ -927,14 +933,20 @@ class TaskViewModel @Inject constructor(
                             
                             val downloadUrl = ref.downloadUrl.await()
                             val finalPhotoUrl = downloadUrl.toString()
+                            
+                            // 1. ANINDA FIRESTORE GÜNCELLE
+                            syncXpToFirestore(forcedPhotoUrl = finalPhotoUrl) 
+                            if (isFocusActive.value) {
+                                updateLiveFocusStatus(active = true, forcedPhotoUrl = finalPhotoUrl)
+                            }
 
-                            // Auth Profilini Güncelle
+                            // 2. Auth Profilini Güncelle
                             val profileUpdates = com.google.firebase.auth.UserProfileChangeRequest.Builder()
                                 .setPhotoUri(android.net.Uri.parse(finalPhotoUrl))
                                 .build()
                             user.updateProfile(profileUpdates).await()
 
-                            // Firestore Güncelle (Kullanıcı profili)
+                            // 3. Firestore Genel Kullanıcı Dökümanını Güncelle
                             val profileMap = mapOf(
                                 "photoUrl" to finalPhotoUrl,
                                 "last_sync" to System.currentTimeMillis()
@@ -942,21 +954,15 @@ class TaskViewModel @Inject constructor(
                             firestore.collection("users").document(user.uid)
                                 .set(profileMap, com.google.firebase.firestore.SetOptions.merge()).await()
                             
-                            // Auth nesnesini tazele ki yeni URL görünsün
                             user.reload().await()
                             
-                            // UI'ı bulut URL'i ile güncelle (Opsiyonel ama daha sağlıklı)
                             withContext(Dispatchers.Main) {
                                 userPhotoUrl.value = finalPhotoUrl
                             }
-                            
-                            // Liderlik tablosunu tamamen güncelle
-                            syncXpToFirestore() 
-
                             android.util.Log.d("FocusPathAuth", "Firebase senkronizasyonu başarılı.")
                         }
                     } catch (e: Exception) {
-                        android.util.Log.e("FocusPathAuth", "Arka plan yükleme hatası: ${e.message}")
+                        android.util.Log.e("FocusPathAuth", "Firebase yükleme hatası: ${e.message}")
                     } finally {
                         withContext(Dispatchers.Main) {
                             isUploadingProfile.value = false
@@ -1188,16 +1194,23 @@ class TaskViewModel @Inject constructor(
                 if (e != null) return@addSnapshotListener
                 
                 // THROW AWAY UPDATES IF TOO FREQUENT (Anti-Overheating)
-                // EXCEPT if there's an emoji update
+                // EXCEPT if there's an emoji or photo update
                 val now = System.currentTimeMillis()
-                val hasEmojiUpdate = snapshot?.documentChanges?.any { 
+                val hasUrgentUpdate = snapshot?.documentChanges?.any { 
                     val data = it.document.data
                     val emojiTime = data["emojiTime"] as? Long ?: 0L
-                    (now - emojiTime) < 5000 
+                    val hasEmoji = data["latestEmoji"] != null && kotlin.math.abs(now - emojiTime) < 10000
+                    
+                    // Fotoğraf değişikliği olup olmadığını kontrol et (Snapshot change type'a göre)
+                    val isPhotoChange = it.type == com.google.firebase.firestore.DocumentChange.Type.MODIFIED && 
+                                       (it.document.data.containsKey("photoUrl") || it.document.data.containsKey("photo_url"))
+                    
+                    hasEmoji || isPhotoChange
                 } ?: false
 
-                if (!hasEmojiUpdate && now - lastLiveFocusUpdate < 3000) return@addSnapshotListener
-                if (!hasEmojiUpdate) lastLiveFocusUpdate = now
+                // Acil bir güncelleme (emoji/fotoğraf) varsa asla throttle yapma, anında yansıt
+                if (!hasUrgentUpdate && now - lastLiveFocusUpdate < 2000) return@addSnapshotListener
+                if (!hasUrgentUpdate) lastLiveFocusUpdate = now
 
                 snapshot?.let { querySnapshot ->
                     val now = System.currentTimeMillis()
@@ -1208,12 +1221,13 @@ class TaskViewModel @Inject constructor(
                         val lastUpd = data["lastUpdate"] as? Long ?: 0L
                         if (now - lastUpd > 60000) return@mapNotNull null // 1 dakikadan eski verileri gösterme
                         
-                        val isMe = (email == currentEmail)
+                        val isMe = email.equals(currentEmail, ignoreCase = true)
+                        val remotePhoto = (data["photoUrl"] as? String) ?: (data["photo_url"] as? String)
                         
                         WorkerInfo(
                             id = if (isMe) "me" else "live_$email",
                             name = (if (isMe) userName.value else data["name"] as? String) ?: "Peer",
-                            photoUrl = (if (isMe) userPhotoUrl.value else data["photoUrl"] as? String),
+                            photoUrl = if (isMe) userPhotoUrl.value else remotePhoto,
                             email = email,
                             deskId = "live_desk_${email.hashCode() % 3}", 
                             isFocusing = true,
@@ -1279,18 +1293,21 @@ class TaskViewModel @Inject constructor(
             // Team modundaysak ve buddy takımda değilse göstermeyebiliriz (Tercihe bağlı)
             val showBuddy = !isTeamMode || buddyUser.teamId == myTeamId
             if (showBuddy) {
+                // CANLI VERİDEN GÜNCEL BİLGİLERİ AL (Anlık emoji ve fotoğraf için)
+                val liveBuddy = livePeers.find { it.email == buddyUser.email }
+                
                 priorityList.add(WorkerInfo(
                     id = "buddy_${buddyUser.email}",
                     name = buddyUser.name,
-                    photoUrl = buddyUser.photoUrl,
+                    photoUrl = liveBuddy?.photoUrl ?: buddyUser.photoUrl,
                     email = buddyUser.email,
                     deskId = "",
                     isFocusing = buddyUser.isFocusing,
                     currentAction = if (buddyUser.isFocusing) WorkerAction.WORKING else WorkerAction.IDLE,
                     isFriend = true,
                     isLiveUser = true,
-                    latestEmoji = buddyUser.latestEmoji,
-                    emojiTime = buddyUser.emojiTime,
+                    latestEmoji = liveBuddy?.latestEmoji ?: buddyUser.latestEmoji,
+                    emojiTime = if (liveBuddy != null) liveBuddy.emojiTime else buddyUser.emojiTime,
                     interactionText = buddyUser.currentTaskTitle // Arkadaşın neye odaklandığını göster
                 ))
             }
@@ -1302,18 +1319,21 @@ class TaskViewModel @Inject constructor(
         activeFriends.forEach { f ->
             val showFriend = !isTeamMode || f.teamId == myTeamId
             if (showFriend) {
+                // CANLI VERİDEN (live_focus) GÜNCEL FOTOĞRAFI VE EMOJİLERİ AL
+                val liveData = livePeers.find { it.email == f.email }
+                
                 priorityList.add(WorkerInfo(
                     id = "friend_${f.email}",
                     name = f.name,
-                    photoUrl = f.photoUrl,
+                    photoUrl = liveData?.photoUrl ?: f.photoUrl,
                     email = f.email,
                     deskId = "",
                     isFocusing = true,
                     currentAction = WorkerAction.WORKING,
                     isFriend = true,
                     isLiveUser = true,
-                    latestEmoji = f.latestEmoji,
-                    emojiTime = f.emojiTime
+                    latestEmoji = liveData?.latestEmoji ?: f.latestEmoji,
+                    emojiTime = if (liveData != null) liveData.emojiTime else f.emojiTime
                 ))
             }
         }
@@ -1362,19 +1382,44 @@ class TaskViewModel @Inject constructor(
         workers.addAll(finalWorkers)
     }
 
-    private fun updateLiveFocusStatus(active: Boolean) {
+    private fun updateLiveFocusStatus(active: Boolean, forcedPhotoUrl: String? = null) {
         val user = firebaseAuth.currentUser ?: return
         val email = user.email ?: return
         
         val docRef = firestore.collection("live_focus").document(email)
         if (active) {
-            // Yerel dosya yolunu değil, Firebase'deki uzak URL'i gönder
-            val remoteUrl = user.photoUrl?.toString() ?: ""
+            // 1. ÖNCE FORCED URL, SONRA LOKAL, EN SON AUTH URL'İ DENE
+            val currentPhoto = userPhotoUrl.value
+            var remoteUrl = when {
+                !forcedPhotoUrl.isNullOrBlank() -> forcedPhotoUrl
+                currentPhoto?.startsWith("http") == true || currentPhoto?.startsWith("data:image") == true -> currentPhoto
+                else -> user.photoUrl?.toString() ?: ""
+            }
             
+            // 2. EĞER FOTOĞRAF HALA YOKSA VARSAYILAN AVATAR ATA
+            if (remoteUrl.isBlank() || remoteUrl == "null") {
+                val finalName = if (userName.value != "ANONYMOUS" && userName.value.isNotBlank()) {
+                    userName.value
+                } else {
+                    user.displayName ?: user.email?.substringBefore("@") ?: "User"
+                }
+                // Sabit arka plan rengi kullan (Flickering önlemek için)
+                remoteUrl = "https://ui-avatars.com/api/?name=${finalName.replace(" ", "+")}&background=0D8ABC&color=fff"
+            }
+            
+            // Linke küçük bir damga ekle ki karşı tarafın cache'i yenilensin
+            val finalUrl = if (remoteUrl.contains("ui-avatars.com")) {
+                remoteUrl
+            } else {
+                val cleanUrl = if (remoteUrl.contains("?t=")) remoteUrl.substringBefore("?t=") else remoteUrl
+                "$cleanUrl?t=${System.currentTimeMillis()}"
+            }
+
             val status = mapOf(
                 "email" to email,
                 "name" to userName.value,
-                "photoUrl" to remoteUrl,
+                "photoUrl" to finalUrl,
+                "photo_url" to finalUrl, // İki anahtarı da güncelle
                 "lastUpdate" to System.currentTimeMillis()
             )
             docRef.set(status, com.google.firebase.firestore.SetOptions.merge())
@@ -1697,20 +1742,29 @@ class TaskViewModel @Inject constructor(
             updateTodayHistory(focusMins = 0) // Bugünün kaydını oluştur/getir
         }
         
-        // Photo and Name sync
-        doc.getString("photoUrl")?.let { cloudPhoto ->
-            if (cloudPhoto.isNotBlank()) {
-                val cloudSyncTime = doc.getLong("last_sync") ?: 0L
-                val localUpdateTime = prefs.getLong("profile_last_local_update", 0L)
-                
-                // Sadece buluttaki veri daha yeniyse (veya yerelde hiç yoksa) kabul et
-                if (cloudSyncTime > localUpdateTime || userPhotoUrl.value.isNullOrBlank()) {
-                    android.util.Log.d("FocusPathAuth", "Applying cloud photo: $cloudPhoto")
-                    userPhotoUrl.value = cloudPhoto
-                    prefs.edit().putString("user_photo_url", cloudPhoto).apply()
+                // Photo and Name sync
+                doc.getString("photoUrl")?.let { cloudPhoto ->
+                    if (cloudPhoto.isNotBlank()) {
+                        val cloudSyncTime = doc.getLong("last_sync") ?: 0L
+                        val localUpdateTime = prefs.getLong("profile_last_local_update", 0L)
+                        val currentPhoto = userPhotoUrl.value ?: ""
+                        
+                        // 1 DAKİKALIK KESİN KORUMA: Eğer yerelde yeni bir seçim yapıldıysa,
+                        // buluttan gelen veriyi 60 saniye boyunca KESİNLİKLE reddet.
+                        val isUnderStrictProtection = (System.currentTimeMillis() - localUpdateTime) < 60000
+                        val isLocalProcessing = currentPhoto.startsWith("file://")
+
+                        if (!isUnderStrictProtection && !isLocalProcessing) {
+                            if (cloudSyncTime > localUpdateTime || currentPhoto.isBlank()) {
+                                android.util.Log.d("FocusPathAuth", "Applying cloud photo: ${cloudPhoto.take(20)}...")
+                                userPhotoUrl.value = cloudPhoto
+                                prefs.edit().putString("user_photo_url", cloudPhoto).apply()
+                            }
+                        } else {
+                            android.util.Log.d("FocusPathAuth", "Cloud photo rejected: Local priority active.")
+                        }
+                    }
                 }
-            }
-        }
         doc.getString("name")?.let { cloudName ->
             if (cloudName.isNotBlank() && cloudName != "ANONYMOUS") {
                 userName.value = cloudName
@@ -1721,8 +1775,22 @@ class TaskViewModel @Inject constructor(
 
     private fun syncProfileToFirestore() {
         val user = firebaseAuth.currentUser ?: return
-        // Yerel dosya yolunu değil, Firebase'deki uzak URL'i gönder
-        val remoteUrl = user.photoUrl?.toString() ?: ""
+        
+        // Sadece HTTP veya Base64 olanları buluta gönder
+        val currentPhoto = userPhotoUrl.value
+        
+        // KRİTİK: Eğer fotoğraf şu an 'file://' (yeni seçilmiş ama işleniyor) ise 
+        // senkronizasyonu durdur ki buluttaki veriyi bozmayalım.
+        if (currentPhoto?.startsWith("file://") == true) {
+            android.util.Log.d("FocusPathAuth", "Sync skipped: photo is still processing (file://)")
+            return
+        }
+
+        val remoteUrl = when {
+            currentPhoto?.startsWith("http") == true -> currentPhoto
+            currentPhoto?.startsWith("data:image") == true -> currentPhoto
+            else -> user.photoUrl?.toString() ?: ""
+        }
         
         val profileMap = mapOf(
             "uid" to user.uid,
@@ -1738,11 +1806,21 @@ class TaskViewModel @Inject constructor(
             "last_sync" to System.currentTimeMillis()
         )
         // Hem UID hem Email ile dokümanı güncelleyelim ki uyuşmazlıklar tamamen ortadan kalksın
-        firestore.collection("users").document(user.uid).set(profileMap, com.google.firebase.firestore.SetOptions.merge())
         val email = user.email
         if (!email.isNullOrBlank()) {
             firestore.collection("users").document(email).set(profileMap, com.google.firebase.firestore.SetOptions.merge())
         }
+
+        // LEADERBOARD'U DA GÜNCELLE (XP ve Diğerleri burada da olmalı)
+        val leaderboardMap = mapOf(
+            "uid" to user.uid,
+            "name" to userName.value,
+            "email" to (user.email?.lowercase() ?: ""),
+            "score" to userXp.value.toLong(),
+            "photoUrl" to remoteUrl,
+            "timestamp" to System.currentTimeMillis()
+        )
+        firestore.collection("leaderboard").document(user.uid).set(leaderboardMap, com.google.firebase.firestore.SetOptions.merge())
     }
 
     private val _searchQuery = MutableStateFlow("")
@@ -2003,7 +2081,18 @@ class TaskViewModel @Inject constructor(
                     firestore.collection("leaderboard")
                         .whereIn("email", team.memberEmails)
                         .addSnapshotListener { lbSnapshot, _ ->
-                            val members = lbSnapshot?.documents?.mapNotNull { it.toObject(LeaderboardUser::class.java) } ?: emptyList()
+                            val members = lbSnapshot?.documents?.mapNotNull { doc -> 
+                                try {
+                                    val u = doc.toObject(LeaderboardUser::class.java)?.copy(uid = doc.id)
+                                    // Agresif fallback
+                                    val photoVal = doc.get("photoUrl") ?: doc.get("photo_url")
+                                    val photoStr = photoVal?.toString()?.trim()
+                                    if (!photoStr.isNullOrBlank() && photoStr.startsWith("http")) {
+                                        u?.photoUrl = photoStr
+                                    }
+                                    u
+                                } catch (ex: Exception) { null }
+                            } ?: emptyList()
                             teamMembers.clear()
                             teamMembers.addAll(members)
                         }
@@ -2012,28 +2101,73 @@ class TaskViewModel @Inject constructor(
     }
 
     fun fetchLeaderboard() {
+        android.util.Log.i("FocusPathFirestore", "fetchLeaderboard: STARTED")
         isLeaderboardLoading.value = true
         
         // Timeout için bir mekanizma ekleyelim
         val timeoutJob = viewModelScope.launch {
-            kotlinx.coroutines.delay(10000) // 10 saniye sonra hala yükleniyorsa zorla kapat
+            kotlinx.coroutines.delay(10000) 
             if (isLeaderboardLoading.value) {
                 isLeaderboardLoading.value = false
-                android.util.Log.w("FocusPathFirestore", "Leaderboard fetch timeout")
+                android.util.Log.w("FocusPathFirestore", "Leaderboard fetch timeout!")
             }
         }
 
-        // KİŞİSEL LİDERLİK TABLOSU
+        // KİŞİSEL LİDERLİK TABLOSU - Önce orderBy olmadan çekmeyi dene (İndeks hatasını önlemek için en garantisi)
         firestore.collection("leaderboard")
-            .orderBy("score", com.google.firebase.firestore.Query.Direction.DESCENDING)
-            .limit(30)
+            .limit(50)
             .addSnapshotListener { snapshot, e ->
                 timeoutJob.cancel()
                 isLeaderboardLoading.value = false
+                
+                if (e != null) {
+                    android.util.Log.e("FocusPathFirestore", "Leaderboard Listen Error: ${e.message}")
+                    return@addSnapshotListener
+                }
+
                 if (snapshot != null) {
-                    val users = snapshot.documents.mapNotNull { it.toObject(LeaderboardUser::class.java) }
+                    android.util.Log.i("FocusPathFirestore", "Leaderboard Snapshot received. Count: ${snapshot.size()}")
+                    
+                    val users = snapshot.documents.mapNotNull { doc ->
+                        try {
+                            // Ham veriyi logla (Debug için kritik!)
+                            android.util.Log.i("FocusPathFirestore", "Doc ID: ${doc.id}, Data: ${doc.data}")
+                            
+                            val u = doc.toObject(LeaderboardUser::class.java)?.copy(uid = doc.id)
+                            
+                            // Agresif fotoğraf bulma (Eğer toObject kaçırdıysa)
+                            val photoVal = doc.get("photoUrl") ?: doc.get("photo_url") ?: doc.get("photo") ?: doc.get("image") ?: doc.get("avatar")
+                            var photoStr = photoVal?.toString()?.trim()
+                            
+                            if (photoStr.isNullOrBlank() || photoStr == "null" || (!photoStr.startsWith("http") && !photoStr.startsWith("data:image"))) {
+                                // Fotoğrafı yoksa varsayılan avatar ata (Ofiste görünmesi için kritik)
+                                val userNameForAvatar = u?.name ?: "User"
+                                photoStr = "https://ui-avatars.com/api/?name=${userNameForAvatar.replace(" ", "+")}&background=0D8ABC&color=fff"
+                            }
+                            
+                            if (u != null) {
+                                u.photoUrl = photoStr
+                            }
+                            
+                            // Log photo status
+                            if (u?.photoUrl.isNullOrBlank()) {
+                                android.util.Log.w("FocusPathFirestore", "User ${u?.name} (${doc.id}) STILL has NO photoUrl!")
+                            }
+                            
+                            u
+                        } catch (ex: Exception) {
+                            android.util.Log.e("FocusPathFirestore", "Leaderboard Parse Error for ${doc.id}: ${ex.message}")
+                            null
+                        }
+                    }.sortedByDescending { it.score } // Uygulama tarafında sırala (Garanti yöntem)
+                    
                     _leaderboard.value = users
                     initializeWorkers()
+                    
+                    // UI'da görsel onay
+                    viewModelScope.launch(Dispatchers.Main) {
+                        Toast.makeText(application, "Leaderboard Güncellendi (${users.size})", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         
@@ -2052,12 +2186,18 @@ class TaskViewModel @Inject constructor(
         listenForIncomingMessages()
     }
 
+    private var messageIncomingRegistration: com.google.firebase.firestore.ListenerRegistration? = null
+    private var messageOutgoingRegistration: com.google.firebase.firestore.ListenerRegistration? = null
+
     private fun listenForIncomingMessages() {
         val email = userEmail.value
         if (email.isBlank()) return
         
+        messageIncomingRegistration?.remove()
+        messageOutgoingRegistration?.remove()
+
         // DÜZELTME: Composite Index hatasını önlemek için orderBy'ı sunucuda değil, in-memory yapıyoruz
-        firestore.collection("messages")
+        messageIncomingRegistration = firestore.collection("messages")
             .whereEqualTo("to", email)
             .addSnapshotListener { snapshot, _ ->
                 snapshot?.documentChanges?.forEach { change ->
@@ -2068,17 +2208,22 @@ class TaskViewModel @Inject constructor(
                             // Gelen mesaj bildirimi - Sadece son 10 saniye içinde gönderilmişse göster (Spam engelleme)
                             if (System.currentTimeMillis() - msg.timestamp < 10000) {
                                 viewModelScope.launch(Dispatchers.Main) {
-                                    val toastMsg = if (msg.text.contains("Sana bir tepki gönderdi:")) {
+                                    val senderName = if (msg.fromName.isBlank()) "Bir arkadaşın" else msg.fromName
+                                    
+                                    val notificationMsg = if (msg.text.contains("Sana bir tepki gönderdi:")) {
                                         val emoji = msg.text.substringAfterLast(": ").trim()
                                         if (msg.from == userEmail.value) {
                                             "Kendine $emoji gönderdin!"
                                         } else {
-                                            "${msg.fromName} sana $emoji gönderdi!"
+                                            "$senderName size bir emoji gönderdi: $emoji"
                                         }
                                     } else {
-                                        "${msg.fromName}: ${msg.text}"
+                                        "$senderName size bir mesaj gönderdi: ${msg.text}"
                                     }
-                                    Toast.makeText(application, toastMsg, Toast.LENGTH_SHORT).show()
+                                    
+                                    // Hem Toast hem de Bildirim göster (Daha belirgin olması için)
+                                    Toast.makeText(application, notificationMsg, Toast.LENGTH_LONG).show()
+                                    showLocalNotification("FocusPath Sosyal", notificationMsg)
                                 }
                             }
                         }
@@ -2086,7 +2231,7 @@ class TaskViewModel @Inject constructor(
                 }
             }
             
-        firestore.collection("messages")
+        messageOutgoingRegistration = firestore.collection("messages")
             .whereEqualTo("from", email)
             .addSnapshotListener { snapshot, _ ->
                 snapshot?.documentChanges?.forEach { change ->
@@ -2122,7 +2267,13 @@ class TaskViewModel @Inject constructor(
                 android.util.Log.e("FocusPathEmoji", "Live focus update failed: ${it.message}")
             }
             
-        // 3. Mesaj olarak gönder (Gelen kutusuna düşmesi için asıl yöntem)
+        // 3. Yerel listede anında güncelle (Sender için anlık geri bildirim)
+        val workerIdx = workers.indexOfFirst { it.email?.lowercase() == cleanTargetEmail }
+        if (workerIdx != -1) {
+            workers[workerIdx] = workers[workerIdx].copy(latestEmoji = emoji, emojiTime = now)
+        }
+            
+        // 4. Mesaj olarak gönder (Gelen kutusuna düşmesi için asıl yöntem)
         val targetUser = _leaderboard.value.find { it.email.lowercase() == cleanTargetEmail }
         val targetName = targetUser?.name ?: "Arkadaş"
         sendDirectMessage(cleanTargetEmail, targetName, "Sana bir tepki gönderdi: $emoji")
@@ -2130,7 +2281,11 @@ class TaskViewModel @Inject constructor(
 
     fun sendDirectMessage(toEmail: String, toName: String, content: String) {
         val fromEmail = userEmail.value.lowercase()
-        val fromName = userName.value
+        val fromName = if (userName.value.isBlank() || userName.value == "ANONYMOUS") {
+            userEmail.value.split("@").firstOrNull() ?: "Bir kullanıcı"
+        } else {
+            userName.value
+        }
         val cleanToEmail = toEmail.trim().lowercase()
         if (fromEmail.isBlank() || cleanToEmail.isBlank()) return
         
@@ -2158,7 +2313,7 @@ class TaskViewModel @Inject constructor(
         firestore.collection("users").document(userEmail.value).collection("tasks").document(taskId.toString()).delete()
     }
 
-    fun syncXpToFirestore(sessionDuration: Int = 0, isFocusing: Boolean = false) {
+    fun syncXpToFirestore(sessionDuration: Int = 0, isFocusing: Boolean = false, forcedPhotoUrl: String? = null) {
         val user = firebaseAuth.currentUser ?: return
         
         viewModelScope.launch(Dispatchers.IO) {
@@ -2166,26 +2321,56 @@ class TaskViewModel @Inject constructor(
                 val currentTasks = taskDao.getAllTasksOnce()
                 val activeTask = currentTasks.find { !it.isCompleted && it.priority == 2 } ?: currentTasks.firstOrNull { !it.isCompleted }
 
-                // Yerel dosya yolunu değil, Firebase'deki uzak URL'i gönder
-                val remoteUrl = user.photoUrl?.toString() ?: ""
+                val finalName = if (userName.value != "ANONYMOUS" && userName.value.isNotBlank()) { 
+                    userName.value 
+                } else if (!user.displayName.isNullOrBlank()) { 
+                    user.displayName!! 
+                } else {
+                    user.email?.substringBefore("@") ?: "User"
+                }
+
+                val currentPhoto = userPhotoUrl.value
+                var remoteUrl = when {
+                    !forcedPhotoUrl.isNullOrBlank() -> forcedPhotoUrl
+                    currentPhoto?.startsWith("http") == true || currentPhoto?.startsWith("data:image") == true -> currentPhoto
+                    user.photoUrl?.toString()?.startsWith("http") == true -> user.photoUrl.toString()
+                    else -> ""
+                }
+                
+                // EĞER LOKAL BİR RESİM VARSA AMA HENÜZ BASE64/HTTP DEĞİLSE, 
+                // FIRESTORE'DAKİ ESKİ VERİYİ ÜSTÜNE YAZMA (AVATAR YAPMA)
+                if (remoteUrl.isBlank() && currentPhoto?.startsWith("file://") == true) {
+                    android.util.Log.d("FocusPathFirestore", "Local photo exists, skipping avatar fallback for sync")
+                    return@launch
+                }
+                
+                // EĞER FOTOĞRAF HALA YOKSA, VARSAYILAN BİR AVATAR OLUŞTUR
+                if (remoteUrl.isBlank() || remoteUrl == "null") {
+                    // Sabit bir background rengi kullan (random olmasın ki flickering azalsın)
+                    remoteUrl = "https://ui-avatars.com/api/?name=${finalName.replace(" ", "+")}&background=0D8ABC&color=fff"
+                }
+                
+                // Önbellek çakışmasını önlemek için timestamp ekle (Base64 veya Avatar değilse)
+                val finalUrl = if (remoteUrl.contains("ui-avatars.com") || remoteUrl.startsWith("data:image")) {
+                    remoteUrl
+                } else {
+                    val cleanUrl = if (remoteUrl.contains("?t=")) remoteUrl.substringBefore("?t=") else remoteUrl
+                    "$cleanUrl?t=${System.currentTimeMillis()}"
+                }
 
                 val updateMap = mutableMapOf<String, Any>(
                     "uid" to user.uid,
                     "email" to (user.email?.lowercase() ?: ""),
                     "score" to userXp.value.toLong(),
-                    "photoUrl" to remoteUrl,
+                    "photoUrl" to finalUrl,
+                    "photo_url" to finalUrl, // İki anahtarı da güncelle
+                    "name" to finalName,
                     "timestamp" to System.currentTimeMillis(),
                     "sessionDuration" to sessionDuration,
-                    "isFocusing" to isFocusing,
+                    "focusing" to isFocusing,
                     "focusBuddyEmail" to (selectedFocusBuddy.value?.email ?: ""),
                     "currentTaskTitle" to (if (isFocusing) activeTask?.title ?: "" else "")
                 )
-                
-                if (userName.value != "ANONYMOUS" && userName.value.isNotBlank()) { 
-                    updateMap["name"] = userName.value 
-                } else if (!user.displayName.isNullOrBlank()) { 
-                    updateMap["name"] = user.displayName!! 
-                }
 
                 firestore.collection("leaderboard").document(user.uid)
                     .set(updateMap, com.google.firebase.firestore.SetOptions.merge())
@@ -2789,8 +2974,12 @@ class TaskViewModel @Inject constructor(
     }
     fun resetPassword(email: String, onSuccess: () -> Unit, onError: (String) -> Unit) { viewModelScope.launch { try { firebaseAuth.sendPasswordResetEmail(email).await() ; onSuccess() } catch (e: Exception) { onError(e.localizedMessage ?: "Error") } } }
 
-    fun sendFriendRequest(targetEmail: String, targetName: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
+    fun sendFriendRequest(targetEmail: String, targetName: String, targetUid: String? = null, onSuccess: () -> Unit, onError: (String) -> Unit) {
         val currentUser = firebaseAuth.currentUser ?: return
+        if (currentUser.email?.lowercase() == targetEmail.trim().lowercase() || currentUser.uid == targetUid) {
+            onError("Kendinizi arkadaş olarak ekleyemezsiniz.")
+            return
+        }
         val myDisplayName = if (userName.value != "ANONYMOUS" && userName.value.isNotBlank()) userName.value else currentUser.displayName ?: "Kullanıcı"
         
         val myData = mapOf(
@@ -2798,26 +2987,49 @@ class TaskViewModel @Inject constructor(
             "name" to myDisplayName,
             "email" to (currentUser.email?.lowercase() ?: ""),
             "score" to userXp.value.toLong(),
-            "photoUrl" to (userPhotoUrl.value ?: "")
+            "photoUrl" to (userPhotoUrl.value ?: ""),
+            "timestamp" to System.currentTimeMillis()
         )
         
+        val targetEmailClean = targetEmail.trim().lowercase()
+        val targetUidClean = targetUid?.trim()
+
+        // 1. ÖNCE EMAIL üzerinden deniyoruz (Mevcut kuralların bunu bekliyor olma ihtimali yüksek)
         firestore.collection("users")
-            .document(targetEmail.lowercase())
+            .document(targetEmailClean)
             .collection("friend_requests")
             .document(currentUser.uid)
             .set(myData)
             .addOnSuccessListener { 
-                completeOnboardingTask("add_friend") // GÖREVİ TAMAMLA
+                completeOnboardingTask("add_friend")
                 onSuccess() 
             }
-            .addOnFailureListener { onError(it.localizedMessage ?: "Hata oluştu") }
+            .addOnFailureListener { e1 ->
+                // 2. Email başarısız olursa UID üzerinden dene
+                if (!targetUidClean.isNullOrBlank()) {
+                    firestore.collection("users")
+                        .document(targetUidClean)
+                        .collection("friend_requests")
+                        .document(currentUser.uid)
+                        .set(myData)
+                        .addOnSuccessListener { 
+                            completeOnboardingTask("add_friend")
+                            onSuccess() 
+                        }
+                        .addOnFailureListener { e2 ->
+                            onError("Hata: ${e2.localizedMessage}")
+                        }
+                } else {
+                    onError("Hata: ${e1.localizedMessage}")
+                }
+            }
     }
 
     fun acceptFriendRequest(reqUser: LeaderboardUser, onSuccess: () -> Unit) {
         val currentUser = firebaseAuth.currentUser ?: return
-        val currentEmail = currentUser.email ?: return
         val db = firestore
-        val userDocRef = db.collection("users").document(currentEmail.lowercase())
+        // Kendi dokümanımız için UID kullanalım (Daha güvenli ve kurallara uygun)
+        val userDocRef = db.collection("users").document(currentUser.uid)
 
         val friendData = mapOf(
             "uid" to reqUser.uid,
@@ -2831,36 +3043,54 @@ class TaskViewModel @Inject constructor(
         val myData = mapOf(
             "uid" to currentUser.uid,
             "name" to myDisplayName,
-            "email" to currentEmail.lowercase(),
+            "email" to (currentUser.email?.lowercase() ?: ""),
             "score" to userXp.value.toLong(),
             "photoUrl" to (userPhotoUrl.value ?: "")
         )
 
         userDocRef.collection("friends").document(reqUser.uid).set(friendData)
             .addOnSuccessListener {
-                db.collection("users").document(reqUser.email.lowercase()).collection("friends").document(currentUser.uid).set(myData)
+                // Karşı tarafın dokümanı için de UID kullanalım
+                db.collection("users").document(reqUser.uid).collection("friends").document(currentUser.uid).set(myData)
                     .addOnSuccessListener {
                         userDocRef.collection("friend_requests").document(reqUser.uid).delete()
+                        val currentEmail = currentUser.email
+                        if (!currentEmail.isNullOrBlank()) {
+                            db.collection("users").document(currentEmail.lowercase())
+                                .collection("friend_requests").document(reqUser.uid).delete()
+                        }
                         completeOnboardingTask("add_friend") // GÖREVİ TAMAMLA
                         onSuccess()
+                    }
+                    .addOnFailureListener {
+                        // Eğer UID dokümanı yoksa (eski kullanıcı), Email dokümanını dene
+                        db.collection("users").document(reqUser.email.lowercase()).collection("friends").document(currentUser.uid).set(myData)
+                            .addOnSuccessListener {
+                                userDocRef.collection("friend_requests").document(reqUser.uid).delete()
+                                completeOnboardingTask("add_friend") // GÖREVİ TAMAMLA
+                                onSuccess()
+                            }
                     }
             }
     }
 
     fun removeFriend(friendUid: String, friendEmail: String, onSuccess: () -> Unit) {
         val currentUser = firebaseAuth.currentUser ?: return
-        val currentEmail = currentUser.email ?: return
         val db = firestore
         
-        // 1. Kendi listemden sil
-        db.collection("users").document(currentEmail.lowercase())
+        // Kendi dokümanımızdan sil (UID kullanıyoruz)
+        db.collection("users").document(currentUser.uid)
             .collection("friends").document(friendUid).delete()
             .addOnSuccessListener {
-                // 2. Karşı tarafın listesinden beni sil
-                db.collection("users").document(friendEmail.lowercase())
+                // Karşı tarafın dokümanından sil (Önce UID'yi dene)
+                db.collection("users").document(friendUid)
                     .collection("friends").document(currentUser.uid).delete()
-                    .addOnSuccessListener {
-                        onSuccess()
+                    .addOnSuccessListener { onSuccess() }
+                    .addOnFailureListener {
+                        // Fallback: Email dokümanını dene
+                        db.collection("users").document(friendEmail.lowercase())
+                            .collection("friends").document(currentUser.uid).delete()
+                            .addOnSuccessListener { onSuccess() }
                     }
             }
     }
@@ -2887,7 +3117,7 @@ class TaskViewModel @Inject constructor(
         if (email.isBlank()) return
         
         friendRequestRegistration?.remove()
-        friendRequestRegistration = firestore.collection("users").document(email)
+        friendRequestRegistration = firestore.collection("users").document(email.lowercase())
             .collection("friend_requests")
             .addSnapshotListener { snapshot, e ->
                 if (e != null) return@addSnapshotListener
@@ -2904,7 +3134,7 @@ class TaskViewModel @Inject constructor(
         val nm = application.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
         val channelId = "focuspath_notifications"
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            val channel = android.app.NotificationChannel(channelId, "FocusPath Bildirimleri", android.app.NotificationManager.IMPORTANCE_DEFAULT)
+            val channel = android.app.NotificationChannel(channelId, "FocusPath Bildirimleri", android.app.NotificationManager.IMPORTANCE_HIGH)
             nm.createNotificationChannel(channel)
         }
 
@@ -2912,7 +3142,7 @@ class TaskViewModel @Inject constructor(
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(title)
             .setContentText(message)
-            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_DEFAULT)
+            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .build()
 

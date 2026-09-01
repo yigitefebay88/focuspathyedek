@@ -72,7 +72,9 @@ fun CalendarTab(
                     }
                 } else {
                     lbUsers.forEachIndexed { index, user ->
-                        val isMe = user.email == vm.userEmail.value
+                        val isMe = user.email.equals(vm.userEmail.value, ignoreCase = true)
+                        val displayPhoto = user.photoUrl
+                        
                         val infiniteTransition = rememberInfiniteTransition(label = "pulse")
                         val pulseScale by infiniteTransition.animateFloat(
                             initialValue = 1f,
@@ -103,9 +105,9 @@ fun CalendarTab(
                             Text("${index + 1}", modifier = Modifier.width(30.dp), color = if (index < 3) AccentYellow else MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                             Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                                 ProfileImage(
-                                    photoUrl = user.photoUrl,
+                                    photoUrl = displayPhoto,
                                     name = user.name,
-                                    email = null,
+                                    email = user.email,
                                     size = 20.dp
                                 )
                                 Spacer(Modifier.width(8.dp))
@@ -135,14 +137,20 @@ fun UserProfileDialog(
     onDismiss: () -> Unit
 ) {
     val isMe = user.email == vm.userEmail.value
-    val isFriend = vm.friendsList.any { it.email == user.email }
+    val isFriend = vm.friendsList.any { it.email == user.email || it.uid == user.uid }
     val context = androidx.compose.ui.platform.LocalContext.current
+    val displayPhoto = user.photoUrl
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                ProfileImage(photoUrl = user.photoUrl, name = user.name, size = 48.dp)
+                ProfileImage(
+                    photoUrl = displayPhoto, 
+                    name = user.name, 
+                    email = user.email,
+                    size = 48.dp
+                )
                 Spacer(Modifier.width(12.dp))
                 Column {
                     Text(user.name.uppercase(), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
@@ -181,6 +189,7 @@ fun UserProfileDialog(
                             vm.sendFriendRequest(
                                 targetEmail = user.email,
                                 targetName = user.name,
+                                targetUid = user.uid,
                                 onSuccess = {
                                     android.widget.Toast.makeText(context, "İstek gönderildi!", android.widget.Toast.LENGTH_SHORT).show()
                                 },

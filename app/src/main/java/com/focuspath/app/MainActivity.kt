@@ -523,7 +523,7 @@ class MainActivity : ComponentActivity(), BillingProvider {
                             // Hem UID hem de Email bazlı dokümanları dinleyelim (uyuşmazlık olmasın diye)
                             val userDocRefs = mutableListOf(db.collection("users").document(uid))
                             if (!email.isNullOrBlank()) {
-                                userDocRefs.add(db.collection("users").document(email))
+                                userDocRefs.add(db.collection("users").document(email.lowercase()))
                             }
 
                             userDocRefs.forEach { userDocRef ->
@@ -621,8 +621,21 @@ class MainActivity : ComponentActivity(), BillingProvider {
                                                         if (!documents.isEmpty) {
                                                             val doc = documents.documents[0]
                                                             val user = doc.toObject(com.focuspath.app.data.model.LeaderboardUser::class.java)
-                                                            searchResultUser = user
-                                                            statusMessage = "Kullanıcı bulundu!"
+                                                            if (user != null) {
+                                                                // Agresif photo fallback
+                                                                val photoVal = doc.get("photoUrl") ?: doc.get("photo_url") ?: doc.get("photo") ?: doc.get("image")
+                                                                val photoStr = photoVal?.toString()?.trim()
+                                                                if (!photoStr.isNullOrBlank() && photoStr.startsWith("http")) {
+                                                                    user.photoUrl = photoStr
+                                                                }
+                                                                // Firestore döküman ID'sini UID olarak set edelim (eğer döküman içinde yoksa)
+                                                                val populatedUser = if (user.uid.isBlank()) user.copy(uid = doc.id) else user
+                                                                searchResultUser = populatedUser
+                                                                statusMessage = "Kullanıcı bulundu!"
+                                                            } else {
+                                                                searchResultUser = null
+                                                                statusMessage = "Kullanıcı verisi okunamadı."
+                                                            }
                                                         } else {
                                                             searchResultUser = null
                                                             statusMessage = "Kullanıcı bulunamadı! (Kullanıcının sistemde kaydı olmayabilir)"
@@ -664,6 +677,7 @@ class MainActivity : ComponentActivity(), BillingProvider {
                                                         vm.sendFriendRequest(
                                                             targetEmail = foundUser.email,
                                                             targetName = foundUser.name,
+                                                            targetUid = foundUser.uid,
                                                             onSuccess = {
                                                                 Toast.makeText(this@MainActivity, "İstek gönderildi!", Toast.LENGTH_SHORT).show()
                                                                 searchResultUser = null

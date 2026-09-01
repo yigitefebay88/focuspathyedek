@@ -542,23 +542,71 @@ fun ArcherGame(vm: TaskViewModel, onExit: () -> Unit) {
 // --- 6. SUDOKU GAME ---
 @Composable
 fun SudokuGame(vm: TaskViewModel, onExit: () -> Unit) {
-    val fixedValues = remember { listOf(listOf(1, 0, 3, 0), listOf(0, 0, 0, 2), listOf(0, 1, 0, 0), listOf(0, 0, 2, 0)) }
-    val userBoard = remember { listOf(mutableStateListOf(1, 0, 3, 0), mutableStateListOf(0, 0, 0, 2), mutableStateListOf(0, 1, 0, 0), mutableStateListOf(0, 0, 2, 0)) }
-    val solution = listOf(listOf(1, 2, 3, 4), listOf(3, 4, 1, 2), listOf(2, 1, 4, 3), listOf(4, 3, 2, 1))
+    val levels = remember {
+        listOf(
+            SudokuLevel(
+                board = listOf(listOf(1, 0, 3, 0), listOf(0, 0, 0, 2), listOf(0, 1, 0, 0), listOf(0, 0, 2, 0)),
+                solution = listOf(listOf(1, 2, 3, 4), listOf(3, 4, 1, 2), listOf(2, 1, 4, 3), listOf(4, 3, 2, 1))
+            ),
+            SudokuLevel(
+                board = listOf(listOf(0, 0, 0, 4), listOf(0, 0, 3, 0), listOf(0, 1, 0, 0), listOf(2, 0, 0, 0)),
+                solution = listOf(listOf(3, 2, 1, 4), listOf(1, 4, 3, 2), listOf(4, 1, 2, 3), listOf(2, 3, 4, 1))
+            ),
+            SudokuLevel(
+                board = listOf(listOf(0, 2, 0, 0), listOf(0, 0, 4, 0), listOf(0, 1, 0, 0), listOf(0, 0, 3, 0)),
+                solution = listOf(listOf(4, 2, 1, 3), listOf(1, 3, 4, 2), listOf(3, 1, 2, 4), listOf(2, 4, 3, 1))
+            ),
+            SudokuLevel(
+                board = listOf(listOf(1, 0, 0, 0), listOf(0, 0, 2, 0), listOf(0, 3, 0, 0), listOf(0, 0, 0, 4)),
+                solution = listOf(listOf(1, 2, 3, 4), listOf(3, 4, 1, 2), listOf(4, 1, 2, 3), listOf(2, 3, 4, 1))
+            )
+        )
+    }
+
+    var levelIdx by remember { mutableIntStateOf(0) }
+    val currentLevel = levels[levelIdx % levels.size]
+    val fixedValues = currentLevel.board
+    val solution = currentLevel.solution
+
+    val userBoard = remember {
+        val firstLevel = levels[0].board
+        listOf(
+            mutableStateListOf<Int>().apply { addAll(firstLevel[0]) },
+            mutableStateListOf<Int>().apply { addAll(firstLevel[1]) },
+            mutableStateListOf<Int>().apply { addAll(firstLevel[2]) },
+            mutableStateListOf<Int>().apply { addAll(firstLevel[3]) }
+        )
+    }
+
+    LaunchedEffect(levelIdx) {
+        val nextLevel = levels[levelIdx % levels.size].board
+        userBoard.forEachIndexed { r, row ->
+            row.clear()
+            row.addAll(nextLevel[r])
+        }
+    }
+
     var selectedCell by remember { mutableStateOf<Pair<Int, Int>?>(null) }
-    var timeLeft by remember { mutableIntStateOf(60) } ; var isGameOver by remember { mutableStateOf(false) }
+    var score by remember { mutableIntStateOf(0) }
+    var timeLeft by remember { mutableIntStateOf(60) }
+    var isGameOver by remember { mutableStateOf(false) }
     var isFinished by remember { mutableStateOf(false) }
-    val isWin by remember { derivedStateOf { userBoard.indices.all { r -> userBoard[r].indices.all { c -> userBoard[r][c] == solution[r][c] } } } }
+
+    val isWin by remember {
+        derivedStateOf {
+            userBoard.all { it.size == 4 } && userBoard.indices.all { r ->
+                userBoard[r].indices.all { c -> userBoard[r][c] == solution[r][c] }
+            }
+        }
+    }
 
     LaunchedEffect(isWin) {
         if (isWin) {
             delay(1500)
-            // Reset for infinite mode
-            userBoard.forEachIndexed { r, row ->
-                row.clear()
-                row.addAll(fixedValues[r])
-            }
+            score += 50
+            levelIdx++
             timeLeft = (timeLeft + 30).coerceAtMost(120)
+            selectedCell = null
         }
     }
 
@@ -566,20 +614,23 @@ fun SudokuGame(vm: TaskViewModel, onExit: () -> Unit) {
         if (!isWin && !isGameOver && !isFinished) {
             while (timeLeft > 0) { delay(1000L); timeLeft-- };
             if (timeLeft == 0) isGameOver = true
-        } 
+        }
     }
 
     if (isGameOver || isFinished) {
-        val finalScore = if (isWin) 100 + (timeLeft * 2) else 0;
-        GameResult(vm, finalScore, if (isFinished) "Sudoku" else "Süre Bitti!") {
-            if (finalScore > 0) vm.addCoins(30 + (timeLeft / 2)) else vm.addCoins(-20); onExit()
+        val totalScore = score + (if (isWin) 100 + (timeLeft * 2) else 0)
+        GameResult(vm, totalScore, if (isFinished) "Sudoku" else "Süre Bitti!") {
+            if (totalScore > 0) vm.addCoins(30 + (timeLeft / 2)) else vm.addCoins(-20); onExit()
         }
     }
     else {
         val terminalColor = MaterialTheme.colorScheme.primary
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxSize()) {
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Column { Text("SUDOKU (4x4)", fontWeight = FontWeight.Bold); Text("Zamana Karşı!", style = MaterialTheme.typography.labelSmall, color = terminalColor) }
+                Column {
+                    Text("SUDOKU (LVL ${levelIdx + 1})", fontWeight = FontWeight.Bold)
+                    Text("Zamana Karşı!", style = MaterialTheme.typography.labelSmall, color = terminalColor)
+                }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("SÜRE: $timeLeft", color = if (timeLeft < 10) Color.Red else terminalColor, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
                     Spacer(Modifier.width(8.dp))
@@ -589,12 +640,20 @@ fun SudokuGame(vm: TaskViewModel, onExit: () -> Unit) {
             Spacer(Modifier.height(15.dp))
             Column(modifier = Modifier.background(Color.Black.copy(0.1f)).border(2.dp, terminalColor.copy(0.4f))) {
                 repeat(4) { r -> Row { repeat(4) { c ->
-                    val isInitial = fixedValues[r][c] != 0 ; val value = userBoard[r][c] ; val isWrong = value != 0 && value != solution[r][c] ; val isSelected = selectedCell == r to c
+                    val isInitial = fixedValues[r][c] != 0
+                    val value = if (r < userBoard.size && c < userBoard[r].size) userBoard[r][c] else 0
+                    val isWrong = value != 0 && value != solution[r][c]
+                    val isSelected = selectedCell == r to c
                     Box(modifier = Modifier.size(60.dp).border(if (isSelected) 2.dp else 0.5.dp, if (isSelected) terminalColor else terminalColor.copy(0.2f)).background(when { isWrong -> Color.Red.copy(alpha = 0.3f); isSelected -> terminalColor.copy(0.2f); else -> Color.Transparent }).clickable(enabled = !isInitial) { selectedCell = r to c }, contentAlignment = Alignment.Center) { Text(text = if (value == 0) "" else value.toString(), fontWeight = if (isInitial) FontWeight.ExtraBold else FontWeight.Bold, color = when { isInitial -> terminalColor; isWrong -> Color.Red; else -> Color.White }, fontSize = 22.sp) }
                 } } }
             }
             Spacer(Modifier.height(20.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { (1..4).forEach { num -> Button(onClick = { selectedCell?.let { (r, c) -> userBoard[r][c] = num } }, modifier = Modifier.size(50.dp), contentPadding = PaddingValues(0.dp), enabled = selectedCell != null) { Text(num.toString(), fontWeight = FontWeight.Bold) } } ; Button(onClick = { selectedCell?.let { (r, c) -> userBoard[r][c] = 0 } }, modifier = Modifier.size(50.dp), colors = ButtonDefaults.buttonColors(containerColor = Color.Red.copy(0.7f)), contentPadding = PaddingValues(0.dp), enabled = selectedCell != null) { Icon(Icons.Default.Delete, null, modifier = Modifier.size(24.dp), tint = Color.White) } }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                (1..4).forEach { num ->
+                    Button(onClick = { selectedCell?.let { (r, c) -> if (r < userBoard.size && c < userBoard[r].size) userBoard[r][c] = num } }, modifier = Modifier.size(50.dp), contentPadding = PaddingValues(0.dp), enabled = selectedCell != null) { Text(num.toString(), fontWeight = FontWeight.Bold) }
+                }
+                Button(onClick = { selectedCell?.let { (r, c) -> if (r < userBoard.size && c < userBoard[r].size) userBoard[r][c] = 0 } }, modifier = Modifier.size(50.dp), colors = ButtonDefaults.buttonColors(containerColor = Color.Red.copy(0.7f)), contentPadding = PaddingValues(0.dp), enabled = selectedCell != null) { Icon(Icons.Default.Delete, null, modifier = Modifier.size(24.dp), tint = Color.White) }
+            }
         }
     }
 }
@@ -809,6 +868,7 @@ fun MathBallGame(vm: TaskViewModel, onExit: () -> Unit) {
     }
 }
 data class MathQuestion(val firstNum: Int, val secondNum: Int, val op: String, val correctAnswer: Int, val options: List<Int>)
+data class SudokuLevel(val board: List<List<Int>>, val solution: List<List<Int>>)
 fun generateMathQuestion(level: Int): MathQuestion {
     val ops = if (level < 3) listOf("+", "-") else listOf("+", "-", "*")
     val op = ops.random()

@@ -324,7 +324,7 @@ fun LiveSessionDialog(
                                 ProfileImage(
                                     photoUrl = user.photoUrl,
                                     name = user.name,
-                                    email = null,
+                                    email = user.email,
                                     size = 32.dp
                                 )
                                 Spacer(Modifier.width(16.dp))
@@ -980,7 +980,12 @@ fun TeamManagementDialog(
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
                                                 Box(contentAlignment = Alignment.Center) {
-                                                    ProfileImage(photoUrl = member.photoUrl, name = member.name, size = 32.dp)
+                                                    ProfileImage(
+                                                        photoUrl = member.photoUrl, 
+                                                        name = member.name, 
+                                                        email = member.email,
+                                                        size = 32.dp
+                                                    )
                                                     if (isMvp) {
                                                         Text("👑", fontSize = 10.sp, modifier = Modifier.align(Alignment.TopEnd).offset(x = 6.dp, y = (-6).dp))
                                                     }

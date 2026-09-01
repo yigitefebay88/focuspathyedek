@@ -970,9 +970,9 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
                             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                                 LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                     val me = lbUsers.find { it.email == vm.userEmail.value }
-                                    if (me != null) { item(key = "me") { UserLiveRow(me, isEnglish, true) } }
+                                    if (me != null) { item(key = "me") { UserLiveRow(me, isEnglish, true, vm) } }
                                     items(lbUsers.filter { it.email != vm.userEmail.value }.take(15), key = { it.email }) { user ->
-                                        UserLiveRow(user, isEnglish, false)
+                                        UserLiveRow(user, isEnglish, false, vm)
                                     }
                                 }
                                 // Visual library effect overlay
@@ -1019,7 +1019,9 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
 }
 
 @Composable
-fun UserLiveRow(user: LeaderboardUser, isEnglish: Boolean, isMe: Boolean) {
+fun UserLiveRow(user: LeaderboardUser, isEnglish: Boolean, isMe: Boolean, vm: TaskViewModel) {
+    val displayPhoto = user.photoUrl
+
     Surface(
         color = if (isMe) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else Color.Black.copy(alpha = 0.6f),
         shape = RoundedCornerShape(12.dp),
@@ -1027,9 +1029,9 @@ fun UserLiveRow(user: LeaderboardUser, isEnglish: Boolean, isMe: Boolean) {
     ) {
         Row(modifier = Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
             ProfileImage(
-                photoUrl = user.photoUrl,
+                photoUrl = displayPhoto,
                 name = user.name,
-                email = null,
+                email = user.email,
                 size = 36.dp,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
             )
@@ -1903,7 +1905,17 @@ private fun CalendarTabFull(vm: TaskViewModel, lang: Map<String, String>, curren
             } 
         } 
     };
- Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))) { Column(modifier = Modifier.padding(16.dp)) { Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(text = lang["leaderboard"] ?: "LEADERBOARD", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f), fontWeight = FontWeight.Bold); IconButton(onClick = { vm.fetchLeaderboard() }) { Icon(Icons.Default.Refresh, null, tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f), modifier = Modifier.size(20.dp)) } }; Spacer(Modifier.height(12.dp)); Row(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)) { Text("#", modifier = Modifier.width(30.dp), color = Color.Gray, fontSize = 10.sp); Text("USER", modifier = Modifier.weight(1f), color = Color.Gray, fontSize = 10.sp); Text("UNVAN", modifier = Modifier.width(80.dp), color = Color.Gray, fontSize = 10.sp, textAlign = TextAlign.Center); Text("XP", modifier = Modifier.width(50.dp), color = Color.Gray, fontSize = 10.sp, textAlign = TextAlign.End) }; HorizontalDivider(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)); if (lbUsers.isEmpty()) { Text("FETCHING DATA...", modifier = Modifier.padding(16.dp).fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Gray, fontSize = 11.sp) } else { lbUsers.forEachIndexed { index, user -> val isMe = user.email == vm.userEmail.value ; Row(modifier = Modifier.fillMaxWidth().background(if (isMe) MaterialTheme.colorScheme.primary.copy(alpha = 0.05f) else Color.Transparent).padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) { Text("${index + 1}", modifier = Modifier.width(30.dp), color = if (index < 3) AccentYellow.copy(alpha = 0.9f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.7f), fontWeight = FontWeight.Bold, fontSize = 12.sp); Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) { if (user.photoUrl != null) AsyncImage(model = user.photoUrl, contentDescription = null, modifier = Modifier.size(20.dp).clip(CircleShape).alpha(0.9f)); Spacer(Modifier.width(8.dp)); val displayName = if (user.name.isNullOrBlank()) "ANONYMOUS USER" else user.name.uppercase(); Text(text = displayName, color = if (isMe) MaterialTheme.colorScheme.primary.copy(alpha = 0.9f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }; val rank = com.focuspath.app.util.FocusRank.getTitle(user.score, isEnglish); Text(rank, modifier = Modifier.width(80.dp), color = Color.Gray.copy(alpha = 0.7f), fontSize = 8.sp, textAlign = TextAlign.Center); Text("${user.score}", modifier = Modifier.width(50.dp), color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f), fontSize = 12.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End) } } } } }
+ Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))) { Column(modifier = Modifier.padding(16.dp)) { Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(text = lang["leaderboard"] ?: "LEADERBOARD", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f), fontWeight = FontWeight.Bold); IconButton(onClick = { vm.fetchLeaderboard() }) { Icon(Icons.Default.Refresh, null, tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f), modifier = Modifier.size(20.dp)) } }; Spacer(Modifier.height(12.dp)); Row(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)) { Text("#", modifier = Modifier.width(30.dp), color = Color.Gray, fontSize = 10.sp); Text("USER", modifier = Modifier.weight(1f), color = Color.Gray, fontSize = 10.sp); Text("UNVAN", modifier = Modifier.width(80.dp), color = Color.Gray, fontSize = 10.sp, textAlign = TextAlign.Center); Text("XP", modifier = Modifier.width(50.dp), color = Color.Gray, fontSize = 10.sp, textAlign = TextAlign.End) }; HorizontalDivider(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)); if (lbUsers.isEmpty()) { Text("FETCHING DATA...", modifier = Modifier.padding(16.dp).fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Gray, fontSize = 11.sp) } else { lbUsers.forEachIndexed { index, user -> val isMe = user.email.equals(vm.userEmail.value, ignoreCase = true) ; Row(modifier = Modifier.fillMaxWidth().background(if (isMe) MaterialTheme.colorScheme.primary.copy(alpha = 0.05f) else Color.Transparent).padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) { Text("${index + 1}", modifier = Modifier.width(30.dp), color = if (index < 3) AccentYellow.copy(alpha = 0.9f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.7f), fontWeight = FontWeight.Bold, fontSize = 12.sp);                                 Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                                    com.focuspath.app.ui.components.ProfileImage(
+                                        photoUrl = user.photoUrl,
+                                        name = user.name,
+                                        email = user.email,
+                                        size = 20.dp
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    val displayName = if (user.name.isNullOrBlank()) "ANONYMOUS USER" else user.name.uppercase()
+                                    Text(text = displayName, color = if (isMe) MaterialTheme.colorScheme.primary.copy(alpha = 0.9f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }; val rank = com.focuspath.app.util.FocusRank.getTitle(user.score, isEnglish); Text(rank, modifier = Modifier.width(80.dp), color = Color.Gray.copy(alpha = 0.7f), fontSize = 8.sp, textAlign = TextAlign.Center); Text("${user.score}", modifier = Modifier.width(50.dp), color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f), fontSize = 12.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End) } } } } }
     }
 
     if (showBrainDump) {
@@ -3790,10 +3802,12 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
                         } else {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                                 top3.forEachIndexed { index, user ->
+                                    val displayPhoto = user.photoUrl
+                                    
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         Box(contentAlignment = Alignment.Center) {
                                             ProfileImage(
-                                                photoUrl = user.photoUrl,
+                                                photoUrl = displayPhoto,
                                                 name = user.name,
                                                 email = user.email,
                                                 size = 48.dp,

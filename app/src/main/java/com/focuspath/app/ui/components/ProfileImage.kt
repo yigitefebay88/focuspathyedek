@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
@@ -23,6 +24,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import coil.request.CachePolicy
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun ProfileImage(
@@ -49,24 +53,39 @@ fun ProfileImage(
         contentAlignment = Alignment.Center
     ) {
         var isError by remember(photoUrl) { mutableStateOf(false) }
+        val finalPhotoUrl = if (photoUrl == "null") null else photoUrl
         
-        if (!photoUrl.isNullOrBlank() && !isError) {
+        if (!finalPhotoUrl.isNullOrBlank() && !isError) {
             AsyncImage(
-                model = photoUrl,
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(finalPhotoUrl)
+                    .crossfade(true)
+                    .diskCachePolicy(CachePolicy.ENABLED)
+                    .memoryCachePolicy(CachePolicy.ENABLED)
+                    .build(),
                 contentDescription = name,
                 modifier = Modifier.size(size).clip(CircleShape),
                 contentScale = ContentScale.Crop,
-                onError = { isError = true }
+                onError = { 
+                    android.util.Log.e("FocusPathImage", "FAILED loading profile image: $finalPhotoUrl for $name")
+                    isError = true 
+                }
             )
         } else {
-            Text(
-                text = initials,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = (size.value * 0.4).sp
+            // FALLBACK: Baş harfler
+            Box(
+                modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = initials,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = (size.value * 0.4).sp
+                    )
                 )
-            )
+            }
         }
     }
 }
