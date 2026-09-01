@@ -141,11 +141,11 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
                     Icon(Icons.Default.PriorityHigh, null, tint = AccentRed, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(8.dp))
                     Text(
-
                         text = if(isEnglish) "ACTIVE GOAL: ${task.title}" else "ŞU ANKİ HEDEF: ${task.title}",
                         fontWeight = FontWeight.Black,
                         fontSize = 10.sp,
-                        color = AccentRed
+                        color = AccentRed,
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }
@@ -1306,10 +1306,24 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
 
         item(key = "add_task_form") {
             Column(modifier = Modifier.animateItemPlacement()) {
-                OutlinedTextField(value = tabTaskInput, onValueChange = { tabTaskInput = it }, label = { Text(if(isEnglish) "Task Title" else "Görev Başlığı") }, modifier = Modifier.fillMaxWidth(), singleLine = true, keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next))
+                OutlinedTextField(
+                    value = tabTaskInput, 
+                    onValueChange = { tabTaskInput = it }, 
+                    label = { Text(if(isEnglish) "Task Title" else "Görev Başlığı") }, 
+                    modifier = Modifier.fillMaxWidth(), 
+                    maxLines = 2,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+                )
                 Spacer(Modifier.height(8.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = tabTaskNotes, onValueChange = { tabTaskNotes = it }, label = { Text(if(isEnglish) "Details" else "Notlar") }, modifier = Modifier.weight(1.5f), singleLine = true, keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next))
+                    OutlinedTextField(
+                        value = tabTaskNotes, 
+                        onValueChange = { tabTaskNotes = it }, 
+                        label = { Text(if(isEnglish) "Details" else "Notlar") }, 
+                        modifier = Modifier.weight(1.5f), 
+                        maxLines = 3,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+                    )
                     OutlinedTextField(
                         value = vm.currentTaskEstimation.intValue.let { if(it == 0) "" else it.toString() },
                         onValueChange = { vm.currentTaskEstimation.intValue = it.toIntOrNull() ?: 0 },
@@ -1473,8 +1487,19 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
                     )
                     Spacer(Modifier.width(6.dp))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(text = task.title, style = MaterialTheme.typography.bodyMedium.copy(textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        if (task.notes.isNotBlank()) Text(text = task.notes, style = MaterialTheme.typography.bodySmall, color = Color.Gray, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(
+                            text = task.title, 
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                            )
+                        )
+                        if (task.notes.isNotBlank()) Text(
+                            text = task.notes, 
+                            style = MaterialTheme.typography.bodySmall, 
+                            color = Color.Gray, 
+                            maxLines = 2, 
+                            overflow = TextOverflow.Ellipsis
+                        )
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = "[${task.category}]",
@@ -3640,7 +3665,7 @@ fun TaskSlicerDialog(vm: TaskViewModel, isEnglish: Boolean) {
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
                                 Icon(Icons.Default.SubdirectoryArrowRight, null, modifier = Modifier.size(16.dp), tint = Color.Gray)
                                 Spacer(Modifier.width(8.dp))
-                                Text(step, fontSize = 13.sp)
+                                Text(step, fontSize = 13.sp, modifier = Modifier.weight(1f))
                             }
                         }
                     }
@@ -4040,7 +4065,7 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
                             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Box(modifier = Modifier.size(8.dp).background(if(task.priority == 2) AccentRed else MaterialTheme.colorScheme.primary, CircleShape))
                                 Spacer(Modifier.width(12.dp))
-                                Column {
+                                Column(modifier = Modifier.weight(1f)) {
                                     Text(task.title, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                                     val timeStr = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(task.dueDate))
                                     Text(timeStr, fontSize = 10.sp, color = Color.Gray)

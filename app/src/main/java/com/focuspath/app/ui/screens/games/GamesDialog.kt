@@ -290,7 +290,13 @@ fun StroopGame(vm: TaskViewModel, onExit: () -> Unit) {
                     Text("Skor: $score | Seviye: $level", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     Text("Süre: $timeLeft", color = if (timeLeft < 5) Color.Red else MaterialTheme.colorScheme.primary, fontWeight = FontWeight.ExtraBold)
                 }
-                TextButton(onClick = { isFinished = true }) { Text("BİTİR VE ÖDÜLÜ AL", color = Color.Red, fontWeight = FontWeight.Bold, fontSize = 10.sp) }
+                TextButton(
+                    onClick = { isFinished = true },
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                    modifier = Modifier.height(32.dp)
+                ) { 
+                    Text("BİTİR VE ÖDÜLÜ AL", color = Color.Red, fontWeight = FontWeight.Bold, fontSize = 10.sp) 
+                }
             }
             Spacer(Modifier.height(20.dp)); Text("YAZININ RENGİNİ SEÇ!", style = MaterialTheme.typography.labelSmall)
             Spacer(Modifier.height(10.dp)); Text(text = currentPair.first, color = textColor, fontSize = 42.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
@@ -347,8 +353,14 @@ fun MemoryGame(vm: TaskViewModel, onExit: () -> Unit) {
                 }
                 Row {
                     HintButton(vm) { val oldRevealed = revealed.toList(); revealed.clear(); revealed.addAll(gameIcons.indices); android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ revealed.clear(); revealed.addAll(oldRevealed) }, 1000) }
-                    Spacer(Modifier.width(8.dp))
-                    TextButton(onClick = { isFinished = true }) { Text("BİTİR", color = Color.Red, fontWeight = FontWeight.Bold) }
+                    Spacer(Modifier.width(4.dp))
+                    TextButton(
+                        onClick = { isFinished = true },
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                        modifier = Modifier.height(32.dp)
+                    ) { 
+                        Text("BİTİR", color = Color.Red, fontWeight = FontWeight.Bold, fontSize = 12.sp) 
+                    }
                 }
             }
             Spacer(Modifier.height(8.dp))
@@ -410,7 +422,13 @@ fun CubeCountGame(vm: TaskViewModel, onExit: () -> Unit) {
         Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("Skor: $score | Seviye: $level", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                TextButton(onClick = { isFinished = true }) { Text("BİTİR", color = Color.Red, fontWeight = FontWeight.Bold) }
+                TextButton(
+                    onClick = { isFinished = true },
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                    modifier = Modifier.height(32.dp)
+                ) { 
+                    Text("BİTİR", color = Color.Red, fontWeight = FontWeight.Bold, fontSize = 12.sp) 
+                }
             }
 
             when (gameState) {
@@ -526,7 +544,13 @@ fun ArcherGame(vm: TaskViewModel, onExit: () -> Unit) {
         Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text("Skor: $score", fontWeight = FontWeight.Bold, color = terminalColor)
-                TextButton(onClick = { isFinished = true }) { Text("BİTİR", color = Color.Red, fontWeight = FontWeight.Bold) }
+                TextButton(
+                    onClick = { isFinished = true },
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                    modifier = Modifier.height(32.dp)
+                ) { 
+                    Text("BİTİR", color = Color.Red, fontWeight = FontWeight.Bold, fontSize = 12.sp) 
+                }
             }
             Text("Kalan Ok: $shotsLeft", fontWeight = FontWeight.Bold); Text(gameMessage, style = MaterialTheme.typography.labelSmall, color = terminalColor)
             Box(modifier = Modifier.height(350.dp).fillMaxWidth().padding(20.dp).background(Color.Black.copy(alpha = 0.2f), RoundedCornerShape(12.dp)).border(1.dp, terminalColor.copy(0.3f), RoundedCornerShape(12.dp)).clickable(enabled = !isFiring) { isFiring = true }, contentAlignment = Alignment.Center) {
@@ -633,8 +657,14 @@ fun SudokuGame(vm: TaskViewModel, onExit: () -> Unit) {
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("SÜRE: $timeLeft", color = if (timeLeft < 10) Color.Red else terminalColor, fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
-                    Spacer(Modifier.width(8.dp))
-                    TextButton(onClick = { isFinished = true }) { Text("BİTİR", color = Color.Red, fontWeight = FontWeight.Bold) }
+                    Spacer(Modifier.width(4.dp))
+                    TextButton(
+                        onClick = { isFinished = true },
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                        modifier = Modifier.height(32.dp)
+                    ) { 
+                        Text("BİTİR", color = Color.Red, fontWeight = FontWeight.Bold, fontSize = 12.sp) 
+                    }
                 }
             }
             Spacer(Modifier.height(15.dp))
@@ -844,7 +874,13 @@ fun MathBallGame(vm: TaskViewModel, onExit: () -> Unit) {
                     Text("Skor: $score | Seviye: $level", fontWeight = FontWeight.Bold, color = terminalColor)
                     Text("Süre: $timeLeft", color = if (timeLeft < 5) Color.Red else terminalColor, fontWeight = FontWeight.ExtraBold)
                 }
-                TextButton(onClick = { isFinished = true }) { Text("BİTİR", color = Color.Red, fontWeight = FontWeight.Bold) }
+                TextButton(
+                    onClick = { isFinished = true },
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                    modifier = Modifier.height(32.dp)
+                ) { 
+                    Text("BİTİR", color = Color.Red, fontWeight = FontWeight.Bold, fontSize = 12.sp) 
+                }
             }
             Spacer(Modifier.height(30.dp)); Text("HESAPLA VE DOĞRU TOPA DOKUN!", style = MaterialTheme.typography.labelSmall); Spacer(Modifier.height(10.dp)); Text(text = "${currentQuestion.firstNum} ${currentQuestion.op} ${currentQuestion.secondNum} = ?", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = terminalColor)
             Spacer(Modifier.weight(1f))
@@ -919,8 +955,14 @@ fun SpotDifferenceGame(vm: TaskViewModel, onExit: () -> Unit) {
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("SÜRE: $timeLeft", color = if (timeLeft < 7) Color.Red else terminalColor, fontWeight = FontWeight.ExtraBold)
-                    Spacer(Modifier.width(8.dp))
-                    TextButton(onClick = { isFinished = true }) { Text("BİTİR", color = Color.Red, fontWeight = FontWeight.Bold) }
+                    Spacer(Modifier.width(4.dp))
+                    TextButton(
+                        onClick = { isFinished = true },
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                        modifier = Modifier.height(32.dp)
+                    ) { 
+                        Text("BİTİR", color = Color.Red, fontWeight = FontWeight.Bold, fontSize = 12.sp) 
+                    }
                 }
             }
             Text("Farklı olan sembolü bul!", style = MaterialTheme.typography.labelSmall, color = terminalColor)
@@ -981,8 +1023,14 @@ fun MemoryMatrixGame(vm: TaskViewModel, onExit: () -> Unit) {
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     HintButton(vm) { gameState = "SHOWING" }
-                    Spacer(Modifier.width(8.dp))
-                    TextButton(onClick = { isFinished = true }) { Text("BİTİR", color = Color.Red, fontWeight = FontWeight.Bold) }
+                    Spacer(Modifier.width(4.dp))
+                    TextButton(
+                        onClick = { isFinished = true },
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                        modifier = Modifier.height(32.dp)
+                    ) { 
+                        Text("BİTİR", color = Color.Red, fontWeight = FontWeight.Bold, fontSize = 12.sp) 
+                    }
                 }
             }
             Text(text = when(gameState) { "PREVIEW" -> "HAZIR MISIN?"; "SHOWING" -> "YEŞİL KARELERİ HATIRLA!"; "PLAYING" -> "KARELERİ SEÇ!"; else -> "" }, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
@@ -1005,7 +1053,13 @@ fun FindBallGame(vm: TaskViewModel, onExit: () -> Unit) {
     else {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxSize()) {
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.End) {
-                TextButton(onClick = { isFinished = true }) { Text("BİTİR", color = Color.Red, fontWeight = FontWeight.Bold) }
+                TextButton(
+                    onClick = { isFinished = true },
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                    modifier = Modifier.height(32.dp)
+                ) { 
+                    Text("BİTİR", color = Color.Red, fontWeight = FontWeight.Bold, fontSize = 12.sp) 
+                }
             }
             Text(text = when(gameState) { "PREVIEW" -> "TOPU UNUTMA!"; "SHUFFLING" -> "DİKKATLE TAKİP ET..."; "GUESSING" -> "TOP HANGİ BARDAKTA?"; else -> "SONUÇ" }, fontWeight = FontWeight.Bold, color = terminalColor); Spacer(Modifier.height(50.dp))
             Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
@@ -1158,7 +1212,13 @@ fun MazeGame(vm: TaskViewModel, onExit: () -> Unit) {
                         Text("Puan: $score", fontWeight = FontWeight.Bold, color = terminalColor)
                         Text("Süre: $timeLeft", color = if (timeLeft < 10) Color.Red else terminalColor, fontWeight = FontWeight.ExtraBold)
                     }
-                    TextButton(onClick = { isFinished = true }) { Text("BİTİR", color = Color.Red, fontWeight = FontWeight.Bold) }
+                    TextButton(
+                    onClick = { isFinished = true },
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                    modifier = Modifier.height(32.dp)
+                ) { 
+                    Text("BİTİR", color = Color.Red, fontWeight = FontWeight.Bold, fontSize = 12.sp) 
+                }
                 }
                 Spacer(Modifier.height(8.dp))
                 Box(modifier = Modifier.size(280.dp).background(Color.Black.copy(alpha = 0.2f), RoundedCornerShape(8.dp)).border(1.dp, terminalColor.copy(0.3f), RoundedCornerShape(8.dp)).padding(4.dp)) {

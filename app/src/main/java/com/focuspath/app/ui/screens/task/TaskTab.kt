@@ -159,9 +159,23 @@ fun TaskTab(
                 }
             }
             Spacer(Modifier.height(10.dp))
-            OutlinedTextField(value = taskInput, onValueChange = { taskInput = it }, label = { Text(if(isEnglish) "Task Title" else "Görev Başlığı") }, modifier = Modifier.fillMaxWidth(), singleLine = true, keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next))
+            OutlinedTextField(
+                value = taskInput, 
+                onValueChange = { taskInput = it }, 
+                label = { Text(if(isEnglish) "Task Title" else "Görev Başlığı") }, 
+                modifier = Modifier.fillMaxWidth(), 
+                maxLines = 2, 
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+            )
             Spacer(Modifier.height(8.dp))
-            OutlinedTextField(value = taskNotes, onValueChange = { taskNotes = it }, label = { Text(if(isEnglish) "Details (Optional)" else "Notlar (Opsiyonel)") }, modifier = Modifier.fillMaxWidth(), singleLine = true, keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next))
+            OutlinedTextField(
+                value = taskNotes, 
+                onValueChange = { taskNotes = it }, 
+                label = { Text(if(isEnglish) "Details (Optional)" else "Notlar (Opsiyonel)") }, 
+                modifier = Modifier.fillMaxWidth(), 
+                maxLines = 3, 
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+            )
             Spacer(Modifier.height(8.dp))
             OutlinedTextField(
                 value = taskDuration, 
