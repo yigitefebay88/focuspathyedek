@@ -115,6 +115,8 @@ class TaskViewModel @Inject constructor(
     val userEmail = mutableStateOf("")
     val userName = mutableStateOf(prefs.getString("user_name", "ANONYMOUS") ?: "ANONYMOUS")
     val userPhotoUrl = mutableStateOf<String?>(prefs.getString("user_photo_url", null))
+    private val _localUserXp = MutableStateFlow(prefs.getInt("user_xp", 0).toLong())
+    private val _localUserPhoto = MutableStateFlow(prefs.getString("user_photo_url", null))
     val userStreak = mutableStateOf(5)
     val userCoins = mutableStateOf(prefs.getInt("user_coins", 0))
     val lifetimeCoins = mutableStateOf(prefs.getInt("lifetime_coins", 0))
@@ -620,18 +622,39 @@ class TaskViewModel @Inject constructor(
     private val _leaderboard = MutableStateFlow<List<LeaderboardUser>>(emptyList())
     val leaderboard: StateFlow<List<LeaderboardUser>> = combine(
         _leaderboard,
-        snapshotFlow { userPhotoUrl.value }
-    ) { users, localPhoto ->
-        users.map { user ->
-            // Daha agresif e-posta ve UID eşleşmesi
-            val isMe = user.uid == firebaseAuth.currentUser?.uid || 
-                       (user.email.isNotBlank() && user.email.equals(userEmail.value, ignoreCase = true))
+        _localUserXp,
+        _localUserPhoto
+    ) { users, localXp, localPhoto ->
+        try {
+            val currentUid = firebaseAuth.currentUser?.uid
+            val currentEmail = userEmail.value
             
-            if (isMe) {
-                user.copy(photoUrl = localPhoto)
-            } else {
-                user
+            var foundMe = false
+            val mappedUsers = users.map { user ->
+                val isMe = (currentUid != null && user.uid == currentUid) || 
+                           (user.email.isNotBlank() && user.email.equals(currentEmail, ignoreCase = true))
+                
+                if (isMe) {
+                    foundMe = true
+                    user.copy(photoUrl = localPhoto, score = localXp)
+                } else {
+                    user
+                }
+            }.toMutableList()
+
+            if (!foundMe && currentUid != null) {
+                mappedUsers.add(LeaderboardUser(
+                    uid = currentUid,
+                    name = if (userName.value == "ANONYMOUS") (firebaseAuth.currentUser?.displayName ?: "Me") else userName.value,
+                    email = currentEmail,
+                    score = localXp,
+                    photoUrl = localPhoto
+                ))
             }
+
+            mappedUsers.sortedByDescending { it.score }
+        } catch (e: Exception) {
+            users
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -913,6 +936,7 @@ class TaskViewModel @Inject constructor(
                     .apply()
                 
                 userPhotoUrl.value = cacheBustedPath
+                _localUserPhoto.value = cacheBustedPath
 
                 withContext(Dispatchers.Main) {
                     Toast.makeText(application, "Profil fotoğrafı güncellendi.", Toast.LENGTH_SHORT).show()
@@ -958,6 +982,7 @@ class TaskViewModel @Inject constructor(
                             
                             withContext(Dispatchers.Main) {
                                 userPhotoUrl.value = finalPhotoUrl
+                                _localUserPhoto.value = finalPhotoUrl
                             }
                             android.util.Log.d("FocusPathAuth", "Firebase senkronizasyonu başarılı.")
                         }
@@ -1700,6 +1725,7 @@ class TaskViewModel @Inject constructor(
         val cloudXp = doc.getLong("user_xp")?.toInt() ?: 0
         if (cloudXp > userXp.value) {
             userXp.value = cloudXp
+            _localUserXp.value = cloudXp.toLong()
             prefs.edit().putInt("user_xp", cloudXp).apply()
         }
         val cloudCoins = doc.getLong("user_coins")?.toInt() ?: 0
@@ -1758,6 +1784,7 @@ class TaskViewModel @Inject constructor(
                             if (cloudSyncTime > localUpdateTime || currentPhoto.isBlank()) {
                                 android.util.Log.d("FocusPathAuth", "Applying cloud photo: ${cloudPhoto.take(20)}...")
                                 userPhotoUrl.value = cloudPhoto
+                                _localUserPhoto.value = cloudPhoto
                                 prefs.edit().putString("user_photo_url", cloudPhoto).apply()
                             }
                         } else {
@@ -2651,6 +2678,7 @@ class TaskViewModel @Inject constructor(
         val finalAmount = (amount * (1f + bonusMultiplier)).toInt()
         
         userXp.value += finalAmount 
+        _localUserXp.value = userXp.value.toLong()
         prefs.edit().putInt("user_xp", userXp.value).apply() 
         syncXpToFirestore() 
         syncProfileToFirestore() 
