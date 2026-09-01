@@ -2179,11 +2179,6 @@ class TaskViewModel @Inject constructor(
                     
                     _leaderboard.value = users
                     initializeWorkers()
-                    
-                    // UI'da görsel onay
-                    viewModelScope.launch(Dispatchers.Main) {
-                        Toast.makeText(application, "Leaderboard Güncellendi (${users.size})", Toast.LENGTH_SHORT).show()
-                    }
                 }
             }
         
