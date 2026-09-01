@@ -2030,29 +2030,45 @@ class TaskViewModel @Inject constructor(
         
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val teamDoc = firestore.collection("teams").document(currentTeamId).get().await()
-                val team = teamDoc.toObject(Team::class.java)
-                
-                if (team != null) {
-                    val updatedMembers = team.memberEmails.filter { it != email }
-                    if (updatedMembers.isEmpty()) {
-                        firestore.collection("teams").document(currentTeamId).delete().await()
-                    } else {
-                        firestore.collection("teams").document(currentTeamId).update("memberEmails", updatedMembers).await()
+                // 1. TAKIMDAN ÇIK (Best-effort update)
+                try {
+                    val teamDoc = firestore.collection("teams").document(currentTeamId).get().await()
+                    if (teamDoc.exists()) {
+                        val team = teamDoc.toObject(Team::class.java)
+                        if (team != null) {
+                            val updatedMembers = team.memberEmails.filter { it.lowercase() != email }
+                            if (updatedMembers.isEmpty()) {
+                                try {
+                                    firestore.collection("teams").document(currentTeamId).delete().await()
+                                } catch (e: Exception) {
+                                    // Silme yetkisi yoksa (eğer creator değilse) en azından listeyi boşalt
+                                    firestore.collection("teams").document(currentTeamId).update("memberEmails", emptyList<String>()).await()
+                                }
+                            } else {
+                                firestore.collection("teams").document(currentTeamId).update("memberEmails", updatedMembers).await()
+                            }
+                        }
                     }
+                } catch (e: Exception) {
+                    android.util.Log.w("FocusPathTeam", "Team doc update failed during leave: ${e.message}")
                 }
 
-                // Kullanıcı profilinden takım ID'sini kaldır
-                val updateMap = mutableMapOf<String, Any?>("teamId" to null)
-                firestore.collection("users").document(user.uid).update(updateMap).await()
-                firestore.collection("leaderboard").document(user.uid).update(updateMap).await()
+                // 2. KENDİ PROFİLİNDEN TAKIM BİLGİSİNİ KALDIR (Kritik İşlem)
+                val updateMap = mapOf<String, Any?>("teamId" to null)
+                firestore.collection("users").document(user.uid).set(updateMap, com.google.firebase.firestore.SetOptions.merge()).await()
+                if (user.email != null) {
+                    firestore.collection("users").document(user.email!!.lowercase()).set(updateMap, com.google.firebase.firestore.SetOptions.merge()).await()
+                }
+                firestore.collection("leaderboard").document(user.uid).set(updateMap, com.google.firebase.firestore.SetOptions.merge()).await()
 
                 withContext(Dispatchers.Main) {
                     userTeam.value = null
                     teamMembers.clear()
                     onSuccess()
                 }
-            } catch (e: Exception) {}
+            } catch (e: Exception) {
+                android.util.Log.e("FocusPathTeam", "Critical error in leaveTeam: ${e.message}")
+            }
         }
     }
 

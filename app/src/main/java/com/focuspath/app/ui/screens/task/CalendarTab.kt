@@ -176,7 +176,13 @@ fun UserProfileDialog(
                 if (user.isFocusing && !user.currentTaskTitle.isNullOrBlank()) {
                     Column {
                         Text("CURRENT TASK", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-                        Text(user.currentTaskTitle, style = MaterialTheme.typography.bodySmall, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+                        Text(
+                            user.currentTaskTitle, 
+                            style = MaterialTheme.typography.bodySmall, 
+                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                            modifier = Modifier.basicMarquee(),
+                            maxLines = 1
+                        )
                     }
                 }
             }

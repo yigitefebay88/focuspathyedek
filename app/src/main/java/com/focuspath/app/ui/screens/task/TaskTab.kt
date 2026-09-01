@@ -310,6 +310,8 @@ fun TaskTab(
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = task.title, 
+                                        modifier = Modifier.basicMarquee(),
+                                        maxLines = 1,
                                         style = MaterialTheme.typography.bodyMedium.copy(
                                             textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
                                             fontWeight = if (task.isCompleted) FontWeight.Normal else FontWeight.Bold

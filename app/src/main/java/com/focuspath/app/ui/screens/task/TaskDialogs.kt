@@ -7,6 +7,7 @@ import android.content.Intent
 import android.os.Build
 import android.widget.Toast
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -201,7 +202,13 @@ fun ReminderDialog(
         title = { Text("Hatırlatıcı Kur", color = MaterialTheme.colorScheme.onSurface) },
         text = {
             Column {
-                Text("Görev: ${task.title}", color = Color.Gray, fontSize = 13.sp)
+                Text(
+                    text = "Görev: ${task.title}", 
+                    color = Color.Gray, 
+                    fontSize = 13.sp,
+                    modifier = Modifier.basicMarquee(),
+                    maxLines = 1
+                )
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(value = reminderMinutes, onValueChange = { reminderMinutes = it }, placeholder = { Text("Kaç dakika sonra?", color = Color.Gray) }, singleLine = true, modifier = Modifier.fillMaxWidth())
             }
@@ -1014,9 +1021,13 @@ fun TeamManagementDialog(
                                 }
                             }
 
-                            // LEAVE BUTTON
                             TextButton(
-                                onClick = { vm.leaveTeam { Toast.makeText(context, "Takımdan ayrıldınız.", Toast.LENGTH_SHORT).show() } },
+                                onClick = { 
+                                    vm.leaveTeam { 
+                                        Toast.makeText(context, "Takımdan ayrıldınız.", Toast.LENGTH_SHORT).show()
+                                        onDismiss()
+                                    } 
+                                },
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = ButtonDefaults.textButtonColors(contentColor = AccentRed.copy(0.7f))
                             ) {

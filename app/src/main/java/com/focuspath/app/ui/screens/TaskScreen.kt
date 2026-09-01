@@ -27,6 +27,7 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -145,7 +146,8 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
                         fontWeight = FontWeight.Black,
                         fontSize = 10.sp,
                         color = AccentRed,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f).basicMarquee(),
+                        maxLines = 1
                     )
                 }
             }
@@ -1489,6 +1491,8 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = task.title, 
+                            modifier = Modifier.basicMarquee(),
+                            maxLines = 1,
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None
                             )
@@ -4066,7 +4070,13 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
                                 Box(modifier = Modifier.size(8.dp).background(if(task.priority == 2) AccentRed else MaterialTheme.colorScheme.primary, CircleShape))
                                 Spacer(Modifier.width(12.dp))
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(task.title, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    Text(
+                                        task.title, 
+                                        fontWeight = FontWeight.Bold, 
+                                        fontSize = 13.sp,
+                                        modifier = Modifier.basicMarquee(),
+                                        maxLines = 1
+                                    )
                                     val timeStr = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(task.dueDate))
                                     Text(timeStr, fontSize = 10.sp, color = Color.Gray)
                                 }
