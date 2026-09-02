@@ -42,6 +42,7 @@ import com.focuspath.app.ui.theme.AccentRed
 import com.focuspath.app.ui.theme.AccentYellow
 import com.focuspath.app.ui.viewmodel.TaskViewModel
 import com.focuspath.app.ui.viewmodel.RadioStation
+import com.focuspath.app.ui.viewmodel.DopamineItem
 import kotlinx.coroutines.delay
 import com.focuspath.app.ui.theme.TerminalGreen
 import kotlinx.coroutines.launch
@@ -255,6 +256,64 @@ fun WeeklyAnalyticsDialog(vm: TaskViewModel, isEnglish: Boolean, onDismiss: () -
             Button(onClick = onDismiss) { Text(if(isEnglish) "GOT IT" else "ANLADIM") }
         }
     )
+}
+
+@Composable
+fun DopamineMenuDialog(vm: TaskViewModel, isEnglish: Boolean, onDismiss: () -> Unit) {
+    val items = vm.dopamineMenu
+    
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Column {
+                        Text(if(isEnglish) "DOPAMINE MENU" else "DOPAMİN MENÜSÜ", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+                        Text(if(isEnglish) "Healthy alternatives to scrolling" else "Sosyal medya yerine sağlıklı mola seçenekleri", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                    }
+                    IconButton(onClick = onDismiss) { Icon(Icons.Default.Close, null) }
+                }
+                
+                Spacer(Modifier.height(24.dp))
+                
+                LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    val categories = listOf(
+                        (if(isEnglish) "Appetizers (2-5 min)" else "Mezeler (2-5 dk)") to "Appetizer",
+                        (if(isEnglish) "Main Courses (15-20 min)" else "Ana Yemekler (15-20 dk)") to "Main",
+                        (if(isEnglish) "Desserts (Rewards)" else "Tatlılar (Ödüller)") to "Dessert"
+                    )
+                    
+                    categories.forEach { (label, key) ->
+                        item {
+                            Text(label, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f))
+                        }
+                        
+                        items(items.filter { it.category == key }) { item ->
+                            Card(
+                                onClick = { vm.completeDopamineActivity(item, isEnglish) },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                            ) {
+                                Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text(item.icon, fontSize = 24.sp)
+                                    Spacer(Modifier.width(16.dp))
+                                    Text(if(isEnglish) item.titleEn else item.titleTr, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                                }
+                            }
+                        }
+                        
+                        item { Spacer(Modifier.height(8.dp)) }
+                    }
+                }
+                
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    text = if(isEnglish) "💡 Brain Tip: Healthy dopamine builds lasting focus." else "💡 Bilgi: Sağlıklı dopamin, kalıcı odaklanma inşa eder.",
+                    style = MaterialTheme.typography.labelSmall, color = Color.Gray, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
 }
 
 @Composable

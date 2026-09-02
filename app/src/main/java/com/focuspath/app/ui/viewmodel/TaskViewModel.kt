@@ -216,6 +216,10 @@ class TaskViewModel @Inject constructor(
     val aiHistoryInsight = mutableStateOf<String?>(null)
     val isAnalyzingHistory = mutableStateOf(false)
 
+    // DOPAMINE MENU STATE
+    val dopamineMenu = mutableStateListOf<DopamineItem>()
+    val showDopamineMenu = mutableStateOf(false)
+
     private val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
     private val todayStr: String get() = synchronized(sdf) { sdf.format(Date()) }
 
@@ -826,6 +830,32 @@ class TaskViewModel @Inject constructor(
         checkPlantHealth()
         fetchYesterdayStats()
         updateAmbientSounds() // Başlangıçta sesleri kontrol et
+        loadDopamineMenu()
+    }
+
+    private fun loadDopamineMenu() {
+        dopamineMenu.clear()
+        dopamineMenu.addAll(listOf(
+            DopamineItem(titleTr = "Bir bardak su iç", titleEn = "Drink a glass of water", category = "Appetizer", icon = "💧"),
+            DopamineItem(titleTr = "Derin nefes al (2 dk)", titleEn = "Deep breathing (2 min)", category = "Appetizer", icon = "🌬️"),
+            DopamineItem(titleTr = "Pencereden dışarı bak", titleEn = "Look out the window", category = "Appetizer", icon = "🪟"),
+            DopamineItem(titleTr = "Kısa bir yürüyüş", titleEn = "Take a short walk", category = "Main", icon = "🚶"),
+            DopamineItem(titleTr = "10 sayfa kitap oku", titleEn = "Read 10 pages", category = "Main", icon = "📚"),
+            DopamineItem(titleTr = "Masayı topla", titleEn = "Tidy up your desk", category = "Main", icon = "🧹"),
+            DopamineItem(titleTr = "En sevdiğin şarkıyı dinle", titleEn = "Listen to your favorite song", category = "Dessert", icon = "🎵"),
+            DopamineItem(titleTr = "Bir meyve ye", titleEn = "Eat a piece of fruit", category = "Dessert", icon = "🍎")
+        ))
+    }
+
+    fun completeDopamineActivity(item: DopamineItem, isEnglish: Boolean) {
+        viewModelScope.launch {
+            // Ödülleri kaldırdık (Suistimali önlemek için)
+            // Sadece bir plan/seçim olarak çalışacak
+            
+            showDopamineMenu.value = false
+            val msg = if(isEnglish) "Enjoy your '${item.titleEn}' break!" else "'${item.titleTr}' molasının tadını çıkar!"
+            Toast.makeText(application, msg, Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun fetchYesterdayStats() {
@@ -3516,3 +3546,11 @@ data class DirectMessage(
 )
 
 data class AppInfo(val name: String, val packageName: String, val icon: android.graphics.drawable.Drawable)
+
+data class DopamineItem(
+    val id: String = UUID.randomUUID().toString(),
+    val titleTr: String,
+    val titleEn: String,
+    val category: String, // "Appetizer", "Main", "Dessert"
+    val icon: String
+)

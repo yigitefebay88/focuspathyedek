@@ -562,6 +562,10 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
         DailyBriefingDialog(vm, isEnglish)
     }
 
+    if (vm.showDopamineMenu.value) {
+        com.focuspath.app.ui.screens.task.DopamineMenuDialog(vm, isEnglish) { vm.showDopamineMenu.value = false }
+    }
+
     if (vm.showConfetti.value) {
         Box(modifier = Modifier.fillMaxSize()) {
             AndroidView(
@@ -3962,6 +3966,39 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
                             modifier = Modifier.basicMarquee()
                         )
                     }
+                }
+            }
+        }
+
+        // DOPAMINE MENU BUTTON
+        item(key = "home_dopamenu") {
+            Card(
+                onClick = { vm.showDopamineMenu.value = true },
+                modifier = Modifier.fillMaxWidth().animateItemPlacement(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("☕", fontSize = 24.sp)
+                    Spacer(Modifier.width(16.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if(isEnglish) "DOPAMINE MENU" else "DOPAMİN MENÜSÜ",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = if(isEnglish) "Need a break? Choose a healthy activity." else "Molaya mı ihtiyacın var? Sağlıklı bir aktivite seç.",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                    Icon(Icons.Default.ChevronRight, null, tint = MaterialTheme.colorScheme.primary)
                 }
             }
         }
