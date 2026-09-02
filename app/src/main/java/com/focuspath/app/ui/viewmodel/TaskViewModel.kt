@@ -778,6 +778,7 @@ class TaskViewModel @Inject constructor(
     }
 
     init {
+        loadOnboardingTasks() // ÖNCE GÖREVLERİ YÜKLE
         setupSoundPool()
         checkRemoteUpdate()
         
@@ -826,7 +827,6 @@ class TaskViewModel @Inject constructor(
         initializeWorkers()
         startWorkerSimulation()
         syncTimerWithService()
-        loadOnboardingTasks()
         checkPlantHealth()
         fetchYesterdayStats()
         updateAmbientSounds() // Başlangıçta sesleri kontrol et
@@ -965,25 +965,34 @@ class TaskViewModel @Inject constructor(
     }
 
     fun completeOnboardingTask(id: String) {
-        val task = onboardingTasks.find { it.id == id } ?: return
-        if (!task.isCompleted) {
+        val idx = onboardingTasks.indexOfFirst { it.id == id }
+        if (idx == -1) return
+        
+        val task = onboardingTasks[idx]
+        val alreadyDoneInPrefs = prefs.getBoolean("onboarding_$id", false)
+        
+        // Eğer zaten hafızada tamamlanmışsa veya hem hafızada hem prefs'te tamamlanmışsa çık
+        if (task.isCompleted && alreadyDoneInPrefs) return
+
+        if (!alreadyDoneInPrefs) {
+            // Gerçekten ilk kez tamamlanıyor, ödülleri ver
             prefs.edit().putBoolean("onboarding_$id", true).apply()
             addCoins(task.rewardCoins)
             addXp(task.rewardXp)
-            task.isCompleted = true // Listeden silme yerine durumunu güncelle
-            
-            // Reaktif güncellemeyi tetiklemek için listeyi tazele
-            val idx = onboardingTasks.indexOf(task)
-            if (idx != -1) onboardingTasks[idx] = task.copy(isCompleted = true)
-            
-            // Eğer hepsi bittiyse bir kutlama gösterilebilir
-            if (onboardingTasks.isEmpty()) {
-                viewModelScope.launch(Dispatchers.Main) {
-                    playTickSound()
-                    showConfetti.value = true
-                    delay(3000)
-                    showConfetti.value = false
-                }
+        }
+        
+        // Hafıza durumunu her halükarda güncelle (Prefs true ama UI false ise diye)
+        if (!task.isCompleted) {
+            onboardingTasks[idx] = task.copy(isCompleted = true)
+        }
+        
+        // Eğer hepsi bittiyse bir kutlama gösterilebilir
+        if (onboardingTasks.all { it.isCompleted }) {
+            viewModelScope.launch(Dispatchers.Main) {
+                playTickSound()
+                showConfetti.value = true
+                delay(3000)
+                showConfetti.value = false
             }
         }
     }
@@ -1926,6 +1935,7 @@ class TaskViewModel @Inject constructor(
             
             // Eğer yerel verilerimiz eksikse, buluttaki toplamı baz alarak yerel bugün kaydını güçlendir
             updateTodayHistory(focusMins = 0) // Bugünün kaydını oluştur/getir
+            completeOnboardingTask("first_focus") // Zaten odaklanmışsa tamamla
         }
         
                 // Photo and Name sync
@@ -1946,6 +1956,7 @@ class TaskViewModel @Inject constructor(
                                 userPhotoUrl.value = cloudPhoto
                                 _localUserPhoto.value = cloudPhoto
                                 prefs.edit().putString("user_photo_url", cloudPhoto).apply()
+                                completeOnboardingTask("profile_pic") // Fotoğraf varsa tamamla
                             }
                         } else {
                             android.util.Log.d("FocusPathAuth", "Cloud photo rejected: Local priority active.")
@@ -2283,6 +2294,7 @@ class TaskViewModel @Inject constructor(
                 userTeam.value = team
                 
                 if (team != null) {
+                    completeOnboardingTask("join_team") // Takımdaysa görevi tamamla
                     // Takım üyelerini getir
                     firestore.collection("leaderboard")
                         .whereIn("email", team.memberEmails)
@@ -3327,6 +3339,9 @@ class TaskViewModel @Inject constructor(
                 val list = snapshot?.documents?.mapNotNull { it.toObject(LeaderboardUser::class.java) } ?: emptyList()
                 friendsList.clear()
                 friendsList.addAll(list)
+                if (list.isNotEmpty()) {
+                    completeOnboardingTask("add_friend") // Arkadaşı varsa tamamla
+                }
             }
     }
 
