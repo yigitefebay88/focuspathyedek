@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.focuspath.app.data.local.HabitEntity
 import com.focuspath.app.data.local.TaskEntity
 import com.focuspath.app.ui.theme.AccentRed
 import com.focuspath.app.ui.theme.AccentYellow
@@ -44,6 +45,7 @@ fun TaskTab(
     vm: TaskViewModel,
     taskList: List<TaskEntity>,
     allTasksList: List<TaskEntity>,
+    habitList: List<HabitEntity>,
     selectedDate: Long,
     lang: Map<String, String>,
     isEnglish: Boolean,
@@ -67,6 +69,9 @@ fun TaskTab(
     var categoryFilter by remember { mutableStateOf("Tümü") }
     var priorityFilter by remember { mutableStateOf(-1) }
     var dailyFocus by remember { mutableStateOf("") }
+
+    var showAddHabitDialog by remember { mutableStateOf(false) }
+    var habitNameInput by remember { mutableStateOf("") }
 
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
@@ -222,6 +227,43 @@ fun TaskTab(
         }
     }
 
+    val habitSection = @Composable {
+        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = if(isEnglish) "Habit Chain" else "Alışkanlık Zinciri", 
+                    style = MaterialTheme.typography.titleSmall, 
+                    fontWeight = FontWeight.ExtraBold, 
+                    color = MaterialTheme.colorScheme.primary
+                )
+                IconButton(onClick = { showAddHabitDialog = true }, modifier = Modifier.size(24.dp)) { 
+                    Icon(Icons.Default.AddCircle, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp)) 
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            if (habitList.isEmpty()) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                ) {
+                    Text(
+                        if(isEnglish) "Add a habit to start a chain!" else "Zinciri başlatmak için bir alışkanlık ekle!",
+                        fontSize = 10.sp, color = Color.Gray, modifier = Modifier.padding(12.dp),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            } else {
+                androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    items(habitList) { habit ->
+                        HabitCard(habit, vm, isEnglish)
+                    }
+                }
+            }
+        }
+    }
+
     val taskListSection = @Composable {
         Column {
             OutlinedTextField(value = searchQuery, onValueChange = { searchQuery = it }, placeholder = { Text(lang["search"] ?: "", color = Color.Gray) }, leadingIcon = { Icon(Icons.Default.Search, null, tint = Color.Gray) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
@@ -359,13 +401,21 @@ fun TaskTab(
 
     if (isLandscape) {
         Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            Box(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) { taskInputSection() }
+            Box(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) { 
+                Column {
+                    taskInputSection()
+                    habitSection()
+                }
+            }
             Box(modifier = Modifier.weight(1.2f)) { taskListSection() }
         }
     } else {
         Column(modifier = Modifier.fillMaxSize()) {
             Box(modifier = Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
-                taskInputSection()
+                Column {
+                    taskInputSection()
+                    habitSection()
+                }
             }
             Spacer(Modifier.height(10.dp))
             Box(modifier = Modifier.weight(1f)) { 
@@ -374,8 +424,75 @@ fun TaskTab(
         }
     }
 
+    if (showAddHabitDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddHabitDialog = false },
+            title = { Text(if(isEnglish) "New Habit" else "Yeni Alışkanlık") },
+            text = {
+                OutlinedTextField(
+                    value = habitNameInput,
+                    onValueChange = { habitNameInput = it },
+                    label = { Text(if(isEnglish) "Habit Name" else "Alışkanlık Adı") },
+                    singleLine = true
+                )
+            },
+            confirmButton = {
+                Button(onClick = { 
+                    if (habitNameInput.isNotBlank()) {
+                        vm.addHabit(habitNameInput)
+                        habitNameInput = ""
+                        showAddHabitDialog = false
+                    }
+                }) { Text(if(isEnglish) "Add" else "Ekle") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddHabitDialog = false }) { Text(if(isEnglish) "Cancel" else "İptal") }
+            }
+        )
+    }
 
+}
 
+@Composable
+fun HabitCard(habit: HabitEntity, vm: TaskViewModel, isEnglish: Boolean) {
+    val isDoneToday = isSameDayLocal(habit.lastCompletedDate, System.currentTimeMillis())
+    
+    Card(
+        onClick = { vm.toggleHabit(habit) },
+        modifier = Modifier.width(100.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isDoneToday) TerminalGreen.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surface
+        ),
+        border = BorderStroke(1.dp, if(isDoneToday) TerminalGreen else MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+    ) {
+        Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.size(44.dp)) {
+                CircularProgressIndicator(
+                    progress = { 1f },
+                    color = if(isDoneToday) TerminalGreen else Color.Gray.copy(alpha = 0.1f),
+                    modifier = Modifier.fillMaxSize(),
+                    strokeWidth = 2.dp
+                )
+                Icon(
+                    imageVector = if(isDoneToday) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked, 
+                    contentDescription = null, 
+                    tint = if(isDoneToday) TerminalGreen else Color.Gray,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Spacer(Modifier.height(6.dp))
+            Text(habit.title, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurface)
+            Text("${habit.streak} 🔥", fontSize = 10.sp, color = AccentRed, fontWeight = FontWeight.ExtraBold)
+        }
+    }
+}
+
+private fun isSameDayLocal(millis1: Long, millis2: Long): Boolean {
+    if (millis1 == 0L || millis2 == 0L) return false
+    val cal1 = Calendar.getInstance().apply { timeInMillis = millis1 }
+    val cal2 = Calendar.getInstance().apply { timeInMillis = millis2 }
+    return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
+           cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
 }
 
 

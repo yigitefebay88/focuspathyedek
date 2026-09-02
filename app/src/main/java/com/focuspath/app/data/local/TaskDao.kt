@@ -50,4 +50,20 @@ interface TaskDao {
 
     @Query("SELECT SUM(tasksCompleted) FROM focus_history")
     fun getTotalTasksCompleted(): Flow<Int?>
+
+    // HABITS
+    @Query("SELECT * FROM habits ORDER BY id DESC")
+    fun getAllHabits(): Flow<List<HabitEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertHabit(habit: HabitEntity): Long
+
+    @Update
+    suspend fun updateHabit(habit: HabitEntity)
+
+    @Delete
+    suspend fun deleteHabit(habit: HabitEntity)
+
+    @Query("SELECT * FROM habits WHERE id = :id")
+    suspend fun getHabitById(id: Long): HabitEntity?
 }

@@ -65,6 +65,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
 import com.focuspath.app.data.local.TaskEntity
+import com.focuspath.app.data.local.HabitEntity
 import com.focuspath.app.data.model.LeaderboardUser
 import com.focuspath.app.receiver.ReminderReceiver
 import com.focuspath.app.ui.components.AnimatedIconButton
@@ -809,25 +810,16 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
         })
     }
     if (showZenMode) {
-        androidx.compose.ui.window.Dialog(onDismissRequest = { showZenMode = false }, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
-            val infiniteTransition = rememberInfiniteTransition()
-            val breathScale by infiniteTransition.animateFloat(initialValue = 1f, targetValue = 1.3f, animationSpec = infiniteRepeatable(animation = tween(4000, easing = LinearEasing), repeatMode = RepeatMode.Reverse))
-            val breathAlpha by infiniteTransition.animateFloat(initialValue = 0.1f, targetValue = 0.3f, animationSpec = infiniteRepeatable(animation = tween(4000, easing = LinearEasing), repeatMode = RepeatMode.Reverse))
-            Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
-                Box(contentAlignment = Alignment.Center) {
-                    Box(modifier = Modifier.size(280.dp).graphicsLayer(scaleX = breathScale, scaleY = breathScale).background(MaterialTheme.colorScheme.primary.copy(alpha = breathAlpha), CircleShape))
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("FOCUS MODE", color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
-                        val breathingText = when { breathScale < 1.1f -> if (isEnglish) "BREATH IN..." else "NEFES AL..." ; breathScale > 1.2f -> if (isEnglish) "BREATH OUT..." else "NEFES VER..." ; else -> if (isEnglish) "HOLD..." else "TUT..." }
-                        Text(text = breathingText, style = MaterialTheme.typography.titleMedium.copy(letterSpacing = 4.sp), color = MaterialTheme.colorScheme.primary)
-                        Spacer(Modifier.height(20.dp))
-                        val displayTime = if (isPomodoroMode) { val mins = (timeLeft / 1000) / 60; val secs = (timeLeft / 1000) % 60; String.format(Locale.getDefault(), "%02d:%02d", mins, secs) } else { val hours = (timeElapsed / 1000) / 3600; val mins = ((timeElapsed / 1000) % 3600) / 60; val secs = (timeElapsed / 1000) % 60; String.format(Locale.getDefault(), "%02d:%02d:%02d", hours, mins, secs) }
-                        Text(text = displayTime, style = MaterialTheme.typography.displayLarge.copy(fontSize = 80.sp, fontWeight = FontWeight.Light), color = MaterialTheme.colorScheme.primary)
-                        Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) { IconButton(onClick = { vm.toggleTimer(context, !timerRunning) }) { Icon(if (timerRunning) Icons.Default.Pause else Icons.Default.PlayArrow, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(48.dp)) } ; IconButton(onClick = { showZenMode = false }) { Icon(Icons.Default.Close, null, tint = Color.Gray, modifier = Modifier.size(32.dp)) } }
-                    }
-                }
-            }
-        }
+        com.focuspath.app.ui.screens.task.ZenModeDialog(
+            vm = vm,
+            timerRunning = timerRunning,
+            isPomodoroMode = isPomodoroMode,
+            timeLeft = timeLeft,
+            timeElapsed = timeElapsed,
+            isEnglish = isEnglish,
+            onToggleTimer = { vm.toggleTimer(context, !timerRunning) },
+            onDismiss = { showZenMode = false }
+        )
     }
     if (showLiveSession) {
         val lbUsers by vm.leaderboard.collectAsState()
@@ -1001,13 +993,14 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
 
     if (showCertificate) {
         // En güncel veriyi sağlamak için: 
-        // 1. Yerel DB sum
-        // 2. Bugün ViewModel'da biriken (Reaktif state)
-        // 3. Cloud'dan gelen toplam (Başka cihazlar veya reinstall durumu için)
+        // 1. Yerel DB sum + Henüz DB'ye yansımamış olan bugünkü dakikalar
+        // 2. Cloud'dan gelen toplam (Başka cihazlar veya reinstall durumu için)
         val currentDayMins = vm.dailyFocusMinutes.intValue
-        val cloudTotal = vm.totalFocusMinutesCloud.intValue
+        val todayDbMins = todayStats?.totalFocusMinutes ?: 0
+        val pendingMins = (currentDayMins - todayDbMins).coerceAtLeast(0)
         
-        val finalFocusMins = maxOf(totalFocusMins, currentDayMins, cloudTotal)
+        val cloudTotal = vm.totalFocusMinutesCloud.intValue
+        val finalFocusMins = maxOf(totalFocusMins + pendingMins, cloudTotal)
         
         com.focuspath.app.ui.screens.task.CertificateDialog(
             userName = vm.userName.value,
@@ -1193,6 +1186,108 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
                         }
                     }
                 }
+            }
+        }
+
+        // ALISKANLIK ZINCIRI (HABIT CHAIN)
+        item(key = "habit_chain_section") {
+            val habits by vm.allHabits.collectAsState()
+            var showAddHabit by remember { mutableStateOf(false) }
+            var newHabitName by remember { mutableStateOf("") }
+
+            Column(modifier = Modifier.fillMaxWidth().animateItemPlacement()) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = if(isEnglish) "🔥 HABIT CHAIN" else "🔥 ALIŞKANLIK ZİNCİRİ",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AccentRed,
+                        fontWeight = FontWeight.Black,
+                        modifier = Modifier.padding(start = 4.dp, top = 8.dp)
+                    )
+                    IconButton(onClick = { showAddHabit = true }, modifier = Modifier.size(24.dp)) {
+                        Icon(Icons.Default.AddCircle, null, tint = AccentRed, modifier = Modifier.size(18.dp))
+                    }
+                }
+                
+                if (habits.isEmpty()) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.2f)),
+                        border = BorderStroke(1.dp, Color.Gray.copy(alpha = 0.1f))
+                    ) {
+                        Text(
+                            text = if(isEnglish) "Don't break the chain! Add your first habit." else "Zinciri kırma! İlk alışkanlığını ekle.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                } else {
+                    androidx.compose.foundation.lazy.LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+                    ) {
+                        items(habits, key = { it.id }) { habit ->
+                            val isDoneToday = isSameDay(habit.lastCompletedDate, System.currentTimeMillis())
+                            Card(
+                                onClick = { if(!isDoneToday) vm.toggleHabit(habit) },
+                                modifier = Modifier.width(120.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if(isDoneToday) TerminalGreen.copy(alpha = 0.2f) else Color.Black.copy(alpha = 0.4f)
+                                ),
+                                border = BorderStroke(1.dp, if(isDoneToday) TerminalGreen.copy(0.5f) else Color.Gray.copy(alpha = 0.2f))
+                            ) {
+                                Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Box(contentAlignment = Alignment.Center, modifier = Modifier.size(40.dp)) {
+                                        CircularProgressIndicator(
+                                            progress = { 1f },
+                                            color = if(isDoneToday) TerminalGreen else Color.Gray.copy(alpha = 0.1f),
+                                            strokeWidth = 2.dp
+                                        )
+                                        Icon(
+                                            if(isDoneToday) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                                            null,
+                                            tint = if(isDoneToday) TerminalGreen else Color.Gray,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(habit.title, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text("${habit.streak} 🔥", style = MaterialTheme.typography.labelSmall, color = AccentRed, fontWeight = FontWeight.Black)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (showAddHabit) {
+                AlertDialog(
+                    onDismissRequest = { showAddHabit = false },
+                    title = { Text(if(isEnglish) "Add Habit" else "Alışkanlık Ekle") },
+                    text = {
+                        OutlinedTextField(
+                            value = newHabitName,
+                            onValueChange = { newHabitName = it },
+                            placeholder = { Text(if(isEnglish) "e.g. Read Book" else "örn. Kitap Oku") },
+                            singleLine = true
+                        )
+                    },
+                    confirmButton = {
+                        Button(onClick = {
+                            if (newHabitName.isNotBlank()) {
+                                vm.addHabit(newHabitName)
+                                newHabitName = ""
+                                showAddHabit = false
+                            }
+                        }) { Text(if(isEnglish) "Add" else "Ekle") }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showAddHabit = false }) { Text(if(isEnglish) "Cancel" else "İptal") }
+                    }
+                )
             }
         }
 
@@ -3795,6 +3890,77 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
                                 fontWeight = FontWeight.Medium
                             )
                         }
+                    }
+                }
+            }
+        }
+
+        // MINI RADIO ROW
+        item(key = "home_radio") {
+            val currentStation by vm.currentRadioStation
+            val isRadioPlaying by vm.isRadioPlaying
+            val isRadioLoading by vm.isRadioLoading
+
+            Card(
+                modifier = Modifier.fillMaxWidth().animateItemPlacement(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = if(isEnglish) "📻 FOCUS RADIO" else "📻 ODAK RADYOSU",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.Gray,
+                            fontWeight = FontWeight.Bold
+                        )
+                        if (currentStation != null) {
+                            TextButton(onClick = { vm.stopRadio() }, contentPadding = PaddingValues(0.dp)) {
+                                Text(if(isEnglish) "STOP" else "DURDUR", color = AccentRed, fontSize = 10.sp)
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        vm.radioStations.forEach { station ->
+                            val isSelected = currentStation == station
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if(isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.05f))
+                                    .clickable { vm.toggleRadio(station) },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (isSelected && isRadioLoading) {
+                                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                                } else {
+                                    Text(
+                                        text = station.icon, 
+                                        fontSize = 18.sp, 
+                                        modifier = Modifier.alpha(if(isSelected) 1f else 0.6f)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    if (currentStation != null) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = "${if(isEnglish) "Playing" else "Çalıyor"}: ${currentStation?.name}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.basicMarquee()
+                        )
                     }
                 }
             }

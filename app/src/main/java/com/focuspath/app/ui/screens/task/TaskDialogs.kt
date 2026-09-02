@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.focuspath.app.R
 import com.focuspath.app.data.local.TaskEntity
+import com.focuspath.app.data.local.HabitEntity
 import com.focuspath.app.data.model.LeaderboardUser
 import com.focuspath.app.receiver.ReminderReceiver
 import com.focuspath.app.ui.components.CoolGoogleSignInButton
@@ -38,6 +39,7 @@ import com.focuspath.app.ui.components.ProfileImage
 import com.focuspath.app.ui.theme.AccentRed
 import com.focuspath.app.ui.theme.AccentYellow
 import com.focuspath.app.ui.viewmodel.TaskViewModel
+import com.focuspath.app.ui.viewmodel.RadioStation
 import kotlinx.coroutines.delay
 import com.focuspath.app.ui.theme.TerminalGreen
 import kotlinx.coroutines.launch
@@ -54,6 +56,90 @@ import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.foundation.border
 import java.util.*
 import com.focuspath.app.data.local.FocusHistoryEntity
+
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import java.text.SimpleDateFormat
+
+@Composable
+fun FocusBarChart(history: List<FocusHistoryEntity>) {
+    val maxFocus = history.maxOfOrNull { it.totalFocusMinutes }?.coerceAtLeast(60) ?: 60
+    val barColor = MaterialTheme.colorScheme.primary
+    val secondaryColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(180.dp)
+            .padding(vertical = 8.dp)
+            .drawBehind {
+                val gridAlpha = 0.1f
+                for (i in 1..3) {
+                    val y = size.height * (i.toFloat() / 4f)
+                    drawLine(
+                        color = Color.Gray.copy(alpha = gridAlpha),
+                        start = Offset(0f, y),
+                        end = Offset(size.width, y),
+                        strokeWidth = 1.dp.toPx()
+                    )
+                }
+            }
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.Bottom
+        ) {
+            val displayData = history.takeLast(7)
+            displayData.forEach { day ->
+                val barHeightProgress = remember { Animatable(0f) }
+                LaunchedEffect(day.totalFocusMinutes) {
+                    barHeightProgress.animateTo(
+                        targetValue = day.totalFocusMinutes.toFloat() / maxFocus,
+                        animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow)
+                    )
+                }
+
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Bottom,
+                    modifier = Modifier.fillMaxHeight()
+                ) {
+                    if (day.totalFocusMinutes > 0) {
+                        Text(
+                            text = "${day.totalFocusMinutes}",
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = barColor
+                        )
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Box(
+                        modifier = Modifier
+                            .width(28.dp)
+                            .fillMaxHeight(barHeightProgress.value.coerceIn(0.02f, 1f))
+                            .background(
+                                brush = Brush.verticalGradient(
+                                    colors = listOf(barColor, secondaryColor)
+                                ),
+                                shape = RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)
+                            )
+                            .border(1.dp, barColor.copy(alpha = 0.2f), RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    val dayLabel = try {
+                        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+                        val date = sdf.parse(day.date)
+                        SimpleDateFormat("E", Locale.getDefault()).format(date!!)
+                    } catch (e: Exception) {
+                        day.date.takeLast(2)
+                    }
+                    Text(text = dayLabel.uppercase(), fontSize = 9.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
 
 @Composable
 fun WeeklyAnalyticsDialog(vm: TaskViewModel, isEnglish: Boolean, onDismiss: () -> Unit) {
@@ -96,27 +182,7 @@ fun WeeklyAnalyticsDialog(vm: TaskViewModel, isEnglish: Boolean, onDismiss: () -
                     }
 
                     // Bar Chart
-                    Box(modifier = Modifier.fillMaxWidth().height(150.dp).padding(top = 8.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxSize(),
-                            horizontalArrangement = Arrangement.SpaceEvenly,
-                            verticalAlignment = Alignment.Bottom
-                        ) {
-                            val maxFocus = history.maxOf { it.totalFocusMinutes }.coerceAtLeast(1)
-                            history.takeLast(7).forEach { day ->
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    val barHeight = (day.totalFocusMinutes.toFloat() / maxFocus) * 100
-                                    Box(
-                                        modifier = Modifier
-                                            .width(20.dp)
-                                            .height(barHeight.dp)
-                                            .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                                    )
-                                    Text(day.date.takeLast(2), fontSize = 8.sp, color = Color.Gray)
-                                }
-                            }
-                        }
-                    }
+                    FocusBarChart(history = history)
                     
                     Text(
                         text = if(isEnglish) "💡 Pro Tip: Consistency is key to building focus habits." else "💡 Tavsiye: Odaklanma alışkanlığı için süreklilik en önemli kuraldır.",
@@ -259,6 +325,7 @@ fun ReminderDialog(
 
 @Composable
 fun ZenModeDialog(
+    vm: TaskViewModel,
     timerRunning: Boolean,
     isPomodoroMode: Boolean,
     timeLeft: Long,
@@ -271,25 +338,109 @@ fun ZenModeDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
+        val currentStation by vm.currentRadioStation
+        val isRadioPlaying by vm.isRadioPlaying
+        val isRadioLoading by vm.isRadioLoading
+
+        val infiniteTransition = rememberInfiniteTransition(label = "breathing")
+        val breathScale by infiniteTransition.animateFloat(
+            initialValue = 1f, targetValue = 1.3f, 
+            animationSpec = infiniteRepeatable(animation = tween(4000, easing = LinearEasing), repeatMode = RepeatMode.Reverse),
+            label = "scale"
+        )
+        val breathAlpha by infiniteTransition.animateFloat(
+            initialValue = 0.1f, targetValue = 0.3f, 
+            animationSpec = infiniteRepeatable(animation = tween(4000, easing = LinearEasing), repeatMode = RepeatMode.Reverse),
+            label = "alpha"
+        )
+
         Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
-            Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                Text("ZEN MODE", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
-                Spacer(Modifier.height(20.dp))
-                val displayTime = if (isPomodoroMode) {
-                    val mins = (timeLeft / 1000) / 60
-                    val secs = (timeLeft / 1000) % 60
-                    String.format(Locale.getDefault(), "%02d:%02d", mins, secs)
-                } else {
-                    val hours = (timeElapsed / 1000) / 3600
-                    val mins = ((timeElapsed / 1000) % 3600) / 60
-                    val secs = (timeElapsed / 1000) % 60
-                    String.format(Locale.getDefault(), "%02d:%02d:%02d", hours, mins, secs)
-                }
-                Text(text = displayTime, style = MaterialTheme.typography.displayLarge.copy(fontSize = 80.sp, fontWeight = FontWeight.Light), color = MaterialTheme.colorScheme.primary)
-                Spacer(Modifier.height(60.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                    IconButton(onClick = onToggleTimer) { Icon(if (timerRunning) Icons.Default.Pause else Icons.Default.PlayArrow, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(48.dp)) }
-                    IconButton(onClick = onDismiss) { Icon(Icons.Default.Close, null, tint = Color.Gray, modifier = Modifier.size(32.dp)) }
+            Box(contentAlignment = Alignment.Center) {
+                // BREATHING CIRCLE
+                Box(
+                    modifier = Modifier
+                        .size(280.dp)
+                        .graphicsLayer(scaleX = breathScale, scaleY = breathScale)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = breathAlpha), CircleShape)
+                )
+
+                Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                    val breathingText = when { 
+                        breathScale < 1.1f -> if (isEnglish) "BREATH IN..." else "NEFES AL..." 
+                        breathScale > 1.2f -> if (isEnglish) "BREATH OUT..." else "NEFES VER..." 
+                        else -> if (isEnglish) "HOLD..." else "TUT..." 
+                    }
+                    Text(
+                        text = breathingText, 
+                        style = MaterialTheme.typography.titleMedium.copy(letterSpacing = 4.sp), 
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+                    )
+                    
+                    Spacer(Modifier.height(20.dp))
+                    val displayTime = if (isPomodoroMode) {
+                        val mins = (timeLeft / 1000) / 60
+                        val secs = (timeLeft / 1000) % 60
+                        String.format(Locale.getDefault(), "%02d:%02d", mins, secs)
+                    } else {
+                        val hours = (timeElapsed / 1000) / 3600
+                        val mins = ((timeElapsed / 1000) % 3600) / 60
+                        val secs = (timeElapsed / 1000) % 60
+                        String.format(Locale.getDefault(), "%02d:%02d:%02d", hours, mins, secs)
+                    }
+                    Text(text = displayTime, style = MaterialTheme.typography.displayLarge.copy(fontSize = 80.sp, fontWeight = FontWeight.Light), color = MaterialTheme.colorScheme.primary)
+                    
+                    Spacer(Modifier.height(40.dp))
+                    
+                    // FOCUS RADIO SECTION
+                    Text(
+                        text = if(isEnglish) "FOCUS RADIO" else "ODAK RADYOSU", 
+                        style = MaterialTheme.typography.labelSmall, 
+                        color = Color.Gray
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        vm.radioStations.forEach { station ->
+                            val isSelected = currentStation == station
+                            Box(
+                                modifier = Modifier
+                                    .padding(horizontal = 6.dp)
+                                    .size(48.dp)
+                                    .clip(CircleShape)
+                                    .background(if(isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else Color.White.copy(alpha = 0.05f))
+                                    .clickable { vm.toggleRadio(station) },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (isSelected && isRadioLoading) {
+                                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                                } else {
+                                    Text(
+                                        text = station.icon, 
+                                        fontSize = 20.sp, 
+                                        modifier = Modifier.alpha(if(isSelected) 1f else 0.5f)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    if (currentStation != null) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = "Now Playing: ${currentStation?.name}", 
+                            style = MaterialTheme.typography.labelSmall, 
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.basicMarquee()
+                        )
+                    }
+
+                    Spacer(Modifier.height(60.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                        IconButton(onClick = onToggleTimer) { Icon(if (timerRunning) Icons.Default.Pause else Icons.Default.PlayArrow, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(48.dp)) }
+                        IconButton(onClick = { vm.stopRadio() ; onDismiss() }) { Icon(Icons.Default.Close, null, tint = Color.Gray, modifier = Modifier.size(32.dp)) }
+                    }
                 }
             }
         }

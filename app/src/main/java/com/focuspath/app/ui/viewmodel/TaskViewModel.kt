@@ -22,6 +22,7 @@ import androidx.lifecycle.viewModelScope
 import com.focuspath.app.R
 import com.focuspath.app.data.local.TaskDao
 import com.focuspath.app.data.local.TaskEntity
+import com.focuspath.app.data.local.HabitEntity
 import com.focuspath.app.data.local.FocusHistoryEntity
 import com.focuspath.app.data.model.LeaderboardUser
 import com.focuspath.app.data.model.Team
@@ -97,6 +98,14 @@ data class MysteryBoxReward(
     val icon: String
 )
 
+data class RadioStation(
+    val name: String,
+    val url: String,
+    val icon: String,
+    val isLocal: Boolean = false,
+    val resId: Int = 0
+)
+
 @HiltViewModel
 class TaskViewModel @Inject constructor(
     private val application: Application,
@@ -158,6 +167,9 @@ class TaskViewModel @Inject constructor(
     val isMonotasking = mutableStateOf(false)
     val monotask = mutableStateOf<TaskEntity?>(null)
     val showConfetti = mutableStateOf(false)
+
+    // HABITS STATE
+    val allHabits = taskDao.getAllHabits().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // ADHD NEW STATE
     val distractionLog = mutableStateListOf<String>()
@@ -691,9 +703,14 @@ class TaskViewModel @Inject constructor(
 
     private var rainPlayer: MediaPlayer? = null
     private var fireplacePlayer: MediaPlayer? = null
+    private var radioPlayer: MediaPlayer? = null
 
     val isRainEnabled = mutableStateOf(prefs.getBoolean("is_rain_enabled", false))
     val isFireplaceEnabled = mutableStateOf(prefs.getBoolean("is_fireplace_enabled", false))
+    
+    val currentRadioStation = mutableStateOf<RadioStation?>(null)
+    val isRadioPlaying = mutableStateOf(false)
+    val isRadioLoading = mutableStateOf(false)
 
     // SHARED PREFERENCES LISTENER FOR REAL-TIME SYNC
     private val prefsListener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { sharedPrefs, key ->
@@ -1197,6 +1214,75 @@ class TaskViewModel @Inject constructor(
                 mouseStreamId = 0
             }
         }
+    }
+
+    // FOCUS RADIO LOGIC
+    val radioStations = listOf(
+        RadioStation("Lofi Girl", "https://stream.zeno.fm/0r0xa792kwzuv", "🎧"),
+        RadioStation("Chill Hop", "https://stream.zeno.fm/f3wvbbqmdzzuv", "☕"),
+        RadioStation("Deep Focus", "https://stream.zeno.fm/s08233yzdzzuv", "🧠"),
+        RadioStation("Rainy Mood", "", "🌧️", isLocal = true, resId = com.focuspath.app.R.raw.rain),
+        RadioStation("Fireplace", "", "🔥", isLocal = true, resId = com.focuspath.app.R.raw.fireplace)
+    )
+
+    fun toggleRadio(station: RadioStation) {
+        if (currentRadioStation.value == station && isRadioPlaying.value) {
+            stopRadio()
+        } else {
+            startRadio(station)
+        }
+    }
+
+    private fun startRadio(station: RadioStation) {
+        stopRadio()
+        currentRadioStation.value = station
+        isRadioLoading.value = true
+        
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                radioPlayer = MediaPlayer().apply {
+                    setAudioAttributes(
+                        AudioAttributes.Builder()
+                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                            .setUsage(AudioAttributes.USAGE_MEDIA)
+                            .build()
+                    )
+                    if (station.isLocal) {
+                        val afd = application.resources.openRawResourceFd(station.resId)
+                        setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                        afd.close()
+                    } else {
+                        setDataSource(station.url)
+                    }
+                    prepare()
+                    isLooping = true
+                    start()
+                }
+                withContext(Dispatchers.Main) {
+                    isRadioPlaying.value = true
+                    isRadioLoading.value = false
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("FocusPathRadio", "Error playing radio: ${e.message}")
+                withContext(Dispatchers.Main) {
+                    isRadioLoading.value = false
+                    Toast.makeText(application, "Radio Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    fun stopRadio() {
+        radioPlayer?.let {
+            try {
+                if (it.isPlaying) it.stop()
+                it.release()
+            } catch (e: Exception) {}
+        }
+        radioPlayer = null
+        currentRadioStation.value = null
+        isRadioPlaying.value = false
+        isRadioLoading.value = false
     }
 
     fun playTickSound() {
@@ -3273,6 +3359,48 @@ class TaskViewModel @Inject constructor(
         val pm = application.packageManager
         val apps = pm.getInstalledApplications(android.content.pm.PackageManager.GET_META_DATA)
         return apps.filter { (it.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM) == 0 }.map { AppInfo(name = it.loadLabel(pm).toString(), packageName = it.packageName, icon = it.loadIcon(pm)) }.sortedBy { it.name }
+    }
+
+    // HABITS LOGIC
+    fun addHabit(title: String, description: String = "", icon: String = "Star", color: String = "#FF6200EE") {
+        viewModelScope.launch {
+            taskDao.insertHabit(HabitEntity(title = title, description = description, iconName = icon, colorHex = color))
+        }
+    }
+
+    fun toggleHabit(habit: HabitEntity) {
+        viewModelScope.launch {
+            val now = System.currentTimeMillis()
+            val sdf = SimpleDateFormat("yyyyMMdd", Locale.US)
+            val today = sdf.format(Date(now)).toLong()
+            val lastCompleted = if (habit.lastCompletedDate > 0) sdf.format(Date(habit.lastCompletedDate)).toLong() else 0L
+
+            if (lastCompleted == today) {
+                // Bugün zaten yapıldıysa geri alabiliriz (isteğe bağlı, şimdilik sadece bilgilendirme)
+                return@launch
+            }
+
+            val yesterday = sdf.format(Date(now - 86400000L)).toLong()
+            
+            val newStreak = if (lastCompleted == yesterday) habit.streak + 1 else 1
+            val newLongest = if (newStreak > habit.longestStreak) newStreak else habit.longestStreak
+            
+            taskDao.updateHabit(habit.copy(
+                streak = newStreak, 
+                longestStreak = newLongest, 
+                lastCompletedDate = now
+            ))
+            
+            addXp(15) 
+            userCoins.value += 5
+            showConfetti.value = true
+            delay(2000)
+            showConfetti.value = false
+        }
+    }
+
+    fun deleteHabit(habit: HabitEntity) {
+        viewModelScope.launch { taskDao.deleteHabit(habit) }
     }
 }
 
