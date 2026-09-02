@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -155,7 +157,10 @@ fun WeeklyAnalyticsDialog(vm: TaskViewModel, isEnglish: Boolean, onDismiss: () -
             }
         },
         text = {
-            Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(
+                modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), 
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 if (history.isEmpty()) {
                     Text(
                         if (isEnglish) "No data for this week yet. Start focusing!" else "Bu hafta için henüz veri yok. Odaklanmaya başla!",
@@ -183,6 +188,59 @@ fun WeeklyAnalyticsDialog(vm: TaskViewModel, isEnglish: Boolean, onDismiss: () -
 
                     // Bar Chart
                     FocusBarChart(history = history)
+
+                    // AI INSIGHTS SECTION
+                    val aiInsight by vm.aiHistoryInsight
+                    val isAnalyzing by vm.isAnalyzingHistory
+
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = if(isEnglish) "AI COACH INSIGHTS" else "AI KOÇ ANALİZİ",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                IconButton(
+                                    onClick = { vm.analyzeFocusHistoryWithAi(isEnglish) },
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    if (isAnalyzing) {
+                                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                                    } else {
+                                        Icon(Icons.Default.AutoAwesome, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                                    }
+                                }
+                            }
+                            
+                            if (aiInsight != null) {
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    text = aiInsight!!,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    lineHeight = 16.sp
+                                )
+                            } else if (!isAnalyzing) {
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    text = if(isEnglish) "Tap the icon for personalized advice." else "Kişisel tavsiyeler için butona dokun.",
+                                    fontSize = 10.sp,
+                                    color = Color.Gray
+                                )
+                            }
+                        }
+                    }
                     
                     Text(
                         text = if(isEnglish) "💡 Pro Tip: Consistency is key to building focus habits." else "💡 Tavsiye: Odaklanma alışkanlığı için süreklilik en önemli kuraldır.",

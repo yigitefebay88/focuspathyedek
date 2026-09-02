@@ -213,6 +213,9 @@ class TaskViewModel @Inject constructor(
     val yesterdayFocusMins = mutableIntStateOf(0)
     val todayChallengeTarget = mutableIntStateOf(0)
 
+    val aiHistoryInsight = mutableStateOf<String?>(null)
+    val isAnalyzingHistory = mutableStateOf(false)
+
     private val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
     private val todayStr: String get() = synchronized(sdf) { sdf.format(Date()) }
 
@@ -250,6 +253,42 @@ class TaskViewModel @Inject constructor(
         val cal = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -7) }
         val start = synchronized(sdf) { sdf.format(cal.time) }
         return taskDao.getFocusHistory(start)
+    }
+
+    fun analyzeFocusHistoryWithAi(isEnglish: Boolean) {
+        if (isAnalyzingHistory.value) return
+        isAnalyzingHistory.value = true
+        
+        viewModelScope.launch {
+            try {
+                val cal = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -14) }
+                val start = synchronized(sdf) { sdf.format(cal.time) }
+                val history = taskDao.getFocusHistoryOnce(start)
+                
+                if (history.isEmpty()) {
+                    aiHistoryInsight.value = if (isEnglish) "Not enough data for analysis yet." else "Analiz için henüz yeterli veri yok."
+                    return@launch
+                }
+
+                val historyStr = history.joinToString("\n") { 
+                    "Date: ${it.date}, Focus: ${it.totalFocusMinutes}m, Tasks: ${it.tasksCompleted}, Sessions: ${it.sessionsCompleted}, Interrupted: ${it.sessionsInterrupted}"
+                }
+
+                val prompt = if (isEnglish) {
+                    "As a productivity coach for someone with ADHD, analyze this 14-day focus history and give 3 specific, motivating, and actionable insights to improve their performance:\n$historyStr\nBe concise and friendly."
+                } else {
+                    "ADHD odaklı bir verimlilik koçu olarak, şu 14 günlük odaklanma geçmişini analiz et ve performansı artırmak için 3 tane somut, motive edici ve uygulanabilir tavsiye ver:\n$historyStr\nKısa ve samimi ol."
+                }
+
+                val response = withContext(Dispatchers.IO) { generativeModel.generateContent(prompt) }
+                aiHistoryInsight.value = response.text ?: (if(isEnglish) "Keep up the good work!" else "Harika çalışmaya devam et!")
+            } catch (e: Exception) {
+                android.util.Log.e("FocusPathAI", "Analysis error: ${e.message}")
+                aiHistoryInsight.value = if(isEnglish) "Unable to connect to coach." else "Koç ile bağlantı kurulamadı."
+            } finally {
+                isAnalyzingHistory.value = false
+            }
+        }
     }
 
     private fun updateTodayHistory(focusMins: Int = 0, tasksDone: Int = 0, sessionsComp: Int = 0, sessionsInt: Int = 0) {
