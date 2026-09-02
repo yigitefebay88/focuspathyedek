@@ -16,5 +16,6 @@ data class TaskEntity(
     val rewardCoins: Int = 0,
     val energyLevel: Int = 1, // 0: Düşük, 1: Normal, 2: Yüksek
     val estimatedMinutes: Int = 0,
-    val actualMinutes: Int = 0
+    val actualMinutes: Int = 0,
+    val parentId: Long = 0 // 0: Ana görev, >0: Alt görev
 )

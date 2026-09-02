@@ -224,7 +224,7 @@ class TaskViewModel @Inject constructor(
             showDailyBriefing.value = true
             isBriefingLoading.value = true
             try {
-                val tasks = taskDao.getAllTasksOnce().filter { isSameDay(it.dueDate, System.currentTimeMillis()) && !it.isCompleted }
+                val tasks = taskDao.getAllTasksOnce().filter { isSameDay(it.dueDate, System.currentTimeMillis()) && !it.isCompleted && it.parentId == 0L }
                 if (tasks.isEmpty()) {
                     dailyBriefingText.value = if (isEnglish) "You have no tasks for today. A perfect day to plan something new!" else "Bugün için planlanmış görevin yok. Yeni bir şeyler planlamak için harika bir gün!"
                 } else {
@@ -1974,7 +1974,8 @@ class TaskViewModel @Inject constructor(
             val matchesCategory = category == "Tümü" || task.category == category
             val matchesPriority = priorityF == -1 || task.priority == priorityF
             val matchesDate = isSameDay(task.dueDate, sDate)
-            matchesSearch && matchesFilter && matchesCategory && matchesPriority && matchesDate
+            val isMainTask = task.parentId == 0L
+            matchesSearch && matchesFilter && matchesCategory && matchesPriority && matchesDate && isMainTask
         }
         when (sort) {
             1 -> filtered.sortedByDescending { it.priority }
@@ -1991,6 +1992,8 @@ class TaskViewModel @Inject constructor(
     }
 
     fun setSelectedDate(millis: Long) { _selectedDate.value = millis }
+
+    fun getSubTasks(parentId: Long): Flow<List<TaskEntity>> = taskDao.getSubTasks(parentId)
 
     val isDarkMode = mutableStateOf(prefs.getBoolean("is_dark_mode", true))
     val isHapticEnabled = mutableStateOf(prefs.getBoolean("is_haptic_enabled", true))
@@ -2716,6 +2719,19 @@ class TaskViewModel @Inject constructor(
             val updatedTask = task.copy(isCompleted = true)
             taskDao.updateTask(updatedTask)
             syncTaskToFirestore(updatedTask)
+
+            // Alt görevleri de tamamla
+            if (task.parentId == 0L) {
+                val subTasks = taskDao.getSubTasksOnce(task.id)
+                subTasks.forEach {
+                    if (!it.isCompleted) {
+                        val updatedSub = it.copy(isCompleted = true)
+                        taskDao.updateTask(updatedSub)
+                        syncTaskToFirestore(updatedSub)
+                    }
+                }
+            }
+
             if (updatedTask.isCompleted) { 
                 val xpBase = 5 // Temel görev XP'si 10'dan 5'e düşürüldü
                 val coinBase = task.rewardCoins.coerceAtLeast(5)
@@ -2888,6 +2904,10 @@ class TaskViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) { 
             // 1. Önce yerelden sil
             taskDao.deleteTask(task) 
+            // Alt görevleri de sil
+            if (task.parentId == 0L) {
+                taskDao.deleteSubTasks(task.id)
+            }
             // 2. Buluttan sil
             deleteTaskFromFirestore(task.id)
             
@@ -3401,6 +3421,48 @@ class TaskViewModel @Inject constructor(
 
     fun deleteHabit(habit: HabitEntity) {
         viewModelScope.launch { taskDao.deleteHabit(habit) }
+    }
+
+    // AI TASK BREAKER
+    val isBreakingTask = mutableStateOf(false)
+
+    fun breakTaskWithAi(parentTask: TaskEntity, isEnglish: Boolean) {
+        if (isBreakingTask.value) return
+        isBreakingTask.value = true
+        
+        viewModelScope.launch {
+            try {
+                val prompt = if (isEnglish) {
+                    "Break down the following task into 5 small, actionable, and specific sub-tasks: '${parentTask.title}'. " +
+                    "Details: ${parentTask.notes}. Return ONLY the sub-task titles separated by new lines, no numbers or bullet points."
+                } else {
+                    "Şu görevi 5 tane küçük, somut ve uygulanabilir alt göreve böl: '${parentTask.title}'. " +
+                    "Detaylar: ${parentTask.notes}. SADECE alt görev başlıklarını satır satır döndür, numara veya liste işareti koyma."
+                }
+
+                val response = withContext(Dispatchers.IO) { generativeModel.generateContent(prompt) }
+                val subTaskTitles = response.text?.split("\n")?.filter { it.isNotBlank() }?.take(5) ?: emptyList()
+
+                subTaskTitles.forEach { subTitle ->
+                    taskDao.insertTask(TaskEntity(
+                        title = subTitle.trim().removePrefix("- ").removePrefix("• ").replace(Regex("^\\d+\\.\\s*"), ""),
+                        parentId = parentTask.id,
+                        category = parentTask.category,
+                        priority = parentTask.priority,
+                        dueDate = parentTask.dueDate,
+                        energyLevel = 0 // Alt görevler genelde düşük enerji gerektirir
+                    ))
+                }
+                
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(application, if(isEnglish) "Task broken down!" else "Görev parçalara ayrıldı!", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("FocusPathAI", "Error breaking task: ${e.message}")
+            } finally {
+                isBreakingTask.value = false
+            }
+        }
     }
 }
 

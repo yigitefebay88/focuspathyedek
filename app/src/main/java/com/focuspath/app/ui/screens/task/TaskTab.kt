@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.focuspath.app.data.local.HabitEntity
 import com.focuspath.app.data.local.TaskEntity
+import androidx.compose.material.icons.automirrored.filled.LabelImportant
 import com.focuspath.app.ui.theme.AccentRed
 import com.focuspath.app.ui.theme.AccentYellow
 import com.focuspath.app.ui.theme.TerminalGreen
@@ -284,111 +285,156 @@ fun TaskTab(
             } else {
                 LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(filteredTasks, key = { it.id }) { task ->
-                        val animatedElevation by animateDpAsState(
-                            targetValue = if (task.isCompleted) 0.dp else 4.dp,
-                            label = "cardElevation"
-                        )
-                        val animatedScale by animateFloatAsState(
-                            targetValue = if (task.isCompleted) 0.98f else 1f,
-                            label = "cardScale"
-                        )
-                        val glowAlpha by animateFloatAsState(
-                            targetValue = if (task.isCompleted) 0.2f else 0f,
-                            animationSpec = tween(500),
-                            label = "glowAlpha"
-                        )
+                        val subTasks by vm.getSubTasks(task.id).collectAsState(initial = emptyList())
                         
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .graphicsLayer { 
-                                    scaleX = animatedScale
-                                    scaleY = animatedScale
-                                }
-                                .background(
-                                    if (task.isCompleted) TerminalGreen.copy(alpha = glowAlpha) 
-                                    else Color.Transparent,
-                                    RoundedCornerShape(12.dp)
-                                )
-                                .animateItem()
-                                .pointerInput(task) { 
-                                    detectTapGestures(onLongPress = { 
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        onEditTask(task) 
-                                    }) 
-                                },
-                            colors = CardDefaults.cardColors(
-                                containerColor = if (task.isCompleted) 
-                                    MaterialTheme.colorScheme.surface.copy(alpha = 0.6f) 
-                                else 
-                                    MaterialTheme.colorScheme.surface
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = animatedElevation),
-                            border = BorderStroke(
-                                1.dp, 
-                                if (task.isCompleted) Color.Gray.copy(alpha = 0.2f) 
-                                else MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
+                        Column {
+                            val animatedElevation by animateDpAsState(
+                                targetValue = if (task.isCompleted) 0.dp else 4.dp,
+                                label = "cardElevation"
                             )
-                        ) {
-                            Row(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                val animatedCheckScale by animateFloatAsState(
-                                    targetValue = if (task.isCompleted) 1.2f else 1f,
-                                    animationSpec = spring(dampingRatio = Spring.DampingRatioHighBouncy),
-                                    label = "checkScale"
+                            val animatedScale by animateFloatAsState(
+                                targetValue = if (task.isCompleted) 0.98f else 1f,
+                                label = "cardScale"
+                            )
+                            val glowAlpha by animateFloatAsState(
+                                targetValue = if (task.isCompleted) 0.2f else 0f,
+                                animationSpec = tween(500),
+                                label = "glowAlpha"
+                            )
+                            
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .graphicsLayer { 
+                                        scaleX = animatedScale
+                                        scaleY = animatedScale
+                                    }
+                                    .background(
+                                        if (task.isCompleted) TerminalGreen.copy(alpha = glowAlpha) 
+                                        else Color.Transparent,
+                                        RoundedCornerShape(12.dp)
+                                    )
+                                    .animateItem()
+                                    .pointerInput(task) { 
+                                        detectTapGestures(onLongPress = { 
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            onEditTask(task) 
+                                        }) 
+                                    },
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (task.isCompleted) 
+                                        MaterialTheme.colorScheme.surface.copy(alpha = 0.6f) 
+                                    else 
+                                        MaterialTheme.colorScheme.surface
+                                ),
+                                elevation = CardDefaults.cardElevation(defaultElevation = animatedElevation),
+                                border = BorderStroke(
+                                    1.dp, 
+                                    if (task.isCompleted) Color.Gray.copy(alpha = 0.2f) 
+                                    else MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
                                 )
-                                
-                                Box(modifier = Modifier.graphicsLayer { scaleX = animatedCheckScale; scaleY = animatedCheckScale }) {
-                                    Checkbox(
-                                        checked = task.isCompleted, 
-                                        onCheckedChange = { vm.toggleTask(task) },
-                                        colors = CheckboxDefaults.colors(
-                                            checkedColor = TerminalGreen,
-                                            uncheckedColor = MaterialTheme.colorScheme.primary
+                            ) {
+                                Row(modifier = Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    val animatedCheckScale by animateFloatAsState(
+                                        targetValue = if (task.isCompleted) 1.2f else 1f,
+                                        animationSpec = spring(dampingRatio = Spring.DampingRatioHighBouncy),
+                                        label = "checkScale"
+                                    )
+                                    
+                                    Box(modifier = Modifier.graphicsLayer { scaleX = animatedCheckScale; scaleY = animatedCheckScale }) {
+                                        Checkbox(
+                                            checked = task.isCompleted, 
+                                            onCheckedChange = { vm.toggleTask(task) },
+                                            colors = CheckboxDefaults.colors(
+                                                checkedColor = TerminalGreen,
+                                                uncheckedColor = MaterialTheme.colorScheme.primary
+                                            )
                                         )
-                                    )
-                                }
-                                
-                                Spacer(Modifier.width(12.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = task.title, 
-                                        modifier = Modifier.basicMarquee(),
-                                        maxLines = 1,
-                                        style = MaterialTheme.typography.bodyMedium.copy(
-                                            textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
-                                            fontWeight = if (task.isCompleted) FontWeight.Normal else FontWeight.Bold
-                                        ),
-                                        color = if (task.isCompleted) Color.Gray else MaterialTheme.colorScheme.onSurface
-                                    )
-                                    if (task.notes.isNotBlank()) {
+                                    }
+                                    
+                                    Spacer(Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
                                         Text(
-                                            text = task.notes, 
-                                            style = MaterialTheme.typography.bodySmall, 
-                                            color = Color.Gray.copy(alpha = 0.8f)
+                                            text = task.title, 
+                                            modifier = Modifier.basicMarquee(),
+                                            maxLines = 1,
+                                            style = MaterialTheme.typography.bodyMedium.copy(
+                                                textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
+                                                fontWeight = if (task.isCompleted) FontWeight.Normal else FontWeight.Bold
+                                            ),
+                                            color = if (task.isCompleted) Color.Gray else MaterialTheme.colorScheme.onSurface
                                         )
+                                        if (task.notes.isNotBlank()) {
+                                            Text(
+                                                text = task.notes, 
+                                                style = MaterialTheme.typography.bodySmall, 
+                                                color = Color.Gray.copy(alpha = 0.8f)
+                                            )
+                                        }
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(text = "[${task.category}]", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                                            Spacer(Modifier.width(8.dp))
+                                            val priorityLabel = when(task.priority) {
+                                                0 -> if(isEnglish) "KOLAY" else "KOLAY"
+                                                2 -> if(isEnglish) "ZOR" else "ZOR"
+                                                else -> if(isEnglish) "ORTA" else "ORTA"
+                                            }
+                                            val priorityColor = when(task.priority) {
+                                                0 -> Color.Gray
+                                                2 -> AccentRed
+                                                else -> MaterialTheme.colorScheme.primary
+                                            }
+                                            Text(text = priorityLabel, style = MaterialTheme.typography.labelSmall, color = priorityColor, fontWeight = FontWeight.Bold)
+                                        }
                                     }
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(text = "[${task.category}]", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                                        Spacer(Modifier.width(8.dp))
-                                        val priorityLabel = when(task.priority) {
-                                            0 -> if(isEnglish) "KOLAY" else "KOLAY"
-                                            2 -> if(isEnglish) "ZOR" else "ZOR"
-                                            else -> if(isEnglish) "ORTA" else "ORTA"
+                                        val isBreaking by vm.isBreakingTask
+                                        if (!task.isCompleted && subTasks.isEmpty()) {
+                                            IconButton(onClick = { vm.breakTaskWithAi(task, isEnglish) }) {
+                                                if (isBreaking) {
+                                                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                                                } else {
+                                                    Icon(Icons.Default.AutoAwesome, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                                                }
+                                            }
                                         }
-                                        val priorityColor = when(task.priority) {
-                                            0 -> Color.Gray
-                                            2 -> AccentRed
-                                            else -> MaterialTheme.colorScheme.primary
+                                        IconButton(onClick = { onReminderTask(task) }) { 
+                                            Icon(Icons.Default.Alarm, null, tint = AccentYellow.copy(alpha = 0.7f), modifier = Modifier.size(20.dp)) 
                                         }
-                                        Text(text = priorityLabel, style = MaterialTheme.typography.labelSmall, color = priorityColor, fontWeight = FontWeight.Bold)
+                                        IconButton(onClick = { onDeleteTask(task) }) { 
+                                            Icon(Icons.Default.Delete, null, tint = AccentRed.copy(alpha = 0.7f), modifier = Modifier.size(20.dp)) 
+                                        }
                                     }
                                 }
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    IconButton(onClick = { onReminderTask(task) }) { 
-                                        Icon(Icons.Default.Alarm, null, tint = AccentYellow.copy(alpha = 0.7f), modifier = Modifier.size(20.dp)) 
-                                    }
-                                    IconButton(onClick = { onDeleteTask(task) }) { 
-                                        Icon(Icons.Default.Delete, null, tint = AccentRed.copy(alpha = 0.7f), modifier = Modifier.size(20.dp)) 
+                            }
+                            
+                            // SUB TASKS LIST
+                            if (subTasks.isNotEmpty()) {
+                                Column(modifier = Modifier.padding(start = 32.dp, top = 4.dp)) {
+                                    subTasks.forEach { subTask ->
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Checkbox(
+                                                checked = subTask.isCompleted,
+                                                onCheckedChange = { vm.toggleTask(subTask) },
+                                                modifier = Modifier.size(24.dp),
+                                                colors = CheckboxDefaults.colors(checkedColor = TerminalGreen)
+                                            )
+                                            Spacer(Modifier.width(8.dp))
+                                            Text(
+                                                text = subTask.title,
+                                                style = MaterialTheme.typography.bodySmall.copy(
+                                                    textDecoration = if (subTask.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                                                ),
+                                                color = if (subTask.isCompleted) Color.Gray else MaterialTheme.colorScheme.onSurface,
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                            IconButton(onClick = { onDeleteTask(subTask) }, modifier = Modifier.size(20.dp)) {
+                                                Icon(Icons.Default.Close, null, tint = Color.Gray, modifier = Modifier.size(14.dp))
+                                            }
+                                        }
                                     }
                                 }
                             }

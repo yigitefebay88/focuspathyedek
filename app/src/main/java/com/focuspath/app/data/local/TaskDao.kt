@@ -64,6 +64,14 @@ interface TaskDao {
     @Delete
     suspend fun deleteHabit(habit: HabitEntity)
 
-    @Query("SELECT * FROM habits WHERE id = :id")
-    suspend fun getHabitById(id: Long): HabitEntity?
+    @Query("SELECT * FROM tasks WHERE parentId = :parentId ORDER BY id ASC")
+    fun getSubTasks(parentId: Long): Flow<List<TaskEntity>>
+
+    @Query("SELECT * FROM tasks WHERE parentId = :parentId")
+    suspend fun getSubTasksOnce(parentId: Long): List<TaskEntity>
+
+    @Query("SELECT * FROM tasks WHERE parentId = 0 ORDER BY id DESC")
+    fun getAllMainTasks(): Flow<List<TaskEntity>>
+    @Query("DELETE FROM tasks WHERE parentId = :parentId")
+    suspend fun deleteSubTasks(parentId: Long)
 }

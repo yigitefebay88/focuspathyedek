@@ -3811,7 +3811,7 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
         set(Calendar.MILLISECOND, 0)
     }.timeInMillis
 
-    val upcomingTasks = allTasks.filter { !it.isCompleted && it.dueDate >= startOfToday }.sortedBy { it.dueDate }
+    val upcomingTasks = allTasks.filter { !it.isCompleted && it.dueDate >= startOfToday && it.parentId == 0L }.sortedBy { it.dueDate }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
