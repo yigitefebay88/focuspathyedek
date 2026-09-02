@@ -259,7 +259,12 @@ fun WeeklyAnalyticsDialog(vm: TaskViewModel, isEnglish: Boolean, onDismiss: () -
 }
 
 @Composable
-fun DopamineMenuDialog(vm: TaskViewModel, isEnglish: Boolean, onDismiss: () -> Unit) {
+fun DopamineMenuDialog(
+    vm: TaskViewModel, 
+    isEnglish: Boolean, 
+    onDismiss: () -> Unit,
+    onNavigateToTab: (Int) -> Unit
+) {
     val items = vm.dopamineMenu
     val context = androidx.compose.ui.platform.LocalContext.current
     
@@ -290,7 +295,12 @@ fun DopamineMenuDialog(vm: TaskViewModel, isEnglish: Boolean, onDismiss: () -> U
                         
                         items(items.filter { it.category == key }) { item ->
                             Card(
-                                onClick = { vm.completeDopamineActivity(item, isEnglish, context) },
+                                onClick = { 
+                                    vm.completeDopamineActivity(item, isEnglish, context) 
+                                    if (item.actionType == "BREATHING") {
+                                        onNavigateToTab(3) // Timer/Calendar Sekmesi
+                                    }
+                                },
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(12.dp),
                                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))

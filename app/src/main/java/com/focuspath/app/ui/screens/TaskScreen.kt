@@ -563,7 +563,12 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
     }
 
     if (vm.showDopamineMenu.value) {
-        com.focuspath.app.ui.screens.task.DopamineMenuDialog(vm, isEnglish) { vm.showDopamineMenu.value = false }
+        com.focuspath.app.ui.screens.task.DopamineMenuDialog(
+            vm = vm, 
+            isEnglish = isEnglish,
+            onDismiss = { vm.showDopamineMenu.value = false },
+            onNavigateToTab = { selectedTab = it }
+        )
     }
 
     if (vm.showConfetti.value) {
