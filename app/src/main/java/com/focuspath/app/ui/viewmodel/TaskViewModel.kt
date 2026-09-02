@@ -837,7 +837,7 @@ class TaskViewModel @Inject constructor(
         dopamineMenu.clear()
         dopamineMenu.addAll(listOf(
             DopamineItem(titleTr = "Bir bardak su iç", titleEn = "Drink a glass of water", category = "Appetizer", icon = "💧"),
-            DopamineItem(titleTr = "Derin nefes al (2 dk)", titleEn = "Deep breathing (2 min)", category = "Appetizer", icon = "🌬️"),
+            DopamineItem(titleTr = "Derin nefes al (2 dk)", titleEn = "Deep breathing (2 min)", category = "Appetizer", icon = "🌬️", actionType = "BREATHING"),
             DopamineItem(titleTr = "Pencereden dışarı bak", titleEn = "Look out the window", category = "Appetizer", icon = "🪟"),
             DopamineItem(titleTr = "Kısa bir yürüyüş", titleEn = "Take a short walk", category = "Main", icon = "🚶"),
             DopamineItem(titleTr = "10 sayfa kitap oku", titleEn = "Read 10 pages", category = "Main", icon = "📚"),
@@ -847,10 +847,15 @@ class TaskViewModel @Inject constructor(
         ))
     }
 
-    fun completeDopamineActivity(item: DopamineItem, isEnglish: Boolean) {
+    fun completeDopamineActivity(item: DopamineItem, isEnglish: Boolean, context: Context) {
         viewModelScope.launch {
-            // Ödülleri kaldırdık (Suistimali önlemek için)
-            // Sadece bir plan/seçim olarak çalışacak
+            if (item.actionType == "BREATHING") {
+                // Özel İşlem: 2 Dakikalık Nefes Egzersizi Başlat
+                isPomodoroMode.value = true
+                pomodoroTotalMillis.longValue = 2 * 60000L
+                timeLeft.longValue = 2 * 60000L
+                toggleTimer(context, true)
+            }
             
             showDopamineMenu.value = false
             val msg = if(isEnglish) "Enjoy your '${item.titleEn}' break!" else "'${item.titleTr}' molasının tadını çıkar!"
@@ -3552,5 +3557,6 @@ data class DopamineItem(
     val titleTr: String,
     val titleEn: String,
     val category: String, // "Appetizer", "Main", "Dessert"
-    val icon: String
+    val icon: String,
+    val actionType: String? = null // "BREATHING" gibi özel aksiyonlar için
 )
