@@ -1639,6 +1639,8 @@ class TaskViewModel @Inject constructor(
         val finalWorkers = mutableListOf<WorkerInfo>()
 
         activeDeskIds.forEachIndexed { i, deskId ->
+            val topPeer = priorityList.getOrNull(i) ?: return@forEachIndexed
+            
             val indexInDefault = deskId.removePrefix("desk_setup_").toIntOrNull() ?: 0
             val deskOffset = when(indexInDefault) {
                 0 -> Offset(-90f, 0f)
@@ -1647,31 +1649,12 @@ class TaskViewModel @Inject constructor(
             }
             val spawnPos = itemPositions[deskId] ?: deskOffset
 
-            val topPeer = priorityList.getOrNull(i)
-            
-            val worker = if (topPeer != null) {
-                topPeer.copy(
-                    deskId = deskId,
-                    currentPos = spawnPos,
-                    targetPos = spawnPos,
-                    name = if (topPeer.isMe) "${topPeer.name} (Siz)" else topPeer.name
-                )
-            } else {
-                // BOT OLUŞTUR
-                val seed = i.toLong() + 200L
-                val botRandom = Random(seed)
-                WorkerInfo(
-                    id = "bot_$i",
-                    name = names.getOrElse(i % names.size) { "Expert $i" },
-                    position = positions[botRandom.nextInt(positions.size)],
-                    deskId = deskId,
-                    currentPos = spawnPos,
-                    targetPos = spawnPos,
-                    monitorContent = monitorContents[botRandom.nextInt(monitorContents.size)],
-                    currentAction = if (isFocusActive.value) WorkerAction.WORKING else WorkerAction.IDLE,
-                    isFocusing = isFocusActive.value
-                )
-            }
+            val worker = topPeer.copy(
+                deskId = deskId,
+                currentPos = spawnPos,
+                targetPos = spawnPos,
+                name = if (topPeer.isMe) "${topPeer.name} (Siz)" else topPeer.name
+            )
             finalWorkers.add(worker)
         }
 
@@ -1778,14 +1761,10 @@ class TaskViewModel @Inject constructor(
     }
 
     private fun initializeWorkers() {
-        val names = listOf("Alex", "Jordan", "Casey", "Riley", "Taylor", "Morgan", "Quinn", "Skyler", "Charlie", "Avery", "Jamie", "Dakota")
-        val positions = listOf("Senior Dev", "Lead Designer", "Security Expert", "DevOps Ninja", "AI Architect", "Data Scientist")
-        val monitorContents = listOf("Terminal", "VS Code", "Figma", "Dashboard", "Logcat", "Kibana", "Jira", "Grafana")
-        
         workers.clear()
         
-        // LEADERBOARD'DAN RASTGELE KİŞİLERİ SEÇ
-        val allLbUsers = leaderboard.value.filter { it.email != userEmail.value }.shuffled()
+        // LEADERBOARD'DAN SADECE ODAKLANAN KİŞİLERİ SEÇ
+        val activeUsers = leaderboard.value.filter { it.email != userEmail.value && it.isFocusing }.shuffled()
         
         // SADECE GÖRÜNÜR OLAN MASALARI BUL
         val activeDeskIds = visibleItems.filter { it.startsWith("desk_setup_") }
@@ -1794,15 +1773,11 @@ class TaskViewModel @Inject constructor(
         val roomBase = Offset(0f, 0f)
 
         activeDeskIds.forEachIndexed { i, deskId ->
+            val lbUser = activeUsers.getOrNull(i) ?: return@forEachIndexed
             val indexInDefault = deskId.removePrefix("desk_setup_").toIntOrNull() ?: 0
-            val seed = i.toLong() + 100L
-            val botRandom = Random(seed)
-            val lbUser = allLbUsers.getOrNull(i)
             
-            val workerName = lbUser?.name ?: names.getOrElse(i % names.size) { "Expert $i" }
-            val workerPhoto = lbUser?.photoUrl
-            val workerPosition = if (lbUser != null) "Global Peer" else positions[botRandom.nextInt(positions.size)]
-            val workerMonitor = if (lbUser != null && lbUser.isFocusing) "Focusing..." else monitorContents[botRandom.nextInt(monitorContents.size)]
+            val workerName = lbUser.name
+            val workerPhoto = lbUser.photoUrl
             
             // Oda içindeki varsayılan masa pozisyonu (Yatay genişlik: 90f)
             val deskOffset = when(indexInDefault) {
@@ -1816,18 +1791,19 @@ class TaskViewModel @Inject constructor(
             
             workers.add(
                 WorkerInfo(
+                    id = "init_${lbUser.uid}",
                     name = workerName,
-                    position = workerPosition,
+                    position = "Global Peer",
                     deskId = deskId,
                     currentPos = spawnPos,
                     targetPos = spawnPos,
-                    monitorContent = workerMonitor,
+                    monitorContent = "Focusing...",
                     currentAction = WorkerAction.WORKING,
                     photoUrl = workerPhoto,
-                    isFriend = lbUser != null,
-                    isFocusing = lbUser?.isFocusing ?: false,
+                    isFriend = true,
+                    isFocusing = true,
                     roomId = 0,
-                    email = lbUser?.email
+                    email = lbUser.email
                 )
             )
         }
