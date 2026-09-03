@@ -1961,20 +1961,36 @@ class TaskViewModel @Inject constructor(
         return Offset(current.x + (dx / distance) * speed, current.y + (dy / distance) * speed)
     }
 
-    fun syncTasksFromCloud() {
-        val email = userEmail.value
-        if (email.isBlank()) return
+    fun syncTasksFromCloud(email: String? = null, uid: String? = null) {
+        val finalEmail = (email ?: userEmail.value).lowercase()
+        val finalUid = uid ?: firebaseAuth.currentUser?.uid
         
-        firestore.collection("users").document(email).collection("tasks").get().addOnSuccessListener { snapshot ->
-            viewModelScope.launch(Dispatchers.IO) {
-                snapshot.documents.forEach { doc ->
-                    val task = doc.toObject(TaskEntity::class.java)
-                    if (task != null) {
-                        val fixedTask = if (task.id == 0L) {
-                            task.copy(id = doc.id.toLongOrNull() ?: System.currentTimeMillis())
-                        } else task
-                        taskDao.insertTask(fixedTask)
-                    }
+        if (finalEmail.isBlank() && finalUid.isNullOrBlank()) return
+        
+        // Try syncing from email-based document
+        if (finalEmail.isNotBlank()) {
+            firestore.collection("users").document(finalEmail).collection("tasks").get().addOnSuccessListener { snapshot ->
+                processTaskSnapshot(snapshot)
+            }
+        }
+        
+        // Also try syncing from UID-based document for better reliability
+        if (!finalUid.isNullOrBlank()) {
+            firestore.collection("users").document(finalUid).collection("tasks").get().addOnSuccessListener { snapshot ->
+                processTaskSnapshot(snapshot)
+            }
+        }
+    }
+
+    private fun processTaskSnapshot(snapshot: com.google.firebase.firestore.QuerySnapshot) {
+        viewModelScope.launch(Dispatchers.IO) {
+            snapshot.documents.forEach { doc ->
+                val task = doc.toObject(TaskEntity::class.java)
+                if (task != null) {
+                    val fixedTask = if (task.id == 0L) {
+                        task.copy(id = doc.id.toLongOrNull() ?: System.currentTimeMillis())
+                    } else task
+                    taskDao.insertTask(fixedTask)
                 }
             }
         }
@@ -1983,7 +1999,7 @@ class TaskViewModel @Inject constructor(
     private fun fetchUserDataFromFirestore() {
         val user = firebaseAuth.currentUser ?: return
         val uid = user.uid
-        val email = user.email ?: ""
+        val email = user.email?.lowercase() ?: ""
 
         val docRefByUid = firestore.collection("users").document(uid)
         val docRefByEmail = if (email.isNotBlank()) firestore.collection("users").document(email) else null
@@ -1991,15 +2007,16 @@ class TaskViewModel @Inject constructor(
         docRefByUid.get().addOnSuccessListener { doc ->
             if (doc.exists()) {
                 applyUserDataDoc(doc)
+                syncTasksFromCloud(email, uid)
             } else if (docRefByEmail != null) {
                 docRefByEmail.get().addOnSuccessListener { emailDoc ->
                     if (emailDoc.exists()) {
                         applyUserDataDoc(emailDoc)
+                        syncTasksFromCloud(email, uid)
                     }
                 }
             }
         }
-        syncTasksFromCloud()
     }
 
     private fun applyUserDataDoc(doc: com.google.firebase.firestore.DocumentSnapshot) {
@@ -2049,6 +2066,11 @@ class TaskViewModel @Inject constructor(
             updateTodayHistory(focusMins = 0) // Bugünün kaydını oluştur/getir
             completeOnboardingTask("first_focus") // Zaten odaklanmışsa tamamla
         }
+
+        // Restoration of onboarding tasks from cloud data
+        if (cloudXp > 0) completeOnboardingTask("first_focus")
+        if (doc.contains("teamId") && doc.get("teamId") != null) completeOnboardingTask("join_team")
+        if (doc.getString("photoUrl")?.isNotBlank() == true) completeOnboardingTask("profile_pic")
         
                 // Photo and Name sync
                 doc.getString("photoUrl")?.let { cloudPhoto ->
@@ -2116,10 +2138,13 @@ class TaskViewModel @Inject constructor(
             "last_sync" to System.currentTimeMillis()
         )
         // Hem UID hem Email ile dokümanı güncelleyelim ki uyuşmazlıklar tamamen ortadan kalksın
-        val email = user.email
+        val email = user.email?.lowercase()
         if (!email.isNullOrBlank()) {
             firestore.collection("users").document(email).set(profileMap, com.google.firebase.firestore.SetOptions.merge())
         }
+
+        // UID bazlı dokümanı da her zaman güncel tut (En güveniliri bu)
+        firestore.collection("users").document(user.uid).set(profileMap, com.google.firebase.firestore.SetOptions.merge())
 
         // LEADERBOARD'U DA GÜNCELLE (XP ve Diğerleri burada da olmalı)
         val leaderboardMap = mapOf(
@@ -2642,13 +2667,15 @@ class TaskViewModel @Inject constructor(
     }
 
     private fun syncTaskToFirestore(task: TaskEntity) {
-        if (!isLoggedIn.value || userEmail.value.isBlank()) return
-        firestore.collection("users").document(userEmail.value).collection("tasks").document(task.id.toString()).set(task)
+        val email = userEmail.value.lowercase()
+        if (!isLoggedIn.value || email.isBlank()) return
+        firestore.collection("users").document(email).collection("tasks").document(task.id.toString()).set(task)
     }
 
     private fun deleteTaskFromFirestore(taskId: Long) {
-        if (!isLoggedIn.value || userEmail.value.isBlank()) return
-        firestore.collection("users").document(userEmail.value).collection("tasks").document(taskId.toString()).delete()
+        val email = userEmail.value.lowercase()
+        if (!isLoggedIn.value || email.isBlank()) return
+        firestore.collection("users").document(email).collection("tasks").document(taskId.toString()).delete()
     }
 
     fun syncXpToFirestore(sessionDuration: Int = 0, isFocusing: Boolean = false, forcedPhotoUrl: String? = null) {
@@ -3061,7 +3088,8 @@ class TaskViewModel @Inject constructor(
         val currentFocus = prefs.getInt("DAILY_FOCUS_CURRENT", 0) ; val newFocus = currentFocus + minutes
         prefs.edit().putInt("DAILY_FOCUS_CURRENT", newFocus).apply()
         if (newFocus >= 30 && !prefs.getBoolean("DAILY_FOCUS_DONE", false)) { prefs.edit().putBoolean("DAILY_FOCUS_DONE", true).apply() ; addCoins(50) }
-        if (isLoggedIn.value) { firestore.collection("users").document(userEmail.value).update("total_focus_minutes", com.google.firebase.firestore.FieldValue.increment(minutes.toLong())) }
+        val email = userEmail.value.lowercase()
+        if (isLoggedIn.value && email.isNotBlank()) { firestore.collection("users").document(email).update("total_focus_minutes", com.google.firebase.firestore.FieldValue.increment(minutes.toLong())) }
         
         // Haftalık karne için kaydet
         updateTodayHistory(focusMins = minutes)
@@ -3190,7 +3218,7 @@ class TaskViewModel @Inject constructor(
                 
                 android.util.Log.d("FocusPathAuth", "Giriş başarılı: ${user.email}")
                 isLoggedIn.value = true 
-                userEmail.value = user.email ?: "" 
+                userEmail.value = user.email?.lowercase() ?: "" 
                 userName.value = user.displayName ?: "ANONYMOUS" 
                 
                 // Hemen Firebase Auth'daki resmi al (Varsa)
@@ -3256,7 +3284,7 @@ class TaskViewModel @Inject constructor(
                     }
 
                     isLoggedIn.value = true 
-                    userEmail.value = user.email ?: "" 
+                    userEmail.value = user.email?.lowercase() ?: "" 
                     userName.value = user.displayName ?: user.email?.split("@")?.get(0) ?: "User"
                     
                     // Hemen Firebase Auth'daki resmi al (Varsa)
@@ -3301,7 +3329,7 @@ class TaskViewModel @Inject constructor(
                 val result = firebaseAuth.createUserWithEmailAndPassword(email, pass).await() 
                 val user = result.user
                 isLoggedIn.value = true 
-                userEmail.value = user?.email ?: "" 
+                userEmail.value = user?.email?.lowercase() ?: "" 
                 userName.value = user?.email?.split("@")?.get(0) ?: "User"
                 userPhotoUrl.value = user?.photoUrl?.toString()
 
