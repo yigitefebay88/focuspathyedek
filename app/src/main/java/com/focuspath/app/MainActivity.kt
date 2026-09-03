@@ -586,7 +586,9 @@ class MainActivity : ComponentActivity(), BillingProvider {
                                             "ARKADAŞ SİSTEMİ",
                                             style = MaterialTheme.typography.titleLarge,
                                             fontWeight = FontWeight.ExtraBold,
-                                            color = terminalColor
+                                            color = terminalColor,
+                                            maxLines = 1,
+                                            softWrap = false
                                         )
                                     }
 

@@ -3574,16 +3574,16 @@ class TaskViewModel @Inject constructor(
     fun toggleHabit(habit: HabitEntity) {
         viewModelScope.launch {
             val now = System.currentTimeMillis()
-            val sdf = SimpleDateFormat("yyyyMMdd", Locale.US)
-            val today = sdf.format(Date(now)).toLong()
-            val lastCompleted = if (habit.lastCompletedDate > 0) sdf.format(Date(habit.lastCompletedDate)).toLong() else 0L
+            val habitSdf = SimpleDateFormat("yyyyMMdd", Locale.US)
+            val habitToday = habitSdf.format(Date(now)).toLong()
+            val lastCompleted = if (habit.lastCompletedDate > 0) habitSdf.format(Date(habit.lastCompletedDate)).toLong() else 0L
 
-            if (lastCompleted == today) {
+            if (lastCompleted == habitToday) {
                 // Bugün zaten yapıldıysa geri alabiliriz (isteğe bağlı, şimdilik sadece bilgilendirme)
                 return@launch
             }
 
-            val yesterday = sdf.format(Date(now - 86400000L)).toLong()
+            val yesterday = habitSdf.format(Date(now - 86400000L)).toLong()
             
             val newStreak = if (lastCompleted == yesterday) habit.streak + 1 else 1
             val newLongest = if (newStreak > habit.longestStreak) newStreak else habit.longestStreak
@@ -3594,11 +3594,23 @@ class TaskViewModel @Inject constructor(
                 lastCompletedDate = now
             ))
             
-            addXp(15) 
-            userCoins.value += 5
-            showConfetti.value = true
-            delay(2000)
-            showConfetti.value = false
+            // Suistimal Koruması: Günde en fazla 5 alışkanlık için ödül verilir
+            val rewardedCount = prefs.getInt("habits_rewarded_count_$todayStr", 0)
+            val maxHabitRewards = 5
+
+            if (rewardedCount < maxHabitRewards) {
+                addXp(15) 
+                addCoins(5)
+                prefs.edit().putInt("habits_rewarded_count_$todayStr", rewardedCount + 1).apply()
+
+                showConfetti.value = true
+                delay(2000)
+                showConfetti.value = false
+            } else {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(application, "Günlük alışkanlık ödül limitine ulaştın (Maks 5).", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
 

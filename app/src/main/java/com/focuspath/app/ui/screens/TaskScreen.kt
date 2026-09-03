@@ -457,11 +457,11 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
                                     color = terminalColor,
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         fontWeight = FontWeight.Black,
-                                        fontSize = 9.sp // Extra small to fit 5 items
+                                        fontSize = 8.sp // Sıkışmayı önlemek için 9'dan 8'e düşürüldü
                                     ),
                                     maxLines = 1,
                                     softWrap = false,
-                                    overflow = TextOverflow.Clip // Prevent any wrapping/extra line
+                                    overflow = TextOverflow.Visible
                                 )
                             }
                         }
