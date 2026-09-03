@@ -864,6 +864,30 @@ class TaskViewModel @Inject constructor(
         // Register listener for reactive stats
         prefs.registerOnSharedPreferenceChangeListener(prefsListener)
         
+        firebaseAuth.addAuthStateListener { auth ->
+            val user = auth.currentUser
+            if (user != null && !isLoggedIn.value) {
+                isLoggedIn.value = true
+                userEmail.value = user.email?.lowercase() ?: ""
+                
+                if (userName.value == "ANONYMOUS") {
+                    userName.value = user.displayName ?: "ANONYMOUS"
+                }
+                if (userPhotoUrl.value == null) {
+                    userPhotoUrl.value = user.photoUrl?.toString()
+                }
+
+                fetchLeaderboard()
+                fetchUserDataFromFirestore()
+                fetchUserTeam()
+                syncXpToFirestore()
+                startFriendRequestListener()
+                startFriendsListener()
+                startLiveFocusListener()
+                startPresenceHeartbeat()
+            }
+        }
+        
         firebaseAuth.currentUser?.let { user ->
             isLoggedIn.value = true
             userEmail.value = user.email?.lowercase() ?: ""
@@ -1704,6 +1728,8 @@ class TaskViewModel @Inject constructor(
     private fun startPresenceHeartbeat() {
         presenceHeartbeatJob?.cancel()
         if (firebaseAuth.currentUser == null) return
+        
+        android.util.Log.d("FocusPathPresence", "Presence Heartbeat started for ${firebaseAuth.currentUser?.email}")
         
         presenceHeartbeatJob = viewModelScope.launch(Dispatchers.IO) {
             while (true) {

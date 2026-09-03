@@ -752,7 +752,7 @@ class MainActivity : ComponentActivity(), BillingProvider {
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
                                                     Column {
-                                                        val isOnline = (System.currentTimeMillis() - friend.timestamp) < 5 * 60 * 1000
+                                                        val isOnline = (System.currentTimeMillis() - friend.timestamp) < 10 * 60 * 1000
                                                         Text(friend.name, style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Bold)
                                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                                             Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(if (isOnline) Color.Green else Color.Gray))
