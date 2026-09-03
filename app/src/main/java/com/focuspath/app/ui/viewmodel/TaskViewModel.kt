@@ -46,6 +46,7 @@ import java.text.SimpleDateFormat
 import javax.inject.Inject
 import com.focuspath.app.billing.BillingProvider
 import com.focuspath.app.service.FocusService
+import com.focuspath.app.util.ReminderUtil
 import com.google.ai.client.generativeai.type.FunctionCallPart
 import kotlinx.coroutines.delay
 
@@ -222,6 +223,80 @@ class TaskViewModel @Inject constructor(
 
     private val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
     private val todayStr: String get() = synchronized(sdf) { sdf.format(Date()) }
+
+    // WATER REMINDER STATE
+    val isWaterReminderEnabled = mutableStateOf(prefs.getBoolean("is_water_reminder_enabled", false))
+    val waterReminderInterval = mutableIntStateOf(prefs.getInt("water_reminder_interval", 1)) // hours
+    val waterCupsDrunk = mutableIntStateOf(0)
+    private var lastWaterRewardTime = prefs.getLong("last_water_reward_time", 0L)
+
+    fun drinkWater() {
+        val now = System.currentTimeMillis()
+        val cooldown = 30 * 60 * 1000L // 30 Dakika bekleme süresi
+        val dailyLimit = 10 // Günde en fazla 10 bardak için ödül
+
+        waterCupsDrunk.intValue += 1
+        prefs.edit().putInt("water_cups_drunk_$todayStr", waterCupsDrunk.intValue).apply()
+        playWaterSound()
+
+        // Suistimal Koruması: Süre doldu mu ve günlük limit aşılmadı mı?
+        if (now - lastWaterRewardTime >= cooldown && waterCupsDrunk.intValue <= dailyLimit) {
+            lastWaterRewardTime = now
+            prefs.edit().putLong("last_water_reward_time", now).apply()
+
+            // Ödül Ver
+            addCoins(5)
+            addXp(5)
+
+            viewModelScope.launch(Dispatchers.Main) {
+                showConfetti.value = true
+                delay(2000)
+                showConfetti.value = false
+            }
+        } else if (waterCupsDrunk.intValue > dailyLimit) {
+            viewModelScope.launch(Dispatchers.Main) {
+                Toast.makeText(application, "Günlük ödül limitine ulaştın (Maks 10).", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            val remainingMins = ((cooldown - (now - lastWaterRewardTime)) / 60000) + 1
+            viewModelScope.launch(Dispatchers.Main) {
+                Toast.makeText(application, "Çok hızlı içtin! Bir sonraki ödül için $remainingMins dk bekle.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun playWaterSound() {
+        // Hem başarı sesini çal (garanti olsun) hem de su sesini dene
+        playTickSound()
+        
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                // Daha hızlı yüklenen bir URL deneyelim (Mixkit public asset)
+                val soundUrl = "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"
+                val mp = MediaPlayer()
+                mp.setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
+                        .build()
+                )
+                mp.setDataSource(soundUrl)
+                mp.setOnPreparedListener { 
+                    it.start() 
+                }
+                mp.setOnCompletionListener { 
+                    it.release() 
+                }
+                mp.setOnErrorListener { player, _, _ ->
+                    player.release()
+                    true
+                }
+                mp.prepareAsync()
+            } catch (e: Exception) {
+                android.util.Log.e("FocusPathWater", "Sound setup error: ${e.message}")
+            }
+        }
+    }
 
     fun checkAndGenerateBriefing(isEnglish: Boolean) {
         val lastDate = prefs.getString("last_briefing_date", "")
@@ -778,6 +853,7 @@ class TaskViewModel @Inject constructor(
     }
 
     init {
+        waterCupsDrunk.intValue = prefs.getInt("water_cups_drunk_$todayStr", 0)
         loadOnboardingTasks() // ÖNCE GÖREVLERİ YÜKLE
         setupSoundPool()
         checkRemoteUpdate()
@@ -3458,6 +3534,22 @@ class TaskViewModel @Inject constructor(
     fun setNotificationEnabled(enabled: Boolean) { isNotificationEnabled.value = enabled ; prefs.edit().putBoolean("is_notification_enabled", enabled).apply() }
     fun setAlarmSound(sound: String) { alarmSound.value = sound ; prefs.edit().putString("alarm_sound", sound).apply() }
     fun setAlarmVolume(volume: Float) { alarmVolume.floatValue = volume ; prefs.edit().putFloat("alarm_volume", volume).apply() }
+    
+    fun setWaterReminder(enabled: Boolean, interval: Int, context: Context) {
+        isWaterReminderEnabled.value = enabled
+        waterReminderInterval.intValue = interval
+        prefs.edit().apply {
+            putBoolean("is_water_reminder_enabled", enabled)
+            putInt("water_reminder_interval", interval)
+        }.apply()
+
+        if (enabled) {
+            ReminderUtil.scheduleWaterReminder(context, interval)
+        } else {
+            ReminderUtil.cancelWaterReminder(context)
+        }
+    }
+
     fun setAutoDndEnabled(context: android.content.Context, enabled: Boolean) {
         val nm = context.getSystemService(android.content.Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
         if (enabled && !nm.isNotificationPolicyAccessGranted) { context.startActivity(Intent(android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)) ; return }

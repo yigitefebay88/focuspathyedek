@@ -248,7 +248,7 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
     val lang = if (isEnglish) {
         mapOf(
             "signedInAs" to "Signed in: ",
-            "tasks" to "Tasks", "ai" to "AI Core", "cal" to "Calendar",
+            "tasks" to "Tasks", "ai" to "AI Core", "cal" to "Calendar", "water" to "Water",
             "add" to "New Task...", "noteHint" to "Add details...",
             "search" to "Search tasks...", "all" to "All", "active" to "Active", "completed" to "Done",
             "empty" to "No tasks found in terminal.", "emptyChat" to "YimeBot ready. Ask anything.",
@@ -300,6 +300,7 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
             "ai" to "AI",
             "tasks" to "Görevler",
             "cal" to "Takvim",
+            "water" to "Su",
             "clearChat" to "Geçmişi Sil"
         )
     }
@@ -363,6 +364,7 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
                             3 -> if(isEnglish) "Calendar" else "Takvim"
                             4 -> if(isEnglish) "Virtual Office" else "Sanal Ofis"
                             5 -> if(isEnglish) "Settings" else "Ayarlar"
+                            6 -> if(isEnglish) "Water Reminder" else "Su Hatırlatıcı"
                             else -> "FocusPath"
                         }
                         Text(title, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
@@ -431,16 +433,17 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         val navLabels = if (isEnglish)
-                            listOf("QUEST", "INCOMING", "GAMES", "ACHIEVE", "FRIENDS")
+                            listOf("QUEST", "INCOMING", "GAMES", "ACHIEVE", "FRIENDS", "WATER")
                         else
-                            listOf("GÖREV", "GELEN", "OYUNLAR", "BAŞARIM", "ARKADAŞLAR")
+                            listOf("GÖREV", "GELEN", "OYUNLAR", "BAŞARIM", "ARKADAŞLAR", "SU")
 
                         val navActions = listOf(
                             { com.focuspath.app.MainActivity.showQuestDialogState.value = true },
                             { com.focuspath.app.MainActivity.showIncomingTasksDialogState.value = true },
                             { com.focuspath.app.MainActivity.showGamesDialogState.value = true },
                             { com.focuspath.app.MainActivity.showAchievementDialogState.value = true },
-                            { com.focuspath.app.MainActivity.showFriendsDialogState.value = true }
+                            { com.focuspath.app.MainActivity.showFriendsDialogState.value = true },
+                            { selectedTab = 6 }
                         )
 
                         navLabels.forEachIndexed { index, label ->
@@ -485,7 +488,8 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
                     Triple(1, Icons.Default.CheckCircle, lang["tasks"] ?: ""),
                     Triple(2, Icons.Default.SmartToy, lang["ai"] ?: ""),
                     Triple(3, Icons.Default.CalendarMonth, lang["cal"] ?: ""),
-                    Triple(4, Icons.Default.Business, lang["office"] ?: "")
+                    Triple(4, Icons.Default.Business, lang["office"] ?: ""),
+                    Triple(6, Icons.Default.WaterDrop, lang["water"] ?: "")
                 )
 
                 tabs.forEach { (index, icon, label) ->
@@ -553,6 +557,7 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
                     3 -> CalendarTabFull(vm, lang, currentMonthName, selectedDay, allTasksList, { selectedDay = it }, isEnglish, context, timerRunning, isPomodoroMode, timeLeft, timeElapsed, pomodoroTotalMillis, selectedFocusSound, completedSessions, { vm.toggleTimer(context, it) }, { vm.isPomodoroMode.value = it }, { vm.pomodoroTotalMillis.longValue = it ; vm.timeLeft.longValue = it }, { selectedFocusSound = it }, { showZenMode = true })
                     5 -> SettingsTabFull(vm, lang, isEnglish, onLoginClick, { isEnglish = !isEnglish })
                     4 -> OfficeTabFull(vm, isEnglish, context, allTasksList, completedSessions, { showLiveSession = true }) { showDirectChat = it }
+                    6 -> WaterTabFull(vm, isEnglish)
                 }
             }
         }

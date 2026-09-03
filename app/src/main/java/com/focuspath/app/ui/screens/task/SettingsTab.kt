@@ -131,12 +131,41 @@ fun SettingsTab(
             }
         }
 
+        // Water Reminder
+        Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(if(isEnglish) "HEALTH & WELLNESS" else "SAĞLIK VE YAŞAM", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(if(isEnglish) "Water Reminder" else "Su İçme Hatırlatıcısı")
+                        Text(if(isEnglish) "Get notified to stay hydrated" else "Su içmek için bildirim al", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                    }
+                  Switch(
+                        checked = vm.isWaterReminderEnabled.value, 
+                        onCheckedChange = { vm.setWaterReminder(it, vm.waterReminderInterval.intValue, context) }
+                    )
+                }
+
+                if (vm.isWaterReminderEnabled.value) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(text = (if(isEnglish) "Reminder Interval: " else "Hatırlatma Aralığı: ") + "${vm.waterReminderInterval.intValue} " + (if(isEnglish) "hours" else "saat"), style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                    Slider(
+                        value = vm.waterReminderInterval.intValue.toFloat(),
+                        onValueChange = { vm.setWaterReminder(true, it.toInt(), context) },
+                        valueRange = 1f..12f,
+                        steps = 11,
+                        colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.primary, activeTrackColor = MaterialTheme.colorScheme.primary)
+                    )
+                }
+            }
+        }
+
         // Account
         Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(lang["account"] ?: "", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
                 if (vm.isLoggedIn.value) {
-                    val context = LocalContext.current
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
