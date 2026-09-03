@@ -1,6 +1,8 @@
 package com.focuspath.app.ui.screens.task
 
 import androidx.compose.foundation.*
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -40,7 +42,7 @@ import android.content.Context
 import android.content.Intent
 import android.widget.Toast
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun TaskTab(
     vm: TaskViewModel,
@@ -73,6 +75,7 @@ fun TaskTab(
 
     var showAddHabitDialog by remember { mutableStateOf(false) }
     var habitNameInput by remember { mutableStateOf("") }
+    var habitToDelete by remember { mutableStateOf<HabitEntity?>(null) }
 
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
@@ -258,7 +261,7 @@ fun TaskTab(
             } else {
                 androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     items(habitList) { habit ->
-                        HabitCard(habit, vm, isEnglish)
+                        HabitCard(habit, vm, isEnglish, onLongClick = { habitToDelete = habit })
                     }
                 }
             }
@@ -497,15 +500,44 @@ fun TaskTab(
         )
     }
 
+    if (habitToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { habitToDelete = null },
+            title = { Text(if(isEnglish) "Delete Habit?" else "Alışkanlığı Sil?") },
+            text = { Text(if(isEnglish) "Are you sure you want to delete '${habitToDelete?.title}'?" else "'${habitToDelete?.title}' alışkanlığını silmek istediğinize emin misiniz?") },
+            confirmButton = {
+                Button(
+                    onClick = { 
+                        habitToDelete?.let { vm.deleteHabit(it) }
+                        habitToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentRed)
+                ) { Text(if(isEnglish) "Delete" else "Sil", color = Color.White) }
+            },
+            dismissButton = {
+                TextButton(onClick = { habitToDelete = null }) { Text(if(isEnglish) "Cancel" else "İptal") }
+            }
+        )
+    }
+
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun HabitCard(habit: HabitEntity, vm: TaskViewModel, isEnglish: Boolean) {
+fun HabitCard(habit: HabitEntity, vm: TaskViewModel, isEnglish: Boolean, onLongClick: () -> Unit) {
     val isDoneToday = isSameDayLocal(habit.lastCompletedDate, System.currentTimeMillis())
-    
+    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+
     Card(
-        onClick = { vm.toggleHabit(habit) },
-        modifier = Modifier.width(100.dp),
+        modifier = Modifier
+            .width(100.dp)
+            .combinedClickable(
+                onClick = { vm.toggleHabit(habit) },
+                onLongClick = { 
+                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onLongClick() 
+                }
+            ),
         colors = CardDefaults.cardColors(
             containerColor = if (isDoneToday) TerminalGreen.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surface
         ),

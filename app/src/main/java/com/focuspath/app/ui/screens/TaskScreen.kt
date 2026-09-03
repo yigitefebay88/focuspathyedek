@@ -1083,6 +1083,7 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
     var tabTaskFilter by rememberSaveable { mutableStateOf(0) }; var tabCategoryFilter by rememberSaveable { mutableStateOf("Tümü") }; var tabPriorityFilter by rememberSaveable { mutableStateOf(-1) }
 
     var showTomorrowDialog by remember { mutableStateOf(false) }
+    var habitToDelete by remember { mutableStateOf<HabitEntity?>(null) }
 
     LaunchedEffect(tabSearchQuery) { vm.setSearchQuery(tabSearchQuery) }
     LaunchedEffect(tabTaskFilter) { vm.setTaskFilter(tabTaskFilter) }
@@ -1245,8 +1246,15 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
                         items(habits, key = { it.id }) { habit ->
                             val isDoneToday = isSameDay(habit.lastCompletedDate, System.currentTimeMillis())
                             Card(
-                                onClick = { if(!isDoneToday) vm.toggleHabit(habit) },
-                                modifier = Modifier.width(120.dp),
+                                modifier = Modifier
+                                    .width(120.dp)
+                                    .combinedClickable(
+                                        onClick = { if(!isDoneToday) vm.toggleHabit(habit) },
+                                        onLongClick = { 
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            habitToDelete = habit 
+                                        }
+                                    ),
                                 shape = RoundedCornerShape(12.dp),
                                 colors = CardDefaults.cardColors(
                                     containerColor = if(isDoneToday) TerminalGreen.copy(alpha = 0.2f) else Color.Black.copy(alpha = 0.4f)
@@ -1654,6 +1662,26 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
     if (showTomorrowDialog) {
         TomorrowPlanningDialog(vm, isEnglish) { showTomorrowDialog = false }
     }
+
+    if (habitToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { habitToDelete = null },
+            title = { Text(if(isEnglish) "Delete Habit?" else "Alışkanlığı Sil?") },
+            text = { Text(if(isEnglish) "Are you sure you want to delete '${habitToDelete?.title}'?" else "'${habitToDelete?.title}' alışkanlığını silmek istediğinize emin misiniz?") },
+            confirmButton = {
+                Button(
+                    onClick = { 
+                        habitToDelete?.let { vm.deleteHabit(it) }
+                        habitToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentRed)
+                ) { Text(if(isEnglish) "Delete" else "Sil", color = Color.White) }
+            },
+            dismissButton = {
+                TextButton(onClick = { habitToDelete = null }) { Text(if(isEnglish) "Cancel" else "İptal") }
+            }
+        )
+    }
 }
 
 @Composable
@@ -1848,6 +1876,7 @@ private fun CalendarTabFull(vm: TaskViewModel, lang: Map<String, String>, curren
     var showCertificate by remember { mutableStateOf(false) }
     var brainDumpText by remember { mutableStateOf("") }
     var showTomorrowDialog by remember { mutableStateOf(false) }
+    var habitToDelete by remember { mutableStateOf<HabitEntity?>(null) }
 
     val lbUsers by vm.leaderboard.collectAsState(); Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))) {
@@ -2086,6 +2115,26 @@ private fun CalendarTabFull(vm: TaskViewModel, lang: Map<String, String>, curren
 
     if (showTomorrowDialog) {
         TomorrowPlanningDialog(vm, isEnglish) { showTomorrowDialog = false }
+    }
+
+    if (habitToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { habitToDelete = null },
+            title = { Text(if(isEnglish) "Delete Habit?" else "Alışkanlığı Sil?") },
+            text = { Text(if(isEnglish) "Are you sure you want to delete '${habitToDelete?.title}'?" else "'${habitToDelete?.title}' alışkanlığını silmek istediğinize emin misiniz?") },
+            confirmButton = {
+                Button(
+                    onClick = { 
+                        habitToDelete?.let { vm.deleteHabit(it) }
+                        habitToDelete = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentRed)
+                ) { Text(if(isEnglish) "Delete" else "Sil", color = Color.White) }
+            },
+            dismissButton = {
+                TextButton(onClick = { habitToDelete = null }) { Text(if(isEnglish) "Cancel" else "İptal") }
+            }
+        )
     }
 }
 
