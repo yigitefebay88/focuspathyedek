@@ -551,7 +551,7 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
                 label = "tabTransition"
             ) { targetSelectedTab ->
                 when (targetSelectedTab) {
-                    0 -> HomeTabFull(vm, allTasksList, lang, isEnglish, totalFocusMins, completedSessions, interruptedSessions, { selectedTab = it }, { showCertificate = it })
+                    0 -> HomeTabFull(vm, allTasksList, lang, isEnglish, totalFocusMins, completedSessions, interruptedSessions, { selectedTab = it })
                     1 -> TaskTabFull(vm, taskList, allTasksList, selectedDate, lang, isEnglish, greeting, currentQuote, haptic, context, isLandscape, { showClearDialog = true }, { showEditDialog = it }, { showDeleteConfirm = it }, { showReminderDialog = it }, { showQuoteHistory = true })
                     2 -> AiTabFull(vm, lang, isEnglish, context, chatHistory, isBotTyping, chatListState, taskList)
                     3 -> CalendarTabFull(vm, lang, currentMonthName, selectedDay, allTasksList, { selectedDay = it }, isEnglish, context, timerRunning, isPomodoroMode, timeLeft, timeElapsed, pomodoroTotalMillis, selectedFocusSound, completedSessions, { vm.toggleTimer(context, it) }, { vm.isPomodoroMode.value = it }, { vm.pomodoroTotalMillis.longValue = it ; vm.timeLeft.longValue = it }, { selectedFocusSound = it }, { showZenMode = true })
@@ -1003,27 +1003,6 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
                 }
             }
         }
-    }
-
-    if (showCertificate) {
-        // En güncel veriyi sağlamak için: 
-        // 1. Yerel DB sum + Henüz DB'ye yansımamış olan bugünkü dakikalar
-        // 2. Cloud'dan gelen toplam (Başka cihazlar veya reinstall durumu için)
-        val currentDayMins = vm.dailyFocusMinutes.intValue
-        val todayDbMins = todayStats?.totalFocusMinutes ?: 0
-        val pendingMins = (currentDayMins - todayDbMins).coerceAtLeast(0)
-        
-        val cloudTotal = vm.totalFocusMinutesCloud.intValue
-        val finalFocusMins = maxOf(totalFocusMins + pendingMins, cloudTotal)
-        
-        com.focuspath.app.ui.screens.task.CertificateDialog(
-            userName = vm.userName.value,
-            totalXp = vm.userXp.value.toLong(),
-            totalFocusMinutes = finalFocusMins,
-            totalTasksCompleted = totalTasksDone,
-            isEnglish = isEnglish,
-            onDismiss = { showCertificate = false }
-        )
     }
 }
 
@@ -1873,7 +1852,6 @@ private fun AiTabFull(vm: TaskViewModel, lang: Map<String, String>, isEnglish: B
 private fun CalendarTabFull(vm: TaskViewModel, lang: Map<String, String>, currentMonthName: String, selectedDay: Int, allTasksList: List<TaskEntity>, onDaySelect: (Int) -> Unit, isEnglish: Boolean, context: Context, timerRunning: Boolean, isPomodoroMode: Boolean, timeLeft: Long, timeElapsed: Long, pomodoroTotalMillis: Long, selectedFocusSound: String, completedPomodorosToday: Int, onTimerToggle: (Boolean) -> Unit, onModeToggle: (Boolean) -> Unit, onTimerSet: (Long) -> Unit, onSoundSelect: (String) -> Unit, onZenShow: () -> Unit) {
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     var showBrainDump by remember { mutableStateOf(false) }
-    var showCertificate by remember { mutableStateOf(false) }
     var brainDumpText by remember { mutableStateOf("") }
     var showTomorrowDialog by remember { mutableStateOf(false) }
     var habitToDelete by remember { mutableStateOf<HabitEntity?>(null) }
@@ -3855,7 +3833,7 @@ private fun isSameDay(millis1: Long, millis2: Long): Boolean {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map<String, String>, isEnglish: Boolean, totalFocusMinutes: Int, completedSessions: Int, interruptedSessions: Int, onTabChange: (Int) -> Unit, onShowCertificate: (Boolean) -> Unit) {
+private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map<String, String>, isEnglish: Boolean, totalFocusMinutes: Int, completedSessions: Int, interruptedSessions: Int, onTabChange: (Int) -> Unit) {
     val context = LocalContext.current
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     val leaderboard by vm.leaderboard.collectAsState()
@@ -4209,36 +4187,6 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
                             Text("⭐", fontSize = 24.sp)
                             Text("${com.focuspath.app.util.FocusRank.getTitle(totalXp.toLong(), isEnglish)} / $totalXp", fontWeight = FontWeight.Bold, fontSize = 12.sp, textAlign = TextAlign.Center)
                             Text(if(isEnglish) "Title / Level" else "Şirket Unvanı / Seviyesi", fontSize = 10.sp, color = Color.Gray)
-                            Spacer(Modifier.height(8.dp))
-                            
-                            val isCertificateUnlocked = totalXp >= 500
-                            
-                            TextButton(
-                                onClick = { 
-                                    if(isCertificateUnlocked) {
-                                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
-                                        onShowCertificate(true) 
-                                    }
-                                },
-                                contentPadding = PaddingValues(0.dp),
-                                modifier = Modifier.height(24.dp),
-                                enabled = true
-                            ) {
-                                Icon(
-                                    Icons.Default.Verified, 
-                                    null, 
-                                    modifier = Modifier.size(14.dp), 
-                                    tint = if(isCertificateUnlocked) com.focuspath.app.util.FocusRank.getColor(totalXp.toLong()) else Color.Gray
-                                )
-                                Spacer(Modifier.width(4.dp))
-                                Text(
-                                    text = if(isCertificateUnlocked) (if(isEnglish) "View Certificate" else "Sertifikayı Gör") 
-                                           else (if(isEnglish) "$totalXp/500 XP" else "$totalXp/500 XP"), 
-                                    fontSize = 10.sp, 
-                                    fontWeight = FontWeight.Bold, 
-                                    color = if(isCertificateUnlocked) com.focuspath.app.util.FocusRank.getColor(totalXp.toLong()) else Color.Gray
-                                )
-                            }
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text("🔥", fontSize = 24.sp)

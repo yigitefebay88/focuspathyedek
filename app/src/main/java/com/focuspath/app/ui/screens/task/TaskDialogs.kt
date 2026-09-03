@@ -1137,10 +1137,12 @@ fun TeamManagementDialog(
                         }
                     } else {
                         // ACTIVE TEAM STATE
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
+                        val currentTeam = userTeam
+                        if (currentTeam != null) {
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
                             // TEAM HEADER CARD
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
@@ -1155,18 +1157,18 @@ fun TeamManagementDialog(
                                     ) {
                                         Column {
                                             Text(
-                                                userTeam!!.name.uppercase(),
+                                                currentTeam.name.uppercase(),
                                                 style = MaterialTheme.typography.headlineSmall,
                                                 fontWeight = FontWeight.Black,
                                                 color = terminalColor
                                             )
                                             Row(verticalAlignment = Alignment.CenterVertically) {
                                                 Text(if (isEnglish) "HQ CODE: " else "TAKIM KODU: ", fontSize = 11.sp, color = Color.Gray)
-                                                Text(userTeam!!.inviteCode, fontWeight = FontWeight.Black, color = AccentYellow, letterSpacing = 1.sp)
+                                                Text(currentTeam.inviteCode, fontWeight = FontWeight.Black, color = AccentYellow, letterSpacing = 1.sp)
                                                 IconButton(
                                                     onClick = { 
                                                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                                                        val clip = android.content.ClipData.newPlainText("Team Code", userTeam!!.inviteCode)
+                                                        val clip = android.content.ClipData.newPlainText("Team Code", currentTeam.inviteCode)
                                                         clipboard.setPrimaryClip(clip)
                                                         Toast.makeText(context, "Kod kopyalandı!", Toast.LENGTH_SHORT).show()
                                                     },
@@ -1184,7 +1186,7 @@ fun TeamManagementDialog(
                                             border = BorderStroke(1.dp, terminalColor.copy(0.3f))
                                         ) {
                                             Text(
-                                                "LVL ${(userTeam!!.totalTeamXp / 5000 + 1)}",
+                                                "LVL ${(currentTeam.totalTeamXp / 5000 + 1)}",
                                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                                 fontSize = 10.sp,
                                                 fontWeight = FontWeight.Black,
@@ -1334,3 +1336,6 @@ fun TeamManagementDialog(
         }
     }
 }
+
+
+    }

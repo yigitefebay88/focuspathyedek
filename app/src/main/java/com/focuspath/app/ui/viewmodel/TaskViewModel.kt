@@ -201,6 +201,7 @@ class TaskViewModel @Inject constructor(
     val isTeamLoading = mutableStateOf(false)
     val isTeamOfisMode = mutableStateOf(prefs.getBoolean("is_team_office_mode", false))
     private var teamListener: com.google.firebase.firestore.ListenerRegistration? = null
+    private var teamMembersListener: com.google.firebase.firestore.ListenerRegistration? = null
 
     // MYSTERY BOX STATE
     val showMysteryBox = mutableStateOf(false)
@@ -1742,6 +1743,8 @@ class TaskViewModel @Inject constructor(
         prefs.unregisterOnSharedPreferenceChangeListener(prefsListener)
         friendRequestRegistration?.remove()
         liveFocusRegistration?.remove()
+        teamListener?.remove()
+        teamMembersListener?.remove()
         updateLiveFocusStatus(false)
         presenceHeartbeatJob?.cancel()
         soundPool?.release()
@@ -2364,6 +2367,11 @@ class TaskViewModel @Inject constructor(
                 }
 
                 // 2. KENDİ PROFİLİNDEN TAKIM BİLGİSİNİ KALDIR (Kritik İşlem)
+                teamListener?.remove()
+                teamMembersListener?.remove()
+                userTeam.value = null
+                teamMembers.clear()
+
                 val updateMap = mapOf<String, Any?>("teamId" to null)
                 firestore.collection("users").document(user.uid).set(updateMap, com.google.firebase.firestore.SetOptions.merge()).await()
                 if (user.email != null) {
@@ -2404,25 +2412,33 @@ class TaskViewModel @Inject constructor(
                 
                 if (team != null) {
                     completeOnboardingTask("join_team") // Takımdaysa görevi tamamla
+                    
                     // Takım üyelerini getir
-                    firestore.collection("leaderboard")
-                        .whereIn("email", team.memberEmails)
-                        .addSnapshotListener { lbSnapshot, _ ->
-                            val members = lbSnapshot?.documents?.mapNotNull { doc -> 
-                                try {
-                                    val u = doc.toObject(LeaderboardUser::class.java)?.copy(uid = doc.id)
-                                    // Agresif fallback
-                                    val photoVal = doc.get("photoUrl") ?: doc.get("photo_url")
-                                    val photoStr = photoVal?.toString()?.trim()
-                                    if (!photoStr.isNullOrBlank() && photoStr.startsWith("http")) {
-                                        u?.photoUrl = photoStr
-                                    }
-                                    u
-                                } catch (ex: Exception) { null }
-                            } ?: emptyList()
-                            teamMembers.clear()
-                            teamMembers.addAll(members)
-                        }
+                    teamMembersListener?.remove()
+                    if (team.memberEmails.isNotEmpty()) {
+                        teamMembersListener = firestore.collection("leaderboard")
+                            .whereIn("email", team.memberEmails)
+                            .addSnapshotListener { lbSnapshot, _ ->
+                                val members = lbSnapshot?.documents?.mapNotNull { doc -> 
+                                    try {
+                                        val u = doc.toObject(LeaderboardUser::class.java)?.copy(uid = doc.id)
+                                        // Agresif fallback
+                                        val photoVal = doc.get("photoUrl") ?: doc.get("photo_url")
+                                        val photoStr = photoVal?.toString()?.trim()
+                                        if (!photoStr.isNullOrBlank() && photoStr.startsWith("http")) {
+                                            u?.photoUrl = photoStr
+                                        }
+                                        u
+                                    } catch (ex: Exception) { null }
+                                } ?: emptyList()
+                                teamMembers.clear()
+                                teamMembers.addAll(members)
+                            }
+                    } else {
+                        teamMembers.clear()
+                    }
+                } else {
+                    teamMembers.clear()
                 }
             }
     }
