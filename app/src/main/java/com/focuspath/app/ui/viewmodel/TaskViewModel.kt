@@ -233,14 +233,21 @@ class TaskViewModel @Inject constructor(
     fun drinkWater() {
         val now = System.currentTimeMillis()
         val cooldown = 30 * 60 * 1000L // 30 Dakika bekleme süresi
-        val dailyLimit = 10 // Günde en fazla 10 bardak için ödül
+        val dailyLimit = 8 // Hedef 8 bardak, limit de 8 olsun
+
+        if (waterCupsDrunk.intValue >= dailyLimit) {
+            viewModelScope.launch(Dispatchers.Main) {
+                Toast.makeText(application, "Günlük hedefine zaten ulaştın! (8/8) 💧", Toast.LENGTH_SHORT).show()
+            }
+            return
+        }
 
         waterCupsDrunk.intValue += 1
         prefs.edit().putInt("water_cups_drunk_$todayStr", waterCupsDrunk.intValue).apply()
         playWaterSound()
 
-        // Suistimal Koruması: Süre doldu mu ve günlük limit aşılmadı mı?
-        if (now - lastWaterRewardTime >= cooldown && waterCupsDrunk.intValue <= dailyLimit) {
+        // Suistimal Koruması: Süre doldu mu?
+        if (now - lastWaterRewardTime >= cooldown) {
             lastWaterRewardTime = now
             prefs.edit().putLong("last_water_reward_time", now).apply()
 
@@ -252,10 +259,6 @@ class TaskViewModel @Inject constructor(
                 showConfetti.value = true
                 delay(2000)
                 showConfetti.value = false
-            }
-        } else if (waterCupsDrunk.intValue > dailyLimit) {
-            viewModelScope.launch(Dispatchers.Main) {
-                Toast.makeText(application, "Günlük ödül limitine ulaştın (Maks 10).", Toast.LENGTH_SHORT).show()
             }
         } else {
             val remainingMins = ((cooldown - (now - lastWaterRewardTime)) / 60000) + 1
