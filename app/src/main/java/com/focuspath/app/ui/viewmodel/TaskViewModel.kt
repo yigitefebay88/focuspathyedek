@@ -180,7 +180,7 @@ class TaskViewModel @Inject constructor(
     val dopamineMultiplier = mutableFloatStateOf(1.0f)
     val currentTaskEstimation = mutableIntStateOf(0)
 
-    private var liveFocusUpdateJob: kotlinx.coroutines.Job? = null
+    private var presenceHeartbeatJob: kotlinx.coroutines.Job? = null
 
     val isLeaderboardLoading = mutableStateOf(false)
     
@@ -883,6 +883,7 @@ class TaskViewModel @Inject constructor(
             startFriendRequestListener()
             startFriendsListener()
             startLiveFocusListener()
+            startPresenceHeartbeat()
         }
         
         // Arkadaş listesi güncellendiğinde ofisi tazele
@@ -1700,12 +1701,40 @@ class TaskViewModel @Inject constructor(
         }
     }
 
+    private fun startPresenceHeartbeat() {
+        presenceHeartbeatJob?.cancel()
+        if (firebaseAuth.currentUser == null) return
+        
+        presenceHeartbeatJob = viewModelScope.launch(Dispatchers.IO) {
+            while (true) {
+                try {
+                    val focusing = isFocusActive.value
+                    // Leaderboard timestamp güncelle (Online status için)
+                    syncXpToFirestore(isFocusing = focusing)
+                    
+                    // Eğer odaklanma modundaysak, live_focus koleksiyonunu da güncelle (Ofis sistemi için)
+                    if (focusing) {
+                        updateLiveFocusStatus(true)
+                    }
+                    
+                    // Bekleme süresi: Odaklanırken 30sn, normalde 3dk (Online süresi 5dk olduğu için 3dk güvenli)
+                    val delayMillis = if (focusing) 30000L else 180000L
+                    delay(delayMillis)
+                } catch (e: Exception) {
+                    if (e is kotlinx.coroutines.CancellationException) throw e
+                    delay(10000L) // Hata durumunda bekle
+                }
+            }
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
         prefs.unregisterOnSharedPreferenceChangeListener(prefsListener)
         friendRequestRegistration?.remove()
         liveFocusRegistration?.remove()
         updateLiveFocusStatus(false)
+        presenceHeartbeatJob?.cancel()
         soundPool?.release()
         soundPool = null
         
@@ -3039,16 +3068,8 @@ class TaskViewModel @Inject constructor(
             }
         }
         
-        // Periyodik canlılık güncellemesi
-        liveFocusUpdateJob?.cancel()
-        if (active) {
-            liveFocusUpdateJob = viewModelScope.launch(Dispatchers.IO) {
-                while (true) {
-                    delay(30000L) // 30 saniyede bir güncelle
-                    updateLiveFocusStatus(true)
-                }
-            }
-        }
+        // Periyodik canlılık güncellemesini (heartbeat) modu değiştirerek yeniden başlat
+        startPresenceHeartbeat()
         
         updateAmbientSounds() // Ambient sesleri güncelle
 
@@ -3168,6 +3189,7 @@ class TaskViewModel @Inject constructor(
                 startFriendRequestListener()
                 startFriendsListener()
                 startLiveFocusListener()
+                startPresenceHeartbeat()
                 onSuccess(user.email ?: "")
             } catch (e: Exception) { 
                 android.util.Log.e("FocusPathAuth", "Firebase login error", e)
@@ -3235,6 +3257,7 @@ class TaskViewModel @Inject constructor(
                     startFriendRequestListener()
                     startFriendsListener()
                     startLiveFocusListener()
+                    startPresenceHeartbeat()
                     onSuccess()
                 } else {
                     throw Exception("Kullanıcı oluşturulamadı.")
@@ -3274,6 +3297,7 @@ class TaskViewModel @Inject constructor(
                 startFriendRequestListener()
                 startFriendsListener()
                 startLiveFocusListener()
+                startPresenceHeartbeat()
                 onSuccess() 
             } catch (e: Exception) { 
                 android.util.Log.e("FocusPathAuth", "Registration error", e)
