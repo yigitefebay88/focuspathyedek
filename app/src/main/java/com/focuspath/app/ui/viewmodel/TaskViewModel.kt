@@ -229,11 +229,13 @@ class TaskViewModel @Inject constructor(
     val isWaterReminderEnabled = mutableStateOf(prefs.getBoolean("is_water_reminder_enabled", false))
     val waterReminderInterval = mutableIntStateOf(prefs.getInt("water_reminder_interval", 1)) // hours
     val waterCupsDrunk = mutableIntStateOf(0)
+    val isWaterRewardAvailable = mutableStateOf(false)
     private var lastWaterRewardTime = prefs.getLong("last_water_reward_time", 0L)
+    private var lastWaterReminderTime = prefs.getLong("last_water_reminder_time", 0L)
 
     fun drinkWater() {
         val now = System.currentTimeMillis()
-        val cooldown = 30 * 60 * 1000L // 30 Dakika bekleme süresi
+        val reminderWindow = 2 * 60 * 60 * 1000L // 2 saatlik pencere (Bildirimden sonra 2 saat içinde basarsa)
         val dailyLimit = 8 // Hedef 8 bardak, limit de 8 olsun
 
         if (waterCupsDrunk.intValue >= dailyLimit) {
@@ -243,12 +245,21 @@ class TaskViewModel @Inject constructor(
             return
         }
 
+        // Bildirim gelmiş mi kontrol et
+        // ReminderReceiver.kt içinde last_water_reminder_time set ediliyor
+        lastWaterReminderTime = prefs.getLong("last_water_reminder_time", 0L)
+
         waterCupsDrunk.intValue += 1
         prefs.edit().putInt("water_cups_drunk_$todayStr", waterCupsDrunk.intValue).apply()
         playWaterSound()
 
-        // Suistimal Koruması: Süre doldu mu?
-        if (now - lastWaterRewardTime >= cooldown) {
+        // Suistimal Koruması: Bildirimden sonra makul bir süre içinde mi ve henüz ödül alınmamış mı?
+        if (lastWaterReminderTime > 0 && now - lastWaterReminderTime <= reminderWindow) {
+            // Ödülü ver ve bu bildirimi "kullanılmış" olarak işaretle
+            prefs.edit().putLong("last_water_reminder_time", 0L).apply()
+            lastWaterReminderTime = 0
+            isWaterRewardAvailable.value = false
+
             lastWaterRewardTime = now
             prefs.edit().putLong("last_water_reward_time", now).apply()
 
@@ -262,9 +273,13 @@ class TaskViewModel @Inject constructor(
                 showConfetti.value = false
             }
         } else {
-            val remainingMins = ((cooldown - (now - lastWaterRewardTime)) / 60000) + 1
+            // Bildirim yoksa veya süresi geçtiyse sadece su içildi sayılır, coin verilmez
             viewModelScope.launch(Dispatchers.Main) {
-                Toast.makeText(application, "Çok hızlı içtin! Bir sonraki ödül için $remainingMins dk bekle.", Toast.LENGTH_SHORT).show()
+                val message = if (lastWaterReminderTime == 0L) 
+                    "Su içtin! 💧 (Hatırlatıcı bekleyerek coin kazanabilirsin)" 
+                else 
+                    "Hatırlatıcı süresi dolmuş! 💧"
+                Toast.makeText(application, message, Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -851,6 +866,11 @@ class TaskViewModel @Inject constructor(
                     android.util.Log.d("FocusPathStats", "Coins Synced from Prefs: $newCoins")
                 }
             }
+            "last_water_reminder_time" -> {
+                val lastTime = sharedPrefs.getLong("last_water_reminder_time", 0L)
+                val now = System.currentTimeMillis()
+                isWaterRewardAvailable.value = lastTime > 0 && (now - lastTime < 2 * 60 * 60 * 1000L)
+            }
             "office_level" -> officeLevel.value = sharedPrefs.getInt("office_level", officeLevel.value)
             "is_premium" -> isPremium.value = sharedPrefs.getBoolean("is_premium", isPremium.value)
         }
@@ -858,6 +878,11 @@ class TaskViewModel @Inject constructor(
 
     init {
         waterCupsDrunk.intValue = prefs.getInt("water_cups_drunk_$todayStr", 0)
+        
+        // Ödül durumunu kontrol et
+        val lastTime = prefs.getLong("last_water_reminder_time", 0L)
+        isWaterRewardAvailable.value = lastTime > 0 && (System.currentTimeMillis() - lastTime < 2 * 60 * 60 * 1000L)
+
         loadOnboardingTasks() // ÖNCE GÖREVLERİ YÜKLE
         setupSoundPool()
         checkRemoteUpdate()

@@ -18,6 +18,9 @@ class ReminderReceiver : BroadcastReceiver() {
             val prefs = context.getSharedPreferences("focuspath_prefs", Context.MODE_PRIVATE)
             val interval = prefs.getInt("water_reminder_interval", 1)
             ReminderUtil.scheduleWaterReminder(context, interval)
+
+            // Son bildirim zamanını kaydet (Suistimal önleme için)
+            prefs.edit().putLong("last_water_reminder_time", System.currentTimeMillis()).apply()
         }
 
         val title = if (isWaterReminder) {

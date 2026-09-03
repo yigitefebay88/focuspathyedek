@@ -123,8 +123,10 @@ fun WaterTabFull(
         ) {
             Icon(Icons.Default.LocalDrink, null)
             Spacer(Modifier.width(8.dp))
+            
+            val coinText = if (vm.isWaterRewardAvailable.value) " (+5 Coin)" else ""
             Text(
-                text = if (isEnglish) "I DRANK WATER (+5 Coin)" else "SU İÇTİM (+5 Coin)",
+                text = (if (isEnglish) "I DRANK WATER" else "SU İÇTİM") + coinText,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.ExtraBold
             )
