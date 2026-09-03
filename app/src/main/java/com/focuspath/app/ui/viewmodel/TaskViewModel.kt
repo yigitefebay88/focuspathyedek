@@ -915,7 +915,6 @@ class TaskViewModel @Inject constructor(
     private fun loadDopamineMenu() {
         dopamineMenu.clear()
         dopamineMenu.addAll(listOf(
-            DopamineItem(titleTr = "Bir bardak su iç", titleEn = "Drink a glass of water", category = "Appetizer", icon = "💧"),
             DopamineItem(titleTr = "Derin nefes al (2 dk)", titleEn = "Deep breathing (2 min)", category = "Appetizer", icon = "🌬️", actionType = "BREATHING"),
             DopamineItem(titleTr = "Pencereden dışarı bak", titleEn = "Look out the window", category = "Appetizer", icon = "🪟"),
             DopamineItem(titleTr = "Kısa bir yürüyüş", titleEn = "Take a short walk", category = "Main", icon = "🚶"),
