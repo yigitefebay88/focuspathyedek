@@ -752,7 +752,10 @@ class MainActivity : ComponentActivity(), BillingProvider {
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
                                                     Column {
-                                                        val isOnline = (System.currentTimeMillis() - friend.timestamp) < 10 * 60 * 1000
+                                                        val diff = kotlin.math.abs(System.currentTimeMillis() - friend.timestamp)
+                                                        val isOnline = diff < 15 * 60 * 1000
+                                                        android.util.Log.d("FocusPathPresence", "Friend ${friend.name} status check: diff=${diff/1000}s, isOnline=$isOnline")
+                                                        
                                                         Text(friend.name, style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Bold)
                                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                                             Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(if (isOnline) Color.Green else Color.Gray))

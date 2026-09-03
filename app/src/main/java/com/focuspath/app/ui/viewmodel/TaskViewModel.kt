@@ -2718,6 +2718,8 @@ class TaskViewModel @Inject constructor(
                     "currentTaskTitle" to (if (isFocusing) activeTask?.title ?: "" else "")
                 )
 
+                android.util.Log.d("FocusPathPresence", "Syncing presence to Firestore for ${user.email} (focusing=$isFocusing)")
+                
                 firestore.collection("leaderboard").document(user.uid)
                     .set(updateMap, com.google.firebase.firestore.SetOptions.merge())
                     .await()
