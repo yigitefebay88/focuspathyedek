@@ -1084,6 +1084,12 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
     
     // Smooth scrolling physics
     val flingBehavior = ScrollableDefaults.flingBehavior()
+    val itemAnimationSpec = remember {
+        spring<IntOffset>(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessMedium
+        )
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -1093,7 +1099,7 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
         // ONBOARDING TASKS
         if (onboardingTasks.isNotEmpty() && !isMinimalist) {
             item(key = "onboarding_section", contentType = "onboarding") {
-                Column {
+                Column(modifier = Modifier.graphicsLayer { clip = true }) {
                     Text(
                         text = if(isEnglish) "🚀 STARTER MISSIONS" else "🚀 BAŞLANGIÇ GÖREVLERİ",
                         style = MaterialTheme.typography.labelSmall,
@@ -1185,13 +1191,12 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
             }
         }
 
-        // ALISKANLIK ZINCIRI (HABIT CHAIN)
-        item(key = "habit_chain_section") {
+        item(key = "habit_chain_section", contentType = "habit") {
             val habits by vm.allHabits.collectAsState()
             var showAddHabit by remember { mutableStateOf(false) }
             var newHabitName by remember { mutableStateOf("") }
 
-            Column(modifier = Modifier.fillMaxWidth().animateItemPlacement()) {
+            Column(modifier = Modifier.fillMaxWidth().animateItemPlacement(itemAnimationSpec)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = if(isEnglish) "🔥 HABIT CHAIN" else "🔥 ALIŞKANLIK ZİNCİRİ",
@@ -1294,10 +1299,10 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
             }
         }
 
-        item(key = "daily_planner") {
+        item(key = "daily_planner", contentType = "planner") {
             if (!isMinimalist) {
                 Card(
-                    modifier = Modifier.fillMaxWidth().animateItemPlacement(),
+                    modifier = Modifier.fillMaxWidth().animateItemPlacement(itemAnimationSpec),
                     shape = RoundedCornerShape(12.dp),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
                 ) {
@@ -1342,8 +1347,8 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
             }
         }
 
-        item(key = "greeting_card") {
-            Card(modifier = Modifier.fillMaxWidth().animateItemPlacement(), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(0.3f))) {
+        item(key = "greeting_card", contentType = "greeting") {
+            Card(modifier = Modifier.fillMaxWidth().animateItemPlacement(itemAnimationSpec), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(0.3f))) {
                 Row(modifier = Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(text = greeting, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold), color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -1390,10 +1395,10 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
             }
         }
 
-        item(key = "progress_indicator") {
+        item(key = "progress_indicator", contentType = "progress") {
             if (totalCount > 0) {
                 val progress = doneCount.toFloat() / totalCount.toFloat()
-                Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp).animateItemPlacement()) {
+                Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp).animateItemPlacement(itemAnimationSpec)) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("İlerleme", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
                         Text("${(progress * 100).toInt()}%", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
@@ -1404,8 +1409,8 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
             }
         }
 
-        item(key = "add_task_form") {
-            Column(modifier = Modifier.animateItemPlacement()) {
+        item(key = "add_task_form", contentType = "form") {
+            Column(modifier = Modifier.animateItemPlacement(itemAnimationSpec)) {
                 OutlinedTextField(
                     value = tabTaskInput, 
                     onValueChange = { tabTaskInput = it }, 
@@ -1566,11 +1571,9 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
                 modifier = Modifier
                     .fillMaxWidth()
                     .animateItemPlacement(
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioLowBouncy,
-                            stiffness = Spring.StiffnessLow
-                        )
+                        animationSpec = itemAnimationSpec
                     )
+                    .graphicsLayer { clip = true }
                     .pointerInput(task.id) {
                         detectTapGestures(onLongPress = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onShowEditDialog(task) })
                     },
@@ -1578,8 +1581,8 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
             ) {
                 Row(modifier = Modifier.fillMaxWidth().padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(
-                        checked = task.isCompleted, 
-                        onCheckedChange = { 
+                        checked = task.isCompleted,
+                        onCheckedChange = {
                             vm.toggleTask(task)
                             haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
                         },
@@ -1588,18 +1591,18 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
                     Spacer(Modifier.width(6.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = task.title, 
-                            modifier = Modifier.basicMarquee(),
+                            text = task.title,
+                            modifier = Modifier.then(if (!task.isCompleted) Modifier.basicMarquee() else Modifier),
                             maxLines = 1,
                             style = MaterialTheme.typography.bodyMedium.copy(
                                 textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None
                             )
                         )
                         if (task.notes.isNotBlank()) Text(
-                            text = task.notes, 
-                            style = MaterialTheme.typography.bodySmall, 
-                            color = Color.Gray, 
-                            maxLines = 2, 
+                            text = task.notes,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.Gray,
+                            maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1637,7 +1640,7 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
                 }
             }
         }
-        item { Spacer(Modifier.height(80.dp)) } // Bottom bar için boşluk
+        item(key = "task_list_spacer", contentType = "spacer") { Spacer(Modifier.height(80.dp)) } // Bottom bar için boşluk
     }
 
     if (showTomorrowDialog) {
@@ -3869,10 +3872,18 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
         allTasks.filter { !it.isCompleted && it.dueDate >= startOfToday && it.parentId == 0L }.sortedBy { it.dueDate }
     }
 
+    val flingBehavior = ScrollableDefaults.flingBehavior()
+    val itemAnimationSpec = remember {
+        spring<IntOffset>(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessMedium
+        )
+    }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
-        flingBehavior = ScrollableDefaults.flingBehavior()
+        flingBehavior = flingBehavior
     ) {
         item(key = "home_header", contentType = "header") {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -3921,7 +3932,7 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
         if (yesterdayMins > 0) {
             item(key = "daily_challenge", contentType = "challenge") {
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().animateItemPlacement(itemAnimationSpec),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = AccentYellow.copy(alpha = 0.05f)),
                     border = BorderStroke(1.dp, AccentYellow.copy(alpha = 0.2f))
@@ -3952,14 +3963,13 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
             }
         }
 
-        // MINI RADIO ROW
         item(key = "home_radio", contentType = "radio") {
             val currentStation by vm.currentRadioStation
             val isRadioPlaying by vm.isRadioPlaying
             val isRadioLoading by vm.isRadioLoading
 
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().animateItemPlacement(itemAnimationSpec),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
@@ -4023,11 +4033,10 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
             }
         }
 
-        // DOPAMINE MENU BUTTON
         item(key = "home_dopamenu", contentType = "dopamenu") {
             Card(
                 onClick = { vm.showDopamineMenu.value = true },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().animateItemPlacement(itemAnimationSpec),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
@@ -4058,7 +4067,7 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
 
         item(key = "home_leaderboard", contentType = "leaderboard") {
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().animateItemPlacement(itemAnimationSpec),
                 shape = RoundedCornerShape(16.dp),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(0.3f))
             ) {
@@ -4186,7 +4195,7 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
 
         item(key = "home_rewards", contentType = "rewards") {
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().animateItemPlacement(itemAnimationSpec),
                 shape = RoundedCornerShape(16.dp),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(0.3f))
             ) {
@@ -4216,7 +4225,7 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
 
         item(key = "home_sessions", contentType = "sessions") {
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().animateItemPlacement(itemAnimationSpec),
                 shape = RoundedCornerShape(16.dp),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(0.3f))
             ) {
@@ -4277,7 +4286,7 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
 
         item(key = "home_reminders", contentType = "reminders") {
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().animateItemPlacement(itemAnimationSpec),
                 shape = RoundedCornerShape(16.dp),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(0.3f))
             ) {
@@ -4313,7 +4322,7 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
             }
         }
 
-        item(key = "home_motivation") {
+        item(key = "home_motivation", contentType = "motivation") {
             val quotes = listOf(
                 "Focus on being productive instead of busy.",
                 "Your focus determines your reality.",
@@ -4333,7 +4342,7 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
             val currentQuoteText = if (isEnglish) quotes[hourIndex] else quotesTr[hourIndex]
 
             Card(
-                modifier = Modifier.fillMaxWidth().animateItemPlacement(),
+                modifier = Modifier.fillMaxWidth().animateItemPlacement(itemAnimationSpec),
                 shape = RoundedCornerShape(16.dp),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
             ) {
@@ -4366,7 +4375,7 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
                 }
             }
         }
-        item(key = "home_spacer") { Spacer(Modifier.height(80.dp).animateItemPlacement()) }
+        item(key = "home_spacer", contentType = "spacer") { Spacer(Modifier.height(80.dp).animateItemPlacement(itemAnimationSpec)) }
     }
 }
 
