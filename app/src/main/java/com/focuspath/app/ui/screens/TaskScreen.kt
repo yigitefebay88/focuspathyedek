@@ -32,6 +32,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -97,6 +99,7 @@ import nl.dionsegijn.konfetti.core.Party
 import nl.dionsegijn.konfetti.core.Position
 import nl.dionsegijn.konfetti.core.emitter.Emitter
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -112,7 +115,9 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
     val totalTasksDone by vm.totalTasksCompleted.collectAsState(initial = 0)
     val selectedDate by vm.selectedDate.collectAsState()
 
-    var selectedTab by rememberSaveable { mutableStateOf(0) }
+    val pagerState = rememberPagerState(pageCount = { 7 })
+    val coroutineScope = rememberCoroutineScope()
+    val selectedTab = pagerState.currentPage
     var showCertificate by remember { mutableStateOf(false) }
     var taskInput by rememberSaveable { mutableStateOf("") }
     var taskNotes by rememberSaveable { mutableStateOf("") }
@@ -363,15 +368,15 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
                             2 -> if(isEnglish) "AI Assistant" else "AI Asistan"
                             3 -> if(isEnglish) "Calendar" else "Takvim"
                             4 -> if(isEnglish) "Virtual Office" else "Sanal Ofis"
-                            5 -> if(isEnglish) "Settings" else "Ayarlar"
-                            6 -> if(isEnglish) "Water Reminder" else "Su Hatırlatıcı"
+                            5 -> if(isEnglish) "Water Reminder" else "Su Hatırlatıcı"
+                            6 -> if(isEnglish) "Settings" else "Ayarlar"
                             else -> "FocusPath"
                         }
                         Text(title, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
                     },
                     actions = {
                         IconButton(onClick = {
-                            selectedTab = 0 // Görevler tabına git
+                            coroutineScope.launch { pagerState.animateScrollToPage(1) }
                         }) {
                             Icon(Icons.Default.Search, null)
                         }
@@ -399,7 +404,7 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
                         }
 
                         IconButton(onClick = {
-                            selectedTab = 5 // Settings tabına git
+                            coroutineScope.launch { pagerState.animateScrollToPage(6) }
                         }) {
                             Icon(Icons.Default.Settings, null)
                         }
@@ -437,13 +442,13 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
                         else
                             listOf("GÖREV", "GELEN", "OYUNLAR", "BAŞARIM", "ARKADAŞLAR", "SU")
 
-                        val navActions = listOf(
+                        val navActions: List<() -> Unit> = listOf(
                             { com.focuspath.app.MainActivity.showQuestDialogState.value = true },
                             { com.focuspath.app.MainActivity.showIncomingTasksDialogState.value = true },
                             { com.focuspath.app.MainActivity.showGamesDialogState.value = true },
                             { com.focuspath.app.MainActivity.showAchievementDialogState.value = true },
                             { com.focuspath.app.MainActivity.showFriendsDialogState.value = true },
-                            { selectedTab = 6 }
+                            { coroutineScope.launch { pagerState.animateScrollToPage(5) } }
                         )
 
                         navLabels.forEachIndexed { index, label ->
@@ -489,7 +494,7 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
                     Triple(2, Icons.Default.SmartToy, lang["ai"] ?: ""),
                     Triple(3, Icons.Default.CalendarMonth, lang["cal"] ?: ""),
                     Triple(4, Icons.Default.Business, lang["office"] ?: ""),
-                    Triple(6, Icons.Default.WaterDrop, lang["water"] ?: "")
+                    Triple(5, Icons.Default.WaterDrop, lang["water"] ?: "")
                 )
 
                 tabs.forEach { (index, icon, label) ->
@@ -525,39 +530,26 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
                             )
                         },
                         selected = isSelected,
-                        onClick = { selectedTab = index }
+                        onClick = { coroutineScope.launch { pagerState.animateScrollToPage(index) } }
                     )
                 }
             }
         }
     ) { inner ->
         Box(modifier = Modifier.padding(inner).consumeWindowInsets(inner).imePadding().padding(16.dp)) {
-            AnimatedContent(
-                targetState = selectedTab,
-                transitionSpec = {
-                    val springSpec = spring<IntOffset>(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow)
-                    val fadeSpec = tween<Float>(durationMillis = 300)
-                    
-                    if (targetState > initialState) {
-                        (slideInHorizontally(animationSpec = springSpec) { width -> width } + fadeIn(animationSpec = fadeSpec)).togetherWith(
-                            slideOutHorizontally(animationSpec = springSpec) { width -> -width } + fadeOut(animationSpec = fadeSpec))
-                    } else {
-                        (slideInHorizontally(animationSpec = springSpec) { width -> -width } + fadeIn(animationSpec = fadeSpec)).togetherWith(
-                            slideOutHorizontally(animationSpec = springSpec) { width -> width } + fadeOut(animationSpec = fadeSpec))
-                    }.using(
-                        SizeTransform(clip = false)
-                    )
-                },
-                label = "tabTransition"
-            ) { targetSelectedTab ->
-                when (targetSelectedTab) {
-                    0 -> HomeTabFull(vm, allTasksList, lang, isEnglish, totalFocusMins, completedSessions, interruptedSessions, { selectedTab = it })
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize(),
+                beyondViewportPageCount = 1
+            ) { page ->
+                when (page) {
+                    0 -> HomeTabFull(vm, allTasksList, lang, isEnglish, totalFocusMins, completedSessions, interruptedSessions) { coroutineScope.launch { pagerState.animateScrollToPage(it) } }
                     1 -> TaskTabFull(vm, taskList, allTasksList, selectedDate, lang, isEnglish, greeting, currentQuote, haptic, context, isLandscape, { showClearDialog = true }, { showEditDialog = it }, { showDeleteConfirm = it }, { showReminderDialog = it }, { showQuoteHistory = true })
                     2 -> AiTabFull(vm, lang, isEnglish, context, chatHistory, isBotTyping, chatListState, taskList)
                     3 -> CalendarTabFull(vm, lang, currentMonthName, selectedDay, allTasksList, { selectedDay = it }, isEnglish, context, timerRunning, isPomodoroMode, timeLeft, timeElapsed, pomodoroTotalMillis, selectedFocusSound, completedSessions, { vm.toggleTimer(context, it) }, { vm.isPomodoroMode.value = it }, { vm.pomodoroTotalMillis.longValue = it ; vm.timeLeft.longValue = it }, { selectedFocusSound = it }, { showZenMode = true })
-                    5 -> SettingsTabFull(vm, lang, isEnglish, onLoginClick, { isEnglish = !isEnglish })
                     4 -> OfficeTabFull(vm, isEnglish, context, allTasksList, completedSessions, { showLiveSession = true }) { showDirectChat = it }
-                    6 -> WaterTabFull(vm, isEnglish)
+                    5 -> WaterTabFull(vm, isEnglish)
+                    6 -> SettingsTabFull(vm, lang, isEnglish, onLoginClick, { isEnglish = !isEnglish })
                 }
             }
         }
@@ -572,7 +564,7 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
             vm = vm, 
             isEnglish = isEnglish,
             onDismiss = { vm.showDopamineMenu.value = false },
-            onNavigateToTab = { selectedTab = it }
+            onNavigateToTab = { coroutineScope.launch { pagerState.animateScrollToPage(it) } }
         )
     }
 

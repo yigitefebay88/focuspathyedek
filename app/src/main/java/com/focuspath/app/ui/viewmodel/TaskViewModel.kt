@@ -317,6 +317,8 @@ class TaskViewModel @Inject constructor(
         }
     }
 
+
+
     fun checkAndGenerateBriefing(isEnglish: Boolean) {
         val lastDate = prefs.getString("last_briefing_date", "")
         if (lastDate == todayStr) return // Bugün zaten gösterildi

@@ -1184,7 +1184,6 @@ fun MazeGame(vm: TaskViewModel, onExit: () -> Unit) {
 
         LaunchedEffect(isWin) {
             if (isWin) {
-                delay(500L)
                 score += 50
                 playerX = 0
                 playerY = 0
@@ -1239,13 +1238,13 @@ fun MazeGame(vm: TaskViewModel, onExit: () -> Unit) {
                 }
                 Spacer(Modifier.weight(1f))
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    IconButton(onClick = { if (playerY > 0 && currentMaze[playerY - 1][playerX] == 0) playerY-- }) { Icon(Icons.Default.KeyboardArrowUp, null, tint = terminalColor, modifier = Modifier.size(36.dp)) }
+                    IconButton(onClick = { if (playerY > 0 && currentMaze[playerY - 1][playerX] == 0) { playerY-- } }) { Icon(Icons.Default.KeyboardArrowUp, null, tint = terminalColor, modifier = Modifier.size(36.dp)) }
                     Row {
-                        IconButton(onClick = { if (playerX > 0 && currentMaze[playerY][playerX - 1] == 0) playerX-- }) { Icon(Icons.Default.KeyboardArrowLeft, null, tint = terminalColor, modifier = Modifier.size(36.dp)) }
+                        IconButton(onClick = { if (playerX > 0 && currentMaze[playerY][playerX - 1] == 0) { playerX-- } }) { Icon(Icons.Default.KeyboardArrowLeft, null, tint = terminalColor, modifier = Modifier.size(36.dp)) }
                         Spacer(Modifier.width(30.dp))
-                        IconButton(onClick = { if (playerX < size - 1 && currentMaze[playerY][playerX + 1] == 0) playerX++ }) { Icon(Icons.Default.KeyboardArrowRight, null, tint = terminalColor, modifier = Modifier.size(36.dp)) }
+                        IconButton(onClick = { if (playerX < size - 1 && currentMaze[playerY][playerX + 1] == 0) { playerX++ } }) { Icon(Icons.Default.KeyboardArrowRight, null, tint = terminalColor, modifier = Modifier.size(36.dp)) }
                     }
-                    IconButton(onClick = { if (playerY < size - 1 && currentMaze[playerY + 1][playerX] == 0) playerY++ }) { Icon(Icons.Default.KeyboardArrowDown, null, tint = terminalColor, modifier = Modifier.size(36.dp)) }
+                    IconButton(onClick = { if (playerY < size - 1 && currentMaze[playerY + 1][playerX] == 0) { playerY++ } }) { Icon(Icons.Default.KeyboardArrowDown, null, tint = terminalColor, modifier = Modifier.size(36.dp)) }
                 }
                 Spacer(Modifier.height(8.dp))
             }
