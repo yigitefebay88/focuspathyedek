@@ -26,8 +26,8 @@ android {
         applicationId = "com.focuspath.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 79
-        versionName = "1.2"
+        versionCode = 81
+        versionName = "1.2.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         val geminiKey = localProperties.getProperty("GEMINI_API_KEY", "")
