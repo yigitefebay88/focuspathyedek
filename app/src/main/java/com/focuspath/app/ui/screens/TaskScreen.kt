@@ -536,11 +536,12 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
             }
         }
     ) { inner ->
-        Box(modifier = Modifier.padding(inner).consumeWindowInsets(inner).imePadding().padding(16.dp)) {
+        Box(modifier = Modifier.padding(inner).consumeWindowInsets(inner).imePadding()) {
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),
-                beyondViewportPageCount = 1
+                beyondViewportPageCount = 2,
+                pageSpacing = 16.dp
             ) { page ->
                 when (page) {
                     0 -> HomeTabFull(vm, allTasksList, lang, isEnglish, totalFocusMins, completedSessions, interruptedSessions) { coroutineScope.launch { pagerState.animateScrollToPage(it) } }
@@ -1076,7 +1077,7 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
     val flingBehavior = androidx.compose.foundation.gestures.ScrollableDefaults.flingBehavior()
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
         flingBehavior = flingBehavior
     ) {
@@ -1707,7 +1708,7 @@ private fun AiTabFull(vm: TaskViewModel, lang: Map<String, String>, isEnglish: B
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         // CHAT BOT HEADER (Profil ve Durum)
         Row(
             modifier = Modifier
@@ -1848,7 +1849,7 @@ private fun CalendarTabFull(vm: TaskViewModel, lang: Map<String, String>, curren
     var showTomorrowDialog by remember { mutableStateOf(false) }
     var habitToDelete by remember { mutableStateOf<HabitEntity?>(null) }
 
-    val lbUsers by vm.leaderboard.collectAsState(); Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    val lbUsers by vm.leaderboard.collectAsState(); Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))) {
             Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(text = currentMonthName.uppercase(), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
@@ -2120,7 +2121,7 @@ private fun SettingsTabFull(vm: TaskViewModel, lang: Map<String, String>, isEngl
     var showNameEditDialog by remember { mutableStateOf(false) }
     var newNameInput by remember { mutableStateOf(vm.userName.value) }
 
-    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(text = lang["settings"] ?: "Settings", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f))
         Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.5.dp, if (vm.isPremium.value) TerminalGreen.copy(alpha = 0.5f) else AccentYellow.copy(alpha = 0.3f))) { Column(modifier = Modifier.padding(16.dp)) { Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Column(modifier = Modifier.weight(1f)) { Text(text = lang["premiumTitle"] ?: "", style = MaterialTheme.typography.titleMedium, color = if (vm.isPremium.value) TerminalGreen.copy(alpha = 0.8f) else AccentYellow.copy(alpha = 0.8f), fontWeight = FontWeight.Bold); Text(text = if (vm.isPremium.value) (lang["premiumActive"] ?: "") else (lang["premiumDesc"] ?: ""), style = MaterialTheme.typography.bodySmall, color = Color.Gray) }; if (!vm.isPremium.value) { Button(onClick = { vm.buyPremium() }, shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = AccentYellow.copy(alpha = 0.8f))) { Text(lang["upgrade"] ?: "", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) } } else { Icon(Icons.Default.Verified, null, tint = TerminalGreen.copy(alpha = 0.8f)) } } } }; Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))) { Column(modifier = Modifier.padding(16.dp)) { Text(lang["appearance"] ?: "", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)); Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(lang["themeLabel"] ?: ""); Switch(checked = vm.isDarkMode.value, onCheckedChange = { vm.toggleTheme() }) }; if (vm.isPremium.value) { Spacer(Modifier.height(8.dp)); Text("Terminal Renk Şeması (Premium)", style = MaterialTheme.typography.labelSmall, color = Color.Gray); Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) { listOf(0 to TerminalGreen, 1 to Color(0xFFFFB000), 2 to Color(0xFF00E5FF), 3 to Color(0xFFFF5252)).forEach { (idx, color) -> Box(modifier = Modifier.size(32.dp).background(color.copy(alpha = 0.8f), RoundedCornerShape(4.dp)).border(width = if (vm.themeColorIndex.value == idx) 2.dp else 0.dp, color = Color.White.copy(alpha = 0.5f), shape = RoundedCornerShape(4.dp)).clickable { vm.setThemeColor(idx) }) } } }; Spacer(Modifier.height(8.dp)); Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(lang["langLabel"] ?: ""); TextButton(onClick = onToggleLanguage) { Text(if (isEnglish) "English" else "Türkçe", color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)) } }; Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(lang["vibe"] ?: "Haptic Feedback"); Switch(checked = vm.isHapticEnabled.value, onCheckedChange = { vm.setHapticEnabled(it) }) } } };
         Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))) {
@@ -3847,7 +3848,7 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
     val upcomingTasks = allTasks.filter { !it.isCompleted && it.dueDate >= startOfToday && it.parentId == 0L }.sortedBy { it.dueDate }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item(key = "home_header") {
