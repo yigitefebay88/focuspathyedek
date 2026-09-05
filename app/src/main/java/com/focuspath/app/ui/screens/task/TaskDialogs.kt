@@ -390,7 +390,22 @@ fun ReminderDialog(
     context: Context,
     onDismiss: () -> Unit
 ) {
-    var reminderMinutes by remember { mutableStateOf("10") }
+    var selectedHour by remember { mutableIntStateOf(Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) }
+    var selectedMinute by remember { mutableIntStateOf(Calendar.getInstance().get(Calendar.MINUTE)) }
+    var isTimeSelected by remember { mutableStateOf(false) }
+
+    val timePickerDialog = android.app.TimePickerDialog(
+        context,
+        { _, hourOfDay, minute ->
+            selectedHour = hourOfDay
+            selectedMinute = minute
+            isTimeSelected = true
+        },
+        selectedHour,
+        selectedMinute,
+        true
+    )
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Hatırlatıcı Kur", color = MaterialTheme.colorScheme.onSurface) },
@@ -403,48 +418,78 @@ fun ReminderDialog(
                     modifier = Modifier.basicMarquee(),
                     maxLines = 1
                 )
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(value = reminderMinutes, onValueChange = { reminderMinutes = it }, placeholder = { Text("Kaç dakika sonra?", color = Color.Gray) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(16.dp))
+                
+                Button(
+                    onClick = { timePickerDialog.show() },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                ) {
+                    Icon(Icons.Default.AccessTime, null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = if (isTimeSelected) 
+                            String.format(Locale.getDefault(), "%02d:%02d", selectedHour, selectedMinute)
+                        else "Hatırlatma Saatini Seç",
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         },
         confirmButton = {
-            Button(onClick = {
-                val mins = reminderMinutes.toLongOrNull() ?: 10L
-                val triggerTime = System.currentTimeMillis() + (mins * 60 * 1000L)
-                val intent = Intent(context, ReminderReceiver::class.java).apply { 
-                    putExtra("task_title", task.title) 
-                }
-                
-                val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                } else {
-                    PendingIntent.FLAG_UPDATE_CURRENT
-                }
-                
-                // Task ID'yi PendingIntent için güvenli bir integer'a çevir (Overflow önleme)
-                val safeId = (task.id % Int.MAX_VALUE).toInt()
-                val pendingIntent = PendingIntent.getBroadcast(context, safeId, intent, flags)
-                val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-                
-                try {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        if (alarmManager.canScheduleExactAlarms()) {
+            Button(
+                enabled = isTimeSelected,
+                onClick = {
+                    val calendar = Calendar.getInstance()
+                    // Mevcut görevin tarihini al (gün/ay/yıl)
+                    calendar.timeInMillis = task.dueDate
+                    // Seçilen saati üzerine ekle
+                    calendar.set(Calendar.HOUR_OF_DAY, selectedHour)
+                    calendar.set(Calendar.MINUTE, selectedMinute)
+                    calendar.set(Calendar.SECOND, 0)
+                    calendar.set(Calendar.MILLISECOND, 0)
+                    
+                    val triggerTime = calendar.timeInMillis
+                    
+                    val intent = Intent(context, ReminderReceiver::class.java).apply { 
+                        putExtra("task_title", task.title) 
+                    }
+                    
+                    val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    } else {
+                        PendingIntent.FLAG_UPDATE_CURRENT
+                    }
+                    
+                    val safeId = (task.id % Int.MAX_VALUE).toInt()
+                    val pendingIntent = PendingIntent.getBroadcast(context, safeId, intent, flags)
+                    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                    
+                    try {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            if (alarmManager.canScheduleExactAlarms()) {
+                                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+                            } else {
+                                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+                            }
+                        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                             alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
                         } else {
-                            alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+                            alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
                         }
-                    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
-                    } else {
-                        alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+                        
+                        val sdf = SimpleDateFormat("dd MMMM HH:mm", Locale.getDefault())
+                        Toast.makeText(context, "${sdf.format(calendar.time)} tarihine hatırlatıcı kuruldu.", Toast.LENGTH_SHORT).show()
+                    } catch (e: Exception) {
+                        alarmManager.set(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+                        Toast.makeText(context, "Hatırlatıcı kuruldu.", Toast.LENGTH_SHORT).show()
                     }
-                    Toast.makeText(context, "$mins dakika sonra hatırlandı.", Toast.LENGTH_SHORT).show()
-                } catch (e: Exception) {
-                    alarmManager.set(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
-                    Toast.makeText(context, "Hatırlatıcı kuruldu.", Toast.LENGTH_SHORT).show()
-                }
-                onDismiss()
-            }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)) { Text("Ayarla", color = Color.Black, fontWeight = FontWeight.Bold) }
+                    onDismiss()
+                }, 
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            ) { 
+                Text("Ayarla", color = Color.Black, fontWeight = FontWeight.Bold) 
+            }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("İptal", color = Color.Gray) } },
         containerColor = MaterialTheme.colorScheme.surface

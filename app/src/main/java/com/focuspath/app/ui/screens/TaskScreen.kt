@@ -545,7 +545,11 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),
                 beyondViewportPageCount = 1,
-                pageSpacing = 8.dp
+                pageSpacing = 8.dp,
+                flingBehavior = androidx.compose.foundation.pager.PagerDefaults.flingBehavior(
+                    state = pagerState,
+                    snapAnimationSpec = spring(stiffness = Spring.StiffnessLow)
+                )
             ) { page ->
                 when (page) {
                     0 -> HomeTabFull(vm, allTasksList, lang, isEnglish, totalFocusMins, completedSessions, interruptedSessions) { coroutineScope.launch { pagerState.animateScrollToPage(it) } }
@@ -1082,12 +1086,12 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
     val isMinimalist = vm.isMinimalistMode.value
     val onboardingTasks = vm.onboardingTasks
     
-    // Smooth scrolling physics
+    // Smooth scrolling physics optimized for ADHD focus
     val flingBehavior = ScrollableDefaults.flingBehavior()
     val itemAnimationSpec = remember {
         spring<IntOffset>(
-            dampingRatio = Spring.DampingRatioNoBouncy,
-            stiffness = Spring.StiffnessMedium
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessLow
         )
     }
 
@@ -3875,8 +3879,8 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
     val flingBehavior = ScrollableDefaults.flingBehavior()
     val itemAnimationSpec = remember {
         spring<IntOffset>(
-            dampingRatio = Spring.DampingRatioNoBouncy,
-            stiffness = Spring.StiffnessMedium
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessLow
         )
     }
 
