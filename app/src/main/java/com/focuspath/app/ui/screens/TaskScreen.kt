@@ -4035,12 +4035,52 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
                         }
                     }
                     if (currentStation != null) {
+                        Spacer(Modifier.height(12.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            IconButton(onClick = { vm.previousRadioStation() }, modifier = Modifier.size(32.dp)) {
+                                Icon(Icons.Default.SkipPrevious, null, tint = Color.Gray, modifier = Modifier.size(20.dp))
+                            }
+                            
+                            Spacer(Modifier.width(16.dp))
+                            
+                            Surface(
+                                onClick = { vm.pauseResumeRadio() },
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    if (isRadioLoading) {
+                                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                                    } else {
+                                        Icon(
+                                            if (isRadioPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                            null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(Modifier.width(16.dp))
+
+                            IconButton(onClick = { vm.nextRadioStation() }, modifier = Modifier.size(32.dp)) {
+                                Icon(Icons.Default.SkipNext, null, tint = Color.Gray, modifier = Modifier.size(20.dp))
+                            }
+                        }
+                        
                         Spacer(Modifier.height(8.dp))
                         Text(
                             text = "${if(isEnglish) "Playing" else "Çalıyor"}: ${currentStation?.name}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.basicMarquee()
+                            modifier = Modifier.fillMaxWidth().basicMarquee(),
+                            textAlign = TextAlign.Center
                         )
                     }
                 }

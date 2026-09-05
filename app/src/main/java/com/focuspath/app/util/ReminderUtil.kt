@@ -21,30 +21,13 @@ object ReminderUtil {
 
         val triggerTime = System.currentTimeMillis() + (intervalHours * 3600 * 1000L)
         
-        // Exact alarm is better for water reminder, but requires permission check for Android 12+
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-            if (alarmManager.canScheduleExactAlarms()) {
-                alarmManager.setExactAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerTime,
-                    pendingIntent
-                )
-            } else {
-                alarmManager.setInexactRepeating(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerTime,
-                    intervalHours * 3600 * 1000L,
-                    pendingIntent
-                )
-            }
-        } else {
-            alarmManager.setInexactRepeating(
-                AlarmManager.RTC_WAKEUP,
-                triggerTime,
-                intervalHours * 3600 * 1000L,
-                pendingIntent
-            )
-        }
+        // Use inexact repeating to save battery. Water reminder doesn't need second-precision.
+        alarmManager.setInexactRepeating(
+            AlarmManager.RTC_WAKEUP,
+            triggerTime,
+            intervalHours * 3600 * 1000L,
+            pendingIntent
+        )
     }
 
     fun cancelWaterReminder(context: Context) {

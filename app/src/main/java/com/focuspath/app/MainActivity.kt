@@ -42,6 +42,7 @@ import com.focuspath.app.ui.screens.SplashScreen
 import com.focuspath.app.ui.screens.TaskScreen
 import com.focuspath.app.ui.theme.FocusPathTypography
 import com.focuspath.app.ui.viewmodel.TaskViewModel
+import com.focuspath.app.util.UpdateManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
@@ -79,6 +80,7 @@ data class AchievementItem(
 class MainActivity : ComponentActivity(), BillingProvider {
 
     private lateinit var billingManager: BillingManager
+    private lateinit var updateManager: UpdateManager
     private lateinit var vm: TaskViewModel
 
     // Pencerelerin uygulamanın her yerinden tetiklenebilmesi için statik state'ler
@@ -95,6 +97,11 @@ class MainActivity : ComponentActivity(), BillingProvider {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
+        
+        // In-App Update Initialization
+        updateManager = UpdateManager(this)
+        updateManager.checkForUpdates()
+
         vm = androidx.lifecycle.ViewModelProvider(this)[TaskViewModel::class.java]
         enableEdgeToEdge()
         
@@ -1039,8 +1046,14 @@ class MainActivity : ComponentActivity(), BillingProvider {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        updateManager.onResume()
+    }
+
     override fun onDestroy() {
         super.onDestroy()
+        updateManager.onDestroy()
         timerReceiver?.let { unregisterReceiver(it) }
         timerReceiver = null
     }

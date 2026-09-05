@@ -600,12 +600,46 @@ fun ZenModeDialog(
                         }
                     }
                     if (currentStation != null) {
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(16.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(24.dp)
+                        ) {
+                            IconButton(onClick = { vm.previousRadioStation() }) {
+                                Icon(Icons.Default.SkipPrevious, null, tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(28.dp))
+                            }
+                            
+                            Box(
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                                    .clickable { vm.pauseResumeRadio() },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (isRadioLoading) {
+                                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                                } else {
+                                    Icon(
+                                        if (isRadioPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                        null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(32.dp)
+                                    )
+                                }
+                            }
+
+                            IconButton(onClick = { vm.nextRadioStation() }) {
+                                Icon(Icons.Default.SkipNext, null, tint = Color.White.copy(alpha = 0.7f), modifier = Modifier.size(28.dp))
+                            }
+                        }
+                        
+                        Spacer(Modifier.height(12.dp))
                         Text(
-                            text = "Now Playing: ${currentStation?.name}", 
+                            text = "${if(isEnglish) "Now Playing" else "Şu an Çalıyor"}: ${currentStation?.name}", 
                             style = MaterialTheme.typography.labelSmall, 
                             color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.basicMarquee()
+                            modifier = Modifier.basicMarquee().padding(horizontal = 40.dp)
                         )
                     }
 

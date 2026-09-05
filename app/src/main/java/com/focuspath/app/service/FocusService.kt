@@ -152,9 +152,8 @@ class FocusService : Service() {
                             com.focuspath.app.widget.PomoWidget().updateAll(applicationContext)
                         } catch (e: Exception) {}
                     }
+                    updateNotification(formatTime(currentTime))
                 }
-                
-                updateNotification(formatTime(currentTime))
             }
         }
     }
@@ -190,6 +189,7 @@ class FocusService : Service() {
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
+            .setOnlyAlertOnce(true)
             .build()
     }
 

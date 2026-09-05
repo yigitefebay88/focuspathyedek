@@ -211,6 +211,7 @@ class TaskViewModel @Inject constructor(
     val dailyBriefingText = mutableStateOf<String?>(null)
     val isBriefingLoading = mutableStateOf(false)
     val showDailyBriefing = mutableStateOf(false)
+    val showMindfulnessBreak = mutableStateOf(false)
     
     val yesterdayFocusMins = mutableIntStateOf(0)
     val todayChallengeTarget = mutableIntStateOf(0)
@@ -488,12 +489,12 @@ class TaskViewModel @Inject constructor(
                 addCoins(10)
                 completeOnboardingTask("first_focus")
 
-                // Sürpriz kutu veya Kahve molası
+                // Sürpriz kutu veya Rehberli Mola
                 val totalMins = (pomodoroTotalMillis.longValue / 60000).toInt()
                 if (totalMins >= 20 || (0..100).random() < totalMins * 4) {
                     generateMysteryBox()
                 } else {
-                    showCoffeeBreak.value = true
+                    showMindfulnessBreak.value = true
                 }
 
                 viewModelScope.launch(Dispatchers.Main) {
@@ -843,6 +844,7 @@ class TaskViewModel @Inject constructor(
     private var rainPlayer: MediaPlayer? = null
     private var fireplacePlayer: MediaPlayer? = null
     private var radioPlayer: MediaPlayer? = null
+    private var radioJob: kotlinx.coroutines.Job? = null
 
     val isRainEnabled = mutableStateOf(prefs.getBoolean("is_rain_enabled", false))
     val isFireplaceEnabled = mutableStateOf(prefs.getBoolean("is_fireplace_enabled", false))
@@ -1375,11 +1377,19 @@ class TaskViewModel @Inject constructor(
     }
 
     fun updateAmbientSounds() {
-        val isActive = isFocusActive.value
-
+        // AMBIENT SOUNDS play whenever enabled, but usually they are for focus.
+        // We'll allow them to play if the user has enabled them, 
+        // and we'll handle releasing in onCleared.
+        
         // RAIN
         try {
-            if (isRainEnabled.value && isActive) {
+            if (isRainEnabled.value) {
+                if (rainPlayer == null) {
+                    rainPlayer = MediaPlayer.create(application, com.focuspath.app.R.raw.rain).apply {
+                        isLooping = true
+                        setVolume(0.45f, 0.45f)
+                    }
+                }
                 if (rainPlayer?.isPlaying == false) {
                     rainPlayer?.start()
                 }
@@ -1392,7 +1402,13 @@ class TaskViewModel @Inject constructor(
 
         // FIREPLACE
         try {
-            if (isFireplaceEnabled.value && isActive) {
+            if (isFireplaceEnabled.value) {
+                if (fireplacePlayer == null) {
+                    fireplacePlayer = MediaPlayer.create(application, com.focuspath.app.R.raw.fireplace).apply {
+                        isLooping = true
+                        setVolume(0.55f, 0.55f)
+                    }
+                }
                 if (fireplacePlayer?.isPlaying == false) {
                     fireplacePlayer?.start()
                 }
@@ -1430,21 +1446,49 @@ class TaskViewModel @Inject constructor(
         }
     }
 
-    // FOCUS RADIO LOGIC
+    // FOCUS RADIO LOGIC - Switched to Local Files for instant playback
     val radioStations = listOf(
-        RadioStation("Lofi Girl", "https://stream.zeno.fm/0r0xa792kwzuv", "🎧"),
-        RadioStation("Chill Hop", "https://stream.zeno.fm/f3wvbbqmdzzuv", "☕"),
-        RadioStation("Deep Focus", "https://stream.zeno.fm/s08233yzdzzuv", "🧠"),
+        RadioStation("Lofi Focus", "", "🎧", isLocal = true, resId = com.focuspath.app.R.raw.lofi),
+        RadioStation("Chill Out", "", "☕", isLocal = true, resId = com.focuspath.app.R.raw.chill),
+        RadioStation("Deep Zen", "", "🧠", isLocal = true, resId = com.focuspath.app.R.raw.zen),
         RadioStation("Rainy Mood", "", "🌧️", isLocal = true, resId = com.focuspath.app.R.raw.rain),
         RadioStation("Fireplace", "", "🔥", isLocal = true, resId = com.focuspath.app.R.raw.fireplace)
     )
 
     fun toggleRadio(station: RadioStation) {
-        if (currentRadioStation.value == station && isRadioPlaying.value) {
-            stopRadio()
+        if (currentRadioStation.value == station) {
+            pauseResumeRadio()
         } else {
             startRadio(station)
         }
+    }
+
+    fun pauseResumeRadio() {
+        try {
+            radioPlayer?.let {
+                if (it.isPlaying) {
+                    it.pause()
+                    isRadioPlaying.value = false
+                } else {
+                    it.start()
+                    isRadioPlaying.value = true
+                }
+            } ?: currentRadioStation.value?.let { startRadio(it) }
+        } catch (e: Exception) {
+            android.util.Log.e("FocusPathRadio", "Error in pauseResume: ${e.message}")
+        }
+    }
+
+    fun nextRadioStation() {
+        val currentIndex = radioStations.indexOf(currentRadioStation.value)
+        val nextIndex = if (currentIndex == -1 || currentIndex == radioStations.size - 1) 0 else currentIndex + 1
+        startRadio(radioStations[nextIndex])
+    }
+
+    fun previousRadioStation() {
+        val currentIndex = radioStations.indexOf(currentRadioStation.value)
+        val prevIndex = if (currentIndex <= 0) radioStations.size - 1 else currentIndex - 1
+        startRadio(radioStations[prevIndex])
     }
 
     private fun startRadio(station: RadioStation) {
@@ -1452,41 +1496,66 @@ class TaskViewModel @Inject constructor(
         currentRadioStation.value = station
         isRadioLoading.value = true
         
-        viewModelScope.launch(Dispatchers.IO) {
+        radioJob = viewModelScope.launch(Dispatchers.Main) {
+            var player: MediaPlayer? = null
             try {
-                radioPlayer = MediaPlayer().apply {
-                    setAudioAttributes(
+                if (station.isLocal) {
+                    player = MediaPlayer.create(application, station.resId)
+                    if (player == null) throw Exception("Local player failed")
+                    player.isLooping = true
+                    player.start()
+                    radioPlayer = player
+                    isRadioPlaying.value = true
+                    isRadioLoading.value = false
+                } else {
+                    player = MediaPlayer()
+                    player.setAudioAttributes(
                         AudioAttributes.Builder()
                             .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                             .setUsage(AudioAttributes.USAGE_MEDIA)
                             .build()
                     )
-                    if (station.isLocal) {
-                        val afd = application.resources.openRawResourceFd(station.resId)
-                        setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
-                        afd.close()
-                    } else {
-                        setDataSource(station.url)
+                    
+                    radioPlayer = player
+
+                    player.setOnPreparedListener {
+                        it.start()
+                        isRadioPlaying.value = true
+                        isRadioLoading.value = false
                     }
-                    prepare()
-                    isLooping = true
-                    start()
-                }
-                withContext(Dispatchers.Main) {
-                    isRadioPlaying.value = true
-                    isRadioLoading.value = false
+
+                    player.setOnErrorListener { _, what, extra ->
+                        android.util.Log.e("FocusPathRadio", "Error: $what / $extra")
+                        isRadioLoading.value = false
+                        isRadioPlaying.value = false
+                        stopRadio()
+                        true
+                    }
+
+                    // Timeout check
+                    viewModelScope.launch {
+                        delay(20000) // Increased to 20s for slow streams
+                        if (isRadioLoading.value && radioPlayer == player) {
+                            stopRadio()
+                            Toast.makeText(application, "Bağlantı Zaman Aşımı", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+
+                    withContext(Dispatchers.IO) {
+                        player.setDataSource(station.url)
+                        player.prepareAsync()
+                    }
                 }
             } catch (e: Exception) {
-                android.util.Log.e("FocusPathRadio", "Error playing radio: ${e.message}")
-                withContext(Dispatchers.Main) {
-                    isRadioLoading.value = false
-                    Toast.makeText(application, "Radio Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
+                isRadioLoading.value = false
+                stopRadio()
             }
         }
     }
 
     fun stopRadio() {
+        radioJob?.cancel()
+        radioJob = null
         radioPlayer?.let {
             try {
                 if (it.isPlaying) it.stop()
@@ -1782,6 +1851,8 @@ class TaskViewModel @Inject constructor(
             rainPlayer = null
             fireplacePlayer?.release()
             fireplacePlayer = null
+            radioPlayer?.release()
+            radioPlayer = null
         } catch (e: Exception) {}
     }
 
@@ -1856,8 +1927,11 @@ class TaskViewModel @Inject constructor(
         // Hareket döngüsü (Yürüme animasyonu için)
         viewModelScope.launch {
             while (true) {
-                delay(30L)
+                delay(60L) // Optimized: 30ms to 60ms to save battery
                 val currentSize = workers.size
+                val anyWalking = workers.any { it.currentAction == WorkerAction.WALKING }
+                if (!anyWalking) continue
+
                 for (i in 0 until currentSize) {
                     if (i >= workers.size) continue
                     val worker = try { workers[i] } catch (e: Exception) { continue }
