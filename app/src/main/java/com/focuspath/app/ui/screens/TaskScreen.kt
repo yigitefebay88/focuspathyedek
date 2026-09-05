@@ -26,6 +26,9 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.basicMarquee
@@ -2782,7 +2785,19 @@ private fun OfficeTabFull(vm: TaskViewModel, isEnglish: Boolean, context: Contex
             }
         }
         if (showLayoutDialog) { AlertDialog(onDismissRequest = { showLayoutDialog = false }, title = { Text("Ofis Düzenleri") }, text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { listOf("Yazılım Ofisi" to "💻", "Tasarım Ofisi" to "🎨", "Gaming Ofisi" to "🎮", "CEO Ofisi" to "🏆").forEach { (name, emoji) -> val hasSaved = vm.prefs.getString("office_layout_$name", null) != null ; Row(modifier = Modifier.fillMaxWidth().clickable { if (hasSaved) vm.loadLayout(name) else vm.saveCurrentLayout(name) ; showLayoutDialog = false }.padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Row(verticalAlignment = Alignment.CenterVertically) { Text(emoji, fontSize = 20.sp); Spacer(Modifier.width(12.dp)); Text(name, fontWeight = FontWeight.Bold) }; Text(if (hasSaved) "YÜKLE" else "KAYDET", color = if(hasSaved) MaterialTheme.colorScheme.primary else Color.Gray, fontSize = 10.sp) } } } }, confirmButton = { TextButton(onClick = { showLayoutDialog = false }) { Text("Kapat") } }) }
-        Box(modifier = Modifier.fillMaxWidth().height(500.dp).clip(RoundedCornerShape(16.dp)).background(Color(0xFF020202)).border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), RoundedCornerShape(16.dp)).pointerInput(Unit) { detectTransformGestures { _, _, zoom, _ -> scale = (scale * zoom).coerceIn(0.6f, 2.2f) } }, contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.fillMaxWidth().height(500.dp).clip(RoundedCornerShape(16.dp)).background(Color(0xFF020202)).border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), RoundedCornerShape(16.dp)).pointerInput(Unit) {
+            awaitEachGesture {
+                awaitFirstDown(requireUnconsumed = false)
+                do {
+                    val event = awaitPointerEvent()
+                    val zoom = event.calculateZoom()
+                    if (event.changes.size > 1 && zoom != 1f) {
+                        scale = (scale * zoom).coerceIn(0.6f, 2.2f)
+                        event.changes.forEach { it.consume() }
+                    }
+                } while (event.changes.any { it.pressed })
+            }
+        }, contentAlignment = Alignment.Center) {
             
             // ANA 3D SAHNE - STABİL PERSPEKTİF
             Box(modifier = Modifier.size(dynamicFloorSize.dp).graphicsLayer { 
