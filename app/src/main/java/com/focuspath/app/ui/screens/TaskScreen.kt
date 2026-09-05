@@ -168,10 +168,10 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
     val context = LocalContext.current
 
     // SES ÇALMA MANTIĞI: SoundPool Kullanımı
-    LaunchedEffect(vm.workers.toList(), focusActive) {
-        val isAnyTyping = vm.workers.any { it.currentAction == WorkerAction.TYPING }
-        val isAnyMousing = vm.workers.any { it.currentAction == WorkerAction.MOUSE }
+    val isAnyTyping by remember { derivedStateOf { vm.workers.any { it.currentAction == WorkerAction.TYPING } } }
+    val isAnyMousing by remember { derivedStateOf { vm.workers.any { it.currentAction == WorkerAction.MOUSE } } }
 
+    LaunchedEffect(isAnyTyping, isAnyMousing, focusActive) {
         vm.playKeyboardSound(isAnyTyping && focusActive)
         vm.playMouseSound(isAnyMousing && focusActive)
     }
@@ -367,15 +367,19 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
             Column {
                 TopAppBar(
                     title = {
-                        val title = when(selectedTab) {
-                            0 -> if(isEnglish) "Home" else "Ana Sayfa"
-                            1 -> if(isEnglish) "Tasks" else "Görevler"
-                            2 -> if(isEnglish) "AI Assistant" else "AI Asistan"
-                            3 -> if(isEnglish) "Calendar" else "Takvim"
-                            4 -> if(isEnglish) "Virtual Office" else "Sanal Ofis"
-                            5 -> if(isEnglish) "Water Reminder" else "Su Hatırlatıcı"
-                            6 -> if(isEnglish) "Settings" else "Ayarlar"
-                            else -> "FocusPath"
+                        val title by remember(selectedTab, isEnglish) {
+                            derivedStateOf {
+                                when(selectedTab) {
+                                    0 -> if(isEnglish) "Home" else "Ana Sayfa"
+                                    1 -> if(isEnglish) "Tasks" else "Görevler"
+                                    2 -> if(isEnglish) "AI Assistant" else "AI Asistan"
+                                    3 -> if(isEnglish) "Calendar" else "Takvim"
+                                    4 -> if(isEnglish) "Virtual Office" else "Sanal Ofis"
+                                    5 -> if(isEnglish) "Water Reminder" else "Su Hatırlatıcı"
+                                    6 -> if(isEnglish) "Settings" else "Ayarlar"
+                                    else -> "FocusPath"
+                                }
+                            }
                         }
                         Text(title, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
                     },
@@ -1078,9 +1082,11 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
     }
 
     val counts = remember(allTasksList) {
-        val done = allTasksList.count { it.isCompleted }
-        allTasksList.size to done
-    }
+        derivedStateOf {
+            val done = allTasksList.count { it.isCompleted }
+            allTasksList.size to done
+        }
+    }.value
     val totalCount = counts.first
     val doneCount = counts.second
     val isMinimalist = vm.isMinimalistMode.value
@@ -3127,11 +3133,13 @@ private fun OfficeTabFull(vm: TaskViewModel, isEnglish: Boolean, context: Contex
             }
         }
         val performanceData = remember(allTasksList) {
-            val total = allTasksList.size
-            val done = allTasksList.count { it.isCompleted }
-            val rate = if (total > 0) (done.toFloat() / total) else 0f
-            Triple(total, done, rate)
-        }
+            derivedStateOf {
+                val total = allTasksList.size
+                val done = allTasksList.count { it.isCompleted }
+                val rate = if (total > 0) (done.toFloat() / total) else 0f
+                Triple(total, done, rate)
+            }
+        }.value
         val totalTasks = performanceData.first
         val doneTasks = performanceData.second
         val completionRate = performanceData.third
@@ -3856,8 +3864,8 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
     val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
     val leaderboard by vm.leaderboard.collectAsState()
     
-    val onlineCount = remember(leaderboard) { leaderboard.count { it.isFocusing } }
-    val top3 = remember(leaderboard) { leaderboard.take(3) }
+    val onlineCount by remember { derivedStateOf { leaderboard.count { it.isFocusing } } }
+    val top3 by remember { derivedStateOf { leaderboard.take(3) } }
     
     val totalCoins = vm.userCoins.value
     val totalXp = vm.userXp.value
@@ -3872,8 +3880,10 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
         }.timeInMillis
     }
 
-    val upcomingTasks = remember(allTasks, startOfToday) {
-        allTasks.filter { !it.isCompleted && it.dueDate >= startOfToday && it.parentId == 0L }.sortedBy { it.dueDate }
+    val upcomingTasks by remember(allTasks, startOfToday) {
+        derivedStateOf {
+            allTasks.filter { !it.isCompleted && it.dueDate >= startOfToday && it.parentId == 0L }.sortedBy { it.dueDate }
+        }
     }
 
     val flingBehavior = ScrollableDefaults.flingBehavior()

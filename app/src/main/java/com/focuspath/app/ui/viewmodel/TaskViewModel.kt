@@ -2207,7 +2207,7 @@ class TaskViewModel @Inject constructor(
     val totalTasksCompleted: Flow<Int> = taskDao.getTotalTasksCompleted().map { it ?: 0 }
 
     val tasks: Flow<List<TaskEntity>> = combine(
-        allTasks, _searchQuery, _sortType, _taskFilter, _categoryFilter, _priorityFilter, _selectedDate
+        allTasks.distinctUntilChanged(), _searchQuery, _sortType, _taskFilter, _categoryFilter, _priorityFilter, _selectedDate
     ) { flowArray ->
         val tasks = flowArray[0] as List<TaskEntity>
         val query = flowArray[1] as String

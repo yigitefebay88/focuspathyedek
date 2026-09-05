@@ -293,9 +293,13 @@ class MainActivity : ComponentActivity(), BillingProvider {
 
                 // 2. GÜNLÜK CHALLENGE DIALOG
                 if (showQuestDialogState.value) {
-                    val quests = listOf(
-                        DailyQuestItem("30 Dakika Odaklan", 30, focusCurrent, 50, focusDone)
-                    )
+                    val quests by remember {
+                        derivedStateOf {
+                            listOf(
+                                DailyQuestItem("30 Dakika Odaklan", 30, focusCurrent, 50, focusDone)
+                            )
+                        }
+                    }
 
                     Dialog(onDismissRequest = { showQuestDialogState.value = false }) {
                         Surface(
@@ -392,15 +396,19 @@ class MainActivity : ComponentActivity(), BillingProvider {
 
                 // 3. ACHIEVEMENT (BAŞARIMLAR) DIALOG
                 if (showAchievementDialogState.value) {
-                    val lifetimeCoinsVal = vm.lifetimeCoins.value
-                    val userXpVal = vm.userXp.value
+                    val achievements by remember {
+                        derivedStateOf {
+                            val lifetimeCoinsVal = vm.lifetimeCoins.value
+                            val userXpVal = vm.userXp.value
 
-                    val achievements = listOf(
-                        AchievementItem("İlk Adım", "Uygulamaya giriş yap ve ilk seansını başlat.", true, "🏆"),
-                        AchievementItem("Para Avcısı", "Toplamda 100 altına ulaş.", lifetimeCoinsVal >= 100, "💰"),
-                        AchievementItem("Deneyimli Hacker", "500 Şirket Puanına ulaş.", userXpVal >= 500, "💻"),
-                        AchievementItem("Sistem Yetkilisi", "Kurucu Ortak rütbesine yüksel.", userXpVal >= 2000, "👑")
-                    )
+                            listOf(
+                                AchievementItem("İlk Adım", "Uygulamaya giriş yap ve ilk seansını başlat.", true, "🏆"),
+                                AchievementItem("Para Avcısı", "Toplamda 100 altına ulaş.", lifetimeCoinsVal >= 100, "💰"),
+                                AchievementItem("Deneyimli Hacker", "500 Şirket Puanına ulaş.", userXpVal >= 500, "💻"),
+                                AchievementItem("Sistem Yetkilisi", "Kurucu Ortak rütbesine yüksel.", userXpVal >= 2000, "👑")
+                            )
+                        }
+                    }
 
                     Dialog(onDismissRequest = { showAchievementDialogState.value = false }) {
                         Surface(
