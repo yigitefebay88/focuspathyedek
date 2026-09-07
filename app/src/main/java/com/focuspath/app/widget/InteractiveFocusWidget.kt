@@ -16,7 +16,7 @@ import androidx.glance.layout.*
 import androidx.glance.text.*
 import androidx.glance.unit.ColorProvider
 import com.focuspath.app.R
-import com.focuspath.app.data.local.AppDatabase
+import com.focuspath.app.core.data.local.AppDatabase
 import com.focuspath.app.service.FocusService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

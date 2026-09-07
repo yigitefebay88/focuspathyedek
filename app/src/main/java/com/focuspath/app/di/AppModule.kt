@@ -1,9 +1,11 @@
 package com.focuspath.app.di
 
 import android.content.Context
-import com.focuspath.app.data.local.AppDatabase
-import com.focuspath.app.data.local.TaskDao
+import com.focuspath.app.core.data.local.AppDatabase
+import com.focuspath.app.core.data.local.TaskDao
 import com.focuspath.app.data.remote.FocusPathApiService
+import com.focuspath.app.core.domain.usecase.GetFocusRankUseCase
+import com.focuspath.app.core.domain.usecase.CalculateDopamineUseCase
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.*
 import com.google.firebase.auth.FirebaseAuth
@@ -61,6 +63,14 @@ object AppModule {
             )
         )
     }
+
+    @Provides
+    @Singleton
+    fun provideGetFocusRankUseCase(): GetFocusRankUseCase = GetFocusRankUseCase()
+
+    @Provides
+    @Singleton
+    fun provideCalculateDopamineUseCase(): CalculateDopamineUseCase = CalculateDopamineUseCase()
 
     @Provides
     @Singleton

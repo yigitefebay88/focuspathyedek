@@ -26,7 +26,7 @@ android {
         applicationId = "com.focuspath.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 81
+        versionCode = 82
         versionName = "1.2.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -60,6 +60,8 @@ kotlin {
 }
 
 dependencies {
+    implementation(project(":core:domain"))
+    implementation(project(":core:data"))
     implementation(platform("androidx.compose:compose-bom:2025.04.00"))
 
     implementation("androidx.compose.ui:ui")

@@ -29,8 +29,8 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.focuspath.app.data.local.HabitEntity
-import com.focuspath.app.data.local.TaskEntity
+import com.focuspath.app.core.data.local.HabitEntity
+import com.focuspath.app.core.data.local.TaskEntity
 import androidx.compose.material.icons.automirrored.filled.LabelImportant
 import com.focuspath.app.ui.theme.AccentRed
 import com.focuspath.app.ui.theme.AccentYellow

@@ -3,8 +3,8 @@ package com.focuspath.app
 import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
-import com.focuspath.app.data.local.TaskDao
-import com.focuspath.app.data.local.TaskEntity
+import com.focuspath.app.core.data.local.TaskDao
+import com.focuspath.app.core.data.local.TaskEntity
 import com.focuspath.app.data.remote.FocusPathApiService
 import com.focuspath.app.ui.viewmodel.TaskViewModel
 import com.google.ai.client.generativeai.GenerativeModel
@@ -17,6 +17,9 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
+import com.focuspath.app.core.domain.usecase.GetFocusRankUseCase
+import com.focuspath.app.core.domain.usecase.CalculateDopamineUseCase
+import com.focuspath.app.core.domain.repository.TaskRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -48,6 +51,9 @@ class TaskViewModelTest {
     private val firebaseAuth: FirebaseAuth = mockk(relaxed = true)
     private val firestore: FirebaseFirestore = mockk(relaxed = true)
     private val storage: FirebaseStorage = mockk(relaxed = true)
+    private val getFocusRankUseCase: GetFocusRankUseCase = mockk(relaxed = true)
+    private val calculateDopamineUseCase: CalculateDopamineUseCase = mockk(relaxed = true)
+    private val taskRepository: TaskRepository = mockk(relaxed = true)
     private val context: Context = mockk(relaxed = true)
     private val application: Application = mockk(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
@@ -67,7 +73,10 @@ class TaskViewModelTest {
             apiService, 
             firebaseAuth,
             firestore,
-            storage
+            storage,
+            getFocusRankUseCase,
+            calculateDopamineUseCase,
+            taskRepository
         )
     }
 

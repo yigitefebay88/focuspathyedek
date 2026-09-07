@@ -70,8 +70,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.IntOffset
 import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
-import com.focuspath.app.data.local.TaskEntity
-import com.focuspath.app.data.local.HabitEntity
+import com.focuspath.app.core.data.local.TaskEntity
+import com.focuspath.app.core.data.local.HabitEntity
 import com.focuspath.app.data.model.LeaderboardUser
 import com.focuspath.app.receiver.ReminderReceiver
 import com.focuspath.app.ui.components.AnimatedIconButton
@@ -2736,9 +2736,13 @@ private fun OfficeTabFull(vm: TaskViewModel, isEnglish: Boolean, context: Contex
         animationSpec = tween(1500), label = "OfficeLight"
     )
 
-    var scale by remember { mutableFloatStateOf(0.85f) } ; val officeLevel = vm.officeLevel.value ; val coins = vm.userCoins.value ; val upgradeCost = officeLevel * 500 ; val employeeCount = 3 ; val deskCount = 3 ; val unlocked = vm.unlockedItems ; val fixedRotationX = 55f ; val fixedRotationY = 0f
-    val baseFloorSize = 300f ; val dynamicFloorSize = baseFloorSize + (officeLevel - 1) * 40f ; val wallHalfSize = dynamicFloorSize / 2f ; var showLayoutDialog by remember { mutableStateOf(false) }
-    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    var scale by remember { mutableFloatStateOf(0.85f) } ; val officeLevel = vm.officeLevel.value ; val coins = vm.userCoins.value ; val upgradeCost = officeLevel * 500 ; val employeeCount = 3 ; val deskCount = 3 ; val unlocked = vm.unlockedItems ; val fixedRotationX = 55f ; val fixedRotationY = 0f ; val baseFloorSize = 400f
+    val dynamicFloorSize = remember<Float>(officeLevel) { baseFloorSize + (officeLevel - 1) * 40f }
+    val wallHalfSize = dynamicFloorSize / 2f 
+    var showLayoutDialog by remember { mutableStateOf(false) }
+    val scrollState = rememberScrollState()
+    
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(scrollState), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
 
         Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Column {
@@ -2892,7 +2896,10 @@ private fun OfficeTabFull(vm: TaskViewModel, isEnglish: Boolean, context: Contex
 
                             Box(modifier = Modifier
                                 .align(Alignment.Center)
-                                .offset { animatedDeskOffset }
+                                .graphicsLayer {
+                                    translationX = animatedDeskOffset.x.toFloat()
+                                    translationY = animatedDeskOffset.y.toFloat()
+                                }
                                 .pointerInput(deskId) {
                                     detectDragGestures(
                                         onDrag = { change, dragAmount ->
@@ -2979,7 +2986,10 @@ private fun OfficeTabFull(vm: TaskViewModel, isEnglish: Boolean, context: Contex
 
                             Box(modifier = Modifier
                                 .align(Alignment.Center)
-                                .offset { animatedOffset }
+                                .graphicsLayer {
+                                    translationX = animatedOffset.x.toFloat()
+                                    translationY = animatedOffset.y.toFloat()
+                                }
                             ) {
                                 WorkerModel(worker = worker, fixedRotationX = fixedRotationX, selectedBuddy = vm.selectedFocusBuddy.value) {
                                     vm.workerDetails.value = worker

@@ -1,4 +1,4 @@
-package com.focuspath.app.data.local
+package com.focuspath.app.core.data.local
 
 import android.content.Context
 import androidx.room.Database

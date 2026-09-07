@@ -15,8 +15,8 @@ import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.layout.*
 import androidx.glance.text.*
 import androidx.glance.unit.ColorProvider
-import com.focuspath.app.data.local.AppDatabase
-import com.focuspath.app.data.local.TaskEntity
+import com.focuspath.app.core.data.local.AppDatabase
+import com.focuspath.app.core.data.local.TaskEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

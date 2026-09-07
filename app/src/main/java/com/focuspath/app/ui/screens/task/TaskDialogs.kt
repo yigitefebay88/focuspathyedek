@@ -32,8 +32,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.focuspath.app.R
-import com.focuspath.app.data.local.TaskEntity
-import com.focuspath.app.data.local.HabitEntity
+import com.focuspath.app.core.data.local.TaskEntity
+import com.focuspath.app.core.data.local.HabitEntity
 import com.focuspath.app.data.model.LeaderboardUser
 import com.focuspath.app.receiver.ReminderReceiver
 import com.focuspath.app.ui.components.CoolGoogleSignInButton
@@ -58,7 +58,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.foundation.border
 import java.util.*
-import com.focuspath.app.data.local.FocusHistoryEntity
+import com.focuspath.app.core.data.local.FocusHistoryEntity
 
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset

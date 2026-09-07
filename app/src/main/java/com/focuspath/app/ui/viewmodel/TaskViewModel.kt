@@ -20,13 +20,16 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.focuspath.app.R
-import com.focuspath.app.data.local.TaskDao
-import com.focuspath.app.data.local.TaskEntity
-import com.focuspath.app.data.local.HabitEntity
-import com.focuspath.app.data.local.FocusHistoryEntity
+import com.focuspath.app.core.data.local.TaskDao
+import com.focuspath.app.core.data.local.TaskEntity
+import com.focuspath.app.core.data.local.HabitEntity
+import com.focuspath.app.core.data.local.FocusHistoryEntity
 import com.focuspath.app.data.model.LeaderboardUser
 import com.focuspath.app.data.model.Team
 import com.focuspath.app.data.remote.FocusPathApiService
+import com.focuspath.app.core.domain.usecase.GetFocusRankUseCase
+import com.focuspath.app.core.domain.usecase.CalculateDopamineUseCase
+import com.focuspath.app.core.domain.repository.TaskRepository
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
@@ -116,7 +119,10 @@ class TaskViewModel @Inject constructor(
     private val apiService: FocusPathApiService,
     private val firebaseAuth: FirebaseAuth,
     private val firestore: FirebaseFirestore,
-    private val storage: FirebaseStorage
+    private val storage: FirebaseStorage,
+    private val getFocusRankUseCase: GetFocusRankUseCase,
+    private val calculateDopamineUseCase: CalculateDopamineUseCase,
+    private val taskRepository: TaskRepository
 ) : ViewModel() {
 
     var billingProvider: BillingProvider? = null
@@ -527,11 +533,11 @@ class TaskViewModel @Inject constructor(
     fun logDistraction(reason: String) {
         distractionLog.add(reason)
         // Dikkati toplamak için çarpanı düşür
-        dopamineMultiplier.floatValue = (dopamineMultiplier.floatValue - 0.1f).coerceAtLeast(0.5f)
+        dopamineMultiplier.floatValue = calculateDopamineUseCase.calculateNewMultiplierAfterDistraction(dopamineMultiplier.floatValue)
     }
 
     fun applyDopamineBoost() {
-        dopamineMultiplier.floatValue = (dopamineMultiplier.floatValue + 0.2f).coerceAtMost(3.0f)
+        dopamineMultiplier.floatValue = calculateDopamineUseCase.calculateNewMultiplierAfterBoost(dopamineMultiplier.floatValue)
     }
 
     fun updateActualTaskTime(taskId: Long, minutes: Int) {
@@ -3078,8 +3084,8 @@ class TaskViewModel @Inject constructor(
                 val coinBase = task.rewardCoins.coerceAtLeast(5)
                 
                 // Çarpan etkisini XP'de biraz daha hafiflet
-                val xpMultiplier = if(dopamineMultiplier.floatValue > 1.5f) 1.5f else dopamineMultiplier.floatValue
-                addXp((xpBase * xpMultiplier).toInt())
+                val calculatedXp = calculateDopamineUseCase.calculateXpReward(xpBase, dopamineMultiplier.floatValue)
+                addXp(calculatedXp)
                 addCoins(coinBase)
                 
                 // Haftalık karne için kaydet
