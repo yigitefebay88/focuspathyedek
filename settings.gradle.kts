@@ -26,3 +26,4 @@ rootProject.name = "FocusPath"
 include(":app")
 include(":core:domain")
 include(":core:data")
+include(":baselineprofile")

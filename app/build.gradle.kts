@@ -16,6 +16,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization") version "2.1.0"
     id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.gms.google-services")
+    id("androidx.baselineprofile")
 }
 
 android {
@@ -46,7 +47,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -62,6 +64,7 @@ kotlin {
 dependencies {
     implementation(project(":core:domain"))
     implementation(project(":core:data"))
+    baselineProfile(project(":baselineprofile"))
     implementation(platform("androidx.compose:compose-bom:2025.04.00"))
 
     implementation("androidx.compose.ui:ui")
