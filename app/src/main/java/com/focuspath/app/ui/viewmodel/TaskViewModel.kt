@@ -27,6 +27,9 @@ import com.focuspath.app.core.data.local.FocusHistoryEntity
 import com.focuspath.app.data.model.LeaderboardUser
 import com.focuspath.app.data.model.Team
 import com.focuspath.app.data.remote.FocusPathApiService
+import com.focuspath.app.data.remote.TaskSyncRequest
+import com.focuspath.app.data.remote.UserSyncRequest
+import com.focuspath.app.data.remote.TaskDto
 import com.focuspath.app.core.domain.usecase.GetFocusRankUseCase
 import com.focuspath.app.core.domain.usecase.CalculateDopamineUseCase
 import com.focuspath.app.core.domain.repository.TaskRepository
@@ -723,6 +726,80 @@ class TaskViewModel @Inject constructor(
     val updateNotes = mutableStateOf("")
     val updateVersionName = mutableStateOf("")
 
+    private fun startUserEnvironment(user: com.google.firebase.auth.FirebaseUser) {
+        isLoggedIn.value = true
+        userEmail.value = user.email?.lowercase() ?: ""
+
+        if (userName.value == "ANONYMOUS") {
+            userName.value = user.displayName ?: "ANONYMOUS"
+        }
+        if (userPhotoUrl.value == null) {
+            userPhotoUrl.value = user.photoUrl?.toString()
+        }
+
+        // KRİTİK İŞLEMLER (Hemen Başlat)
+        fetchUserDataFromFirestore()
+        syncWithBackend()
+
+        // SOSYAL VE ARKA PLAN İŞLEMLERİ (2.5 Saniye Ertele)
+        // Bu sayede uygulama ana ekranı (Görevler) anında yüklenir.
+        viewModelScope.launch {
+            delay(2500)
+            fetchLeaderboard()
+            fetchUserTeam()
+            syncXpToFirestore()
+            startFriendRequestListener()
+            startFriendsListener()
+            startLiveFocusListener()
+            startPresenceHeartbeat()
+        }
+    }
+
+    fun syncWithBackend(forcedPhotoUrl: String? = null) {
+        val user = firebaseAuth.currentUser ?: return
+        val email = user.email?.lowercase() ?: return
+        
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                // 1. Sync User Stats
+                val userRequest = UserSyncRequest(
+                    email = email,
+                    username = userName.value,
+                    xp = userXp.value.toLong(),
+                    coins = userCoins.value,
+                    level = officeLevel.value,
+                    photoUrl = forcedPhotoUrl ?: userPhotoUrl.value
+                )
+                apiService.syncUser(userRequest)
+
+                // 2. Sync Tasks (Bulk)
+                val localTasks = taskDao.getAllTasksOnce()
+                val taskDtos = localTasks.map { entity ->
+                    TaskDto(
+                        id = entity.id,
+                        title = entity.title,
+                        notes = entity.notes,
+                        category = entity.category,
+                        priority = entity.priority,
+                        isCompleted = entity.isCompleted,
+                        dueDate = entity.dueDate,
+                        parentId = entity.parentId
+                    )
+                }
+                val taskRequest = TaskSyncRequest(email = email, tasks = taskDtos)
+                val response = apiService.syncTasks(taskRequest)
+                
+                if (response.isSuccessful) {
+                    android.util.Log.d("FocusPathBackend", "Backend sync successful")
+                } else {
+                    android.util.Log.e("FocusPathBackend", "Backend sync error: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("FocusPathBackend", "Backend sync failed: ${e.message}")
+            }
+        }
+    }
+
     private fun checkRemoteUpdate() {
         // Fetch from Firestore config to make it dynamic
         firestore.collection("app_config").document("update_info").get()
@@ -894,8 +971,13 @@ class TaskViewModel @Inject constructor(
         isWaterRewardAvailable.value = lastTime > 0 && (System.currentTimeMillis() - lastTime < 2 * 60 * 60 * 1000L)
 
         loadOnboardingTasks() // ÖNCE GÖREVLERİ YÜKLE
-        setupSoundPool()
-        checkRemoteUpdate()
+        
+        // Ses ve Güncelleme kontrolünü 1.5 saniye sonraya ertele
+        viewModelScope.launch {
+            delay(1500)
+            setupSoundPool()
+            checkRemoteUpdate()
+        }
         
         // Register listener for reactive stats
         prefs.registerOnSharedPreferenceChangeListener(prefsListener)
@@ -903,47 +985,14 @@ class TaskViewModel @Inject constructor(
         firebaseAuth.addAuthStateListener { auth ->
             val user = auth.currentUser
             if (user != null && !isLoggedIn.value) {
-                isLoggedIn.value = true
-                userEmail.value = user.email?.lowercase() ?: ""
-                
-                if (userName.value == "ANONYMOUS") {
-                    userName.value = user.displayName ?: "ANONYMOUS"
-                }
-                if (userPhotoUrl.value == null) {
-                    userPhotoUrl.value = user.photoUrl?.toString()
-                }
-
-                fetchLeaderboard()
-                fetchUserDataFromFirestore()
-                fetchUserTeam()
-                syncXpToFirestore()
-                startFriendRequestListener()
-                startFriendsListener()
-                startLiveFocusListener()
-                startPresenceHeartbeat()
+                startUserEnvironment(user)
             }
         }
         
         firebaseAuth.currentUser?.let { user ->
-            isLoggedIn.value = true
-            userEmail.value = user.email?.lowercase() ?: ""
-            
-            // Sadece yerelde yoksa Firebase Auth'tan al (Stale veriyi önlemek için)
-            if (userName.value == "ANONYMOUS") {
-                userName.value = user.displayName ?: "ANONYMOUS"
+            if (!isLoggedIn.value) {
+                startUserEnvironment(user)
             }
-            if (userPhotoUrl.value == null) {
-                userPhotoUrl.value = user.photoUrl?.toString()
-            }
-
-            fetchLeaderboard()
-            fetchUserDataFromFirestore()
-            fetchUserTeam() // TAKIM VERİSİNİ ÇEK
-            syncXpToFirestore() // Hemen senkronize et ki leaderboard boş kalmasın
-            startFriendRequestListener()
-            startFriendsListener()
-            startLiveFocusListener()
-            startPresenceHeartbeat()
         }
         
         // Arkadaş listesi güncellendiğinde ofisi tazele
@@ -2576,71 +2625,38 @@ class TaskViewModel @Inject constructor(
     }
 
     fun fetchLeaderboard() {
-        android.util.Log.i("FocusPathFirestore", "fetchLeaderboard: STARTED")
+        android.util.Log.i("FocusPathBackend", "fetchLeaderboard: STARTED")
         isLeaderboardLoading.value = true
         
-        // Timeout için bir mekanizma ekleyelim
-        val timeoutJob = viewModelScope.launch {
-            kotlinx.coroutines.delay(10000) 
-            if (isLeaderboardLoading.value) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val response = apiService.getLeaderboard()
+                if (response.isSuccessful && response.body() != null) {
+                    val users = response.body()!!.map { res ->
+                        android.util.Log.d("FocusPathBackend", "Leaderboard user: ${res.username}, photo: ${res.photoUrl}")
+                        LeaderboardUser(
+                            email = res.email,
+                            name = res.username,
+                            score = res.xp,
+                            photoUrl = res.photoUrl,
+                            level = res.level
+                        )
+                    }
+                    _leaderboard.value = users
+                    initializeWorkers()
+                    android.util.Log.i("FocusPathBackend", "Leaderboard loaded from Backend. Count: ${users.size}")
+                } else {
+                    android.util.Log.e("FocusPathBackend", "Leaderboard fetch error: ${response.code()}")
+                    fetchLeaderboardFromFirestore()
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("FocusPathBackend", "Leaderboard fetch failed: ${e.message}")
+                fetchLeaderboardFromFirestore()
+            } finally {
                 isLeaderboardLoading.value = false
-                android.util.Log.w("FocusPathFirestore", "Leaderboard fetch timeout!")
             }
         }
 
-        // KİŞİSEL LİDERLİK TABLOSU - Önce orderBy olmadan çekmeyi dene (İndeks hatasını önlemek için en garantisi)
-        firestore.collection("leaderboard")
-            .limit(50)
-            .addSnapshotListener { snapshot, e ->
-                timeoutJob.cancel()
-                isLeaderboardLoading.value = false
-                
-                if (e != null) {
-                    android.util.Log.e("FocusPathFirestore", "Leaderboard Listen Error: ${e.message}")
-                    return@addSnapshotListener
-                }
-
-                if (snapshot != null) {
-                    android.util.Log.i("FocusPathFirestore", "Leaderboard Snapshot received. Count: ${snapshot.size()}")
-                    
-                    val users = snapshot.documents.mapNotNull { doc ->
-                        try {
-                            // Ham veriyi logla (Debug için kritik!)
-                            android.util.Log.i("FocusPathFirestore", "Doc ID: ${doc.id}, Data: ${doc.data}")
-                            
-                            val u = doc.toObject(LeaderboardUser::class.java)?.copy(uid = doc.id)
-                            
-                            // Agresif fotoğraf bulma (Eğer toObject kaçırdıysa)
-                            val photoVal = doc.get("photoUrl") ?: doc.get("photo_url") ?: doc.get("photo") ?: doc.get("image") ?: doc.get("avatar")
-                            var photoStr = photoVal?.toString()?.trim()
-                            
-                            if (photoStr.isNullOrBlank() || photoStr == "null" || (!photoStr.startsWith("http") && !photoStr.startsWith("data:image"))) {
-                                // Fotoğrafı yoksa varsayılan avatar ata (Ofiste görünmesi için kritik)
-                                val userNameForAvatar = u?.name ?: "User"
-                                photoStr = "https://ui-avatars.com/api/?name=${userNameForAvatar.replace(" ", "+")}&background=0D8ABC&color=fff"
-                            }
-                            
-                            if (u != null) {
-                                u.photoUrl = photoStr
-                            }
-                            
-                            // Log photo status
-                            if (u?.photoUrl.isNullOrBlank()) {
-                                android.util.Log.w("FocusPathFirestore", "User ${u?.name} (${doc.id}) STILL has NO photoUrl!")
-                            }
-                            
-                            u
-                        } catch (ex: Exception) {
-                            android.util.Log.e("FocusPathFirestore", "Leaderboard Parse Error for ${doc.id}: ${ex.message}")
-                            null
-                        }
-                    }.sortedByDescending { it.score } // Uygulama tarafında sırala (Garanti yöntem)
-                    
-                    _leaderboard.value = users
-                    initializeWorkers()
-                }
-            }
-        
         // TAKIM LİDERLİK TABLOSU
         firestore.collection("teams")
             .orderBy("totalTeamXp", com.google.firebase.firestore.Query.Direction.DESCENDING)
@@ -2654,6 +2670,32 @@ class TaskViewModel @Inject constructor(
         
         // Incoming Messages Listener
         listenForIncomingMessages()
+    }
+
+    private fun fetchLeaderboardFromFirestore() {
+        android.util.Log.i("FocusPathFirestore", "fetchLeaderboardFromFirestore: STARTED")
+        firestore.collection("leaderboard")
+            .limit(50)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val users = snapshot.documents.mapNotNull { doc ->
+                    try {
+                        val u = doc.toObject(LeaderboardUser::class.java)?.copy(uid = doc.id)
+                        val photoVal = doc.get("photoUrl") ?: doc.get("photo_url") ?: doc.get("photo") ?: doc.get("image") ?: doc.get("avatar")
+                        var photoStr = photoVal?.toString()?.trim()
+                        if (photoStr.isNullOrBlank() || photoStr == "null" || (!photoStr.startsWith("http") && !photoStr.startsWith("data:image"))) {
+                            val userNameForAvatar = u?.name ?: "User"
+                            photoStr = "https://ui-avatars.com/api/?name=${userNameForAvatar.replace(" ", "+")}&background=0D8ABC&color=fff"
+                        }
+                        if (u != null) {
+                            u.photoUrl = photoStr
+                        }
+                        u
+                    } catch (ex: Exception) { null }
+                }.sortedByDescending { it.score }
+                _leaderboard.value = users
+                initializeWorkers()
+            }
     }
 
     private var messageIncomingRegistration: com.google.firebase.firestore.ListenerRegistration? = null
@@ -2777,6 +2819,7 @@ class TaskViewModel @Inject constructor(
         val email = userEmail.value.lowercase()
         if (!isLoggedIn.value || email.isBlank()) return
         firestore.collection("users").document(email).collection("tasks").document(task.id.toString()).set(task)
+        syncWithBackend()
     }
 
     private fun deleteTaskFromFirestore(taskId: Long) {
@@ -2813,6 +2856,7 @@ class TaskViewModel @Inject constructor(
                 // FIRESTORE'DAKİ ESKİ VERİYİ ÜSTÜNE YAZMA (AVATAR YAPMA)
                 if (remoteUrl.isBlank() && currentPhoto?.startsWith("file://") == true) {
                     android.util.Log.d("FocusPathFirestore", "Local photo exists, skipping avatar fallback for sync")
+                    syncWithBackend(forcedPhotoUrl = currentPhoto)
                     return@launch
                 }
                 
@@ -2829,6 +2873,9 @@ class TaskViewModel @Inject constructor(
                     val cleanUrl = if (remoteUrl.contains("?t=")) remoteUrl.substringBefore("?t=") else remoteUrl
                     "$cleanUrl?t=${System.currentTimeMillis()}"
                 }
+
+                // BACKEND SENKRONİZASYONU (Hesaplanan finalUrl ile)
+                syncWithBackend(forcedPhotoUrl = finalUrl)
 
                 val updateMap = mutableMapOf<String, Any>(
                     "uid" to user.uid,
@@ -3355,7 +3402,6 @@ class TaskViewModel @Inject constructor(
 
     fun logoutGoogle(context: Context) { 
         viewModelScope.launch { 
-            friendRequestRegistration?.remove()
             firebaseAuth.signOut() 
             isLoggedIn.value = false 
             
@@ -3482,7 +3528,7 @@ class TaskViewModel @Inject constructor(
         val targetEmailClean = targetEmail.trim().lowercase()
         val targetUidClean = targetUid?.trim()
 
-        // 1. ÖNCE EMAIL üzerinden deniyoruz (Mevcut kuralların bunu bekliyor olma ihtimali yüksek)
+        // 1. ÖNCE EMAIL üzerinden deniyoruz
         firestore.collection("users")
             .document(targetEmailClean)
             .collection("friend_requests")
@@ -3516,7 +3562,6 @@ class TaskViewModel @Inject constructor(
     fun acceptFriendRequest(reqUser: LeaderboardUser, onSuccess: () -> Unit) {
         val currentUser = firebaseAuth.currentUser ?: return
         val db = firestore
-        // Kendi dokümanımız için UID kullanalım (Daha güvenli ve kurallara uygun)
         val userDocRef = db.collection("users").document(currentUser.uid)
 
         val friendData = mapOf(
@@ -3538,7 +3583,6 @@ class TaskViewModel @Inject constructor(
 
         userDocRef.collection("friends").document(reqUser.uid).set(friendData)
             .addOnSuccessListener {
-                // Karşı tarafın dokümanı için de UID kullanalım
                 db.collection("users").document(reqUser.uid).collection("friends").document(currentUser.uid).set(myData)
                     .addOnSuccessListener {
                         userDocRef.collection("friend_requests").document(reqUser.uid).delete()
@@ -3547,15 +3591,14 @@ class TaskViewModel @Inject constructor(
                             db.collection("users").document(currentEmail.lowercase())
                                 .collection("friend_requests").document(reqUser.uid).delete()
                         }
-                        completeOnboardingTask("add_friend") // GÖREVİ TAMAMLA
+                        completeOnboardingTask("add_friend")
                         onSuccess()
                     }
                     .addOnFailureListener {
-                        // Eğer UID dokümanı yoksa (eski kullanıcı), Email dokümanını dene
                         db.collection("users").document(reqUser.email.lowercase()).collection("friends").document(currentUser.uid).set(myData)
                             .addOnSuccessListener {
                                 userDocRef.collection("friend_requests").document(reqUser.uid).delete()
-                                completeOnboardingTask("add_friend") // GÖREVİ TAMAMLA
+                                completeOnboardingTask("add_friend")
                                 onSuccess()
                             }
                     }
@@ -3566,16 +3609,13 @@ class TaskViewModel @Inject constructor(
         val currentUser = firebaseAuth.currentUser ?: return
         val db = firestore
         
-        // Kendi dokümanımızdan sil (UID kullanıyoruz)
         db.collection("users").document(currentUser.uid)
             .collection("friends").document(friendUid).delete()
             .addOnSuccessListener {
-                // Karşı tarafın dokümanından sil (Önce UID'yi dene)
                 db.collection("users").document(friendUid)
                     .collection("friends").document(currentUser.uid).delete()
                     .addOnSuccessListener { onSuccess() }
                     .addOnFailureListener {
-                        // Fallback: Email dokümanını dene
                         db.collection("users").document(friendEmail.lowercase())
                             .collection("friends").document(currentUser.uid).delete()
                             .addOnSuccessListener { onSuccess() }
@@ -3597,7 +3637,7 @@ class TaskViewModel @Inject constructor(
                 friendsList.clear()
                 friendsList.addAll(list)
                 if (list.isNotEmpty()) {
-                    completeOnboardingTask("add_friend") // Arkadaşı varsa tamamla
+                    completeOnboardingTask("add_friend")
                 }
             }
     }

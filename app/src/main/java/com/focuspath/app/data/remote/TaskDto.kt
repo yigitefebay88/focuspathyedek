@@ -8,5 +8,7 @@ data class TaskDto(
     @SerializedName("notes") val notes: String,
     @SerializedName("category") val category: String,
     @SerializedName("priority") val priority: Int,
-    @SerializedName("isCompleted") val isCompleted: Boolean
+    @SerializedName("isCompleted") val isCompleted: Boolean,
+    @SerializedName("dueDate") val dueDate: Long,
+    @SerializedName("parentId") val parentId: Long
 )

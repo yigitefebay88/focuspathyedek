@@ -7,6 +7,7 @@ data class LeaderboardUser(
     val name: String = "",
     val email: String = "",
     val score: Long = 0L,
+    val level: Int = 1,
     @PropertyName("photoUrl") var photoUrl: String? = null,
     val timestamp: Long = 0L,
     val sessionDuration: Int = 0,

@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: focuspath-backend
+  datasource:
+    # H2 In-Memory DB (Testing için kolaylık sağlar)
+    url: jdbc:h2:mem:focuspath;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+    # PostgreSQL (Gerçek veritabanı için burayı açabilirsin)
+    # url: jdbc:postgresql://localhost:5432/focuspath
+    # username: postgres
+    # password: password
+    # driver-class-name: org.postgresql.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+server:
+  port: 8080
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
