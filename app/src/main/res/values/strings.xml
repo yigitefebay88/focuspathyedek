@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">FocusPath</string>
-    <string name="accessibility_service_description">FocusPath, odaklanma seansınız sırasında dikkat dağıtıcı uygulamaları engellemek ve sizi çalışma alanınıza geri döndürmek için Erişilebilirlik API\'sini kullanır. Bu hizmet yalnızca hangi uygulamanın ön planda olduğunu tespit etmek için kullanılır ve hiçbir kişisel veri toplamaz.</string>
-    <string name="plan_today">Bugünü Planla</string>
-    <string name="remember_tomorrow">Yarını Hatırla</string>
-    <string name="planning_title">GÜNLÜK DÖNGÜ</string>
+    <string name="accessibility_service_description">FocusPath uses the AccessibilityService API to detect which apps are launched during focus sessions. This is required to block distracting apps and help you stay on track. We do not collect, store, or share any personal data through this service.</string>
+    <string name="plan_today">Plan Today</string>
+    <string name="remember_tomorrow">Remember Tomorrow</string>
+    <string name="planning_title">DAILY CYCLE</string>
 </resources>

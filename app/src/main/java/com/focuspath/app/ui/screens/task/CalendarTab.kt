@@ -359,8 +359,9 @@ fun CalendarTab(
                                 fontSize = 12.sp
                             )
                             Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                                val isMe = user.email.equals(vm.userEmail.value, ignoreCase = true)
                                 ProfileImage(
-                                    photoUrl = user.photoUrl,
+                                    photoUrl = if (isMe) vm.userPhotoUrl.value else user.photoUrl,
                                     name = user.name,
                                     email = user.email,
                                     size = 20.dp

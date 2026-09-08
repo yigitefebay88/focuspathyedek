@@ -20,7 +20,13 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -1016,7 +1022,7 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
 
 @Composable
 fun UserLiveRow(user: LeaderboardUser, isEnglish: Boolean, isMe: Boolean, vm: TaskViewModel) {
-    val displayPhoto = user.photoUrl
+    val displayPhoto = if (isMe) vm.userPhotoUrl.value else user.photoUrl
 
     Surface(
         color = if (isMe) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else Color.Black.copy(alpha = 0.6f),
@@ -2070,7 +2076,7 @@ private fun CalendarTabFull(vm: TaskViewModel, lang: Map<String, String>, curren
     };
  Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))) { Column(modifier = Modifier.padding(16.dp)) { Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(text = lang["leaderboard"] ?: "LEADERBOARD", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f), fontWeight = FontWeight.Bold); IconButton(onClick = { vm.fetchLeaderboard() }) { Icon(Icons.Default.Refresh, null, tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f), modifier = Modifier.size(20.dp)) } }; Spacer(Modifier.height(12.dp)); Row(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)) { Text("#", modifier = Modifier.width(30.dp), color = Color.Gray, fontSize = 10.sp); Text("USER", modifier = Modifier.weight(1f), color = Color.Gray, fontSize = 10.sp); Text("UNVAN", modifier = Modifier.width(80.dp), color = Color.Gray, fontSize = 10.sp, textAlign = TextAlign.Center); Text("XP", modifier = Modifier.width(50.dp), color = Color.Gray, fontSize = 10.sp, textAlign = TextAlign.End) }; HorizontalDivider(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)); if (lbUsers.isEmpty()) { Text("FETCHING DATA...", modifier = Modifier.padding(16.dp).fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Gray, fontSize = 11.sp) } else { lbUsers.forEachIndexed { index, user -> val isMe = user.email.equals(vm.userEmail.value, ignoreCase = true) ; Row(modifier = Modifier.fillMaxWidth().background(if (isMe) MaterialTheme.colorScheme.primary.copy(alpha = 0.05f) else Color.Transparent).padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) { Text("${index + 1}", modifier = Modifier.width(30.dp), color = if (index < 3) AccentYellow.copy(alpha = 0.9f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.7f), fontWeight = FontWeight.Bold, fontSize = 12.sp);                                 Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                                     com.focuspath.app.ui.components.ProfileImage(
-                                        photoUrl = user.photoUrl,
+                                        photoUrl = if (isMe) vm.userPhotoUrl.value else user.photoUrl,
                                         name = user.name,
                                         email = user.email,
                                         size = 20.dp
@@ -2459,7 +2465,7 @@ fun WorkerDetailDialog(vm: TaskViewModel, worker: WorkerInfo, isEnglish: Boolean
 }
 
 @Composable
-fun BoxScope.WorkerModel(worker: WorkerInfo, fixedRotationX: Float, selectedBuddy: WorkerInfo? = null, onClick: () -> Unit) {
+fun BoxScope.WorkerModel(worker: WorkerInfo, fixedRotationX: Float, mePhotoUrl: String? = null, selectedBuddy: WorkerInfo? = null, onClick: () -> Unit) {
     val infiniteTransition = rememberInfiniteTransition()
 
     // Typing animation
@@ -2626,10 +2632,11 @@ fun BoxScope.WorkerModel(worker: WorkerInfo, fixedRotationX: Float, selectedBudd
             }
 
             // Arkadaş fotoğrafı varsa Canvas dışına (AsyncImage ile) kafa olarak çiz
-            if (worker.photoUrl != null) {
+            val displayPhoto = if (worker.isMe) mePhotoUrl else worker.photoUrl
+            if (displayPhoto != null) {
                 val headBobPx = if(isThinking || isAsking) headBob else 0f
                 AsyncImage(
-                    model = worker.photoUrl,
+                    model = displayPhoto,
                     contentDescription = null,
                     modifier = Modifier
                         .size(24.dp)
@@ -2956,7 +2963,7 @@ private fun OfficeTabFull(vm: TaskViewModel, isEnglish: Boolean, context: Contex
                                 // Çalışanlar (Masada Olanlar) - Z-INDEX: Masa karakterin arkasında kalsın (Y-sıralaması Box içinde)
                                 workersCopy.filter { it.deskId == deskId && it.currentAction != WorkerAction.WALKING && it.currentAction != WorkerAction.COFFEE }.forEach { worker ->
                                     key(worker.id) {
-                                        WorkerModel(worker = worker, fixedRotationX = fixedRotationX, selectedBuddy = vm.selectedFocusBuddy.value) {
+                                        WorkerModel(worker = worker, fixedRotationX = fixedRotationX, mePhotoUrl = vm.userPhotoUrl.value, selectedBuddy = vm.selectedFocusBuddy.value) {
                                             vm.workerDetails.value = worker
                                         }
                                     }
@@ -2991,7 +2998,7 @@ private fun OfficeTabFull(vm: TaskViewModel, isEnglish: Boolean, context: Contex
                                     translationY = animatedOffset.y.toFloat()
                                 }
                             ) {
-                                WorkerModel(worker = worker, fixedRotationX = fixedRotationX, selectedBuddy = vm.selectedFocusBuddy.value) {
+                                WorkerModel(worker = worker, fixedRotationX = fixedRotationX, mePhotoUrl = vm.userPhotoUrl.value, selectedBuddy = vm.selectedFocusBuddy.value) {
                                     vm.workerDetails.value = worker
                                 }
                             }
@@ -4175,7 +4182,8 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
                         } else {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                                 top3.forEachIndexed { index, user ->
-                                    val displayPhoto = user.photoUrl
+                                    val isMe = user.email.equals(vm.userEmail.value, ignoreCase = true)
+                                    val displayPhoto = if (isMe) vm.userPhotoUrl.value else user.photoUrl
                                     
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         Box(contentAlignment = Alignment.Center) {

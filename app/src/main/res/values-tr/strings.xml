@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">FocusPath</string>
+    <string name="accessibility_service_description">FocusPath, odaklanma seansları sırasında hangi uygulamaların açıldığını tespit etmek için AccessibilityService API\'sini kullanır. Bu, dikkat dağıtıcı uygulamaları engellemek ve yolda kalmanıza yardımcı olmak için gereklidir. Bu hizmet aracılığıyla hiçbir kişisel veriyi toplamıyor, saklamıyor veya paylaşmıyoruz.</string>
+    <string name="plan_today">Bugünü Planla</string>
+    <string name="remember_tomorrow">Yarını Hatırla</string>
+    <string name="planning_title">GÜNLÜK DÖNGÜ</string>
+</resources>

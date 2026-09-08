@@ -8,6 +8,8 @@ import retrofit2.http.Query
 import retrofit2.http.Path
 import retrofit2.http.DELETE
 
+import com.google.gson.annotations.SerializedName
+
 interface FocusPathApiService {
     @GET("api/v1/tasks")
     suspend fun getTasks(@Query("email") email: String): List<TaskDto>
@@ -23,10 +25,10 @@ interface FocusPathApiService {
 }
 
 data class UserResponse(
-    val email: String,
-    val username: String,
-    val xp: Long,
-    val coins: Int,
-    val level: Int,
-    val photoUrl: String?
+    @SerializedName("email") val email: String,
+    @SerializedName("username") val username: String,
+    @SerializedName("xp") val xp: Long,
+    @SerializedName("coins") val coins: Int,
+    @SerializedName("level") val level: Int,
+    @SerializedName("photoUrl") val photoUrl: String?
 )

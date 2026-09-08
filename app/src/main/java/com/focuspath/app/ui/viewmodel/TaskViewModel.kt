@@ -136,6 +136,7 @@ class TaskViewModel @Inject constructor(
     val userPhotoUrl = mutableStateOf<String?>(prefs.getString("user_photo_url", null))
     private val _localUserXp = MutableStateFlow(prefs.getInt("user_xp", 0).toLong())
     private val _localUserPhoto = MutableStateFlow(prefs.getString("user_photo_url", null))
+    private val _localUserName = MutableStateFlow(prefs.getString("user_name", "ANONYMOUS") ?: "ANONYMOUS")
     val userStreak = mutableStateOf(5)
     val userCoins = mutableStateOf(prefs.getInt("user_coins", 0))
     val lifetimeCoins = mutableStateOf(prefs.getInt("lifetime_coins", 0))
@@ -732,6 +733,7 @@ class TaskViewModel @Inject constructor(
 
         if (userName.value == "ANONYMOUS") {
             userName.value = user.displayName ?: "ANONYMOUS"
+            _localUserName.value = userName.value
         }
         if (userPhotoUrl.value == null) {
             userPhotoUrl.value = user.photoUrl?.toString()
@@ -755,7 +757,7 @@ class TaskViewModel @Inject constructor(
         }
     }
 
-    fun syncWithBackend(forcedPhotoUrl: String? = null) {
+    fun syncWithBackend() {
         val user = firebaseAuth.currentUser ?: return
         val email = user.email?.lowercase() ?: return
         
@@ -768,7 +770,7 @@ class TaskViewModel @Inject constructor(
                     xp = userXp.value.toLong(),
                     coins = userCoins.value,
                     level = officeLevel.value,
-                    photoUrl = forcedPhotoUrl ?: userPhotoUrl.value
+                    photoUrl = userPhotoUrl.value
                 )
                 apiService.syncUser(userRequest)
 
@@ -858,8 +860,9 @@ class TaskViewModel @Inject constructor(
     val leaderboard: StateFlow<List<LeaderboardUser>> = combine(
         _leaderboard,
         _localUserXp,
-        _localUserPhoto
-    ) { users, localXp, localPhoto ->
+        _localUserPhoto,
+        _localUserName
+    ) { users, localXp, localPhoto, localName ->
         try {
             val currentUid = firebaseAuth.currentUser?.uid
             val currentEmail = userEmail.value
@@ -871,7 +874,7 @@ class TaskViewModel @Inject constructor(
                 
                 if (isMe) {
                     foundMe = true
-                    user.copy(photoUrl = localPhoto, score = localXp)
+                    user.copy(photoUrl = localPhoto, score = localXp, name = localName)
                 } else {
                     user
                 }
@@ -880,7 +883,7 @@ class TaskViewModel @Inject constructor(
             if (!foundMe && currentUid != null) {
                 mappedUsers.add(LeaderboardUser(
                     uid = currentUid,
-                    name = if (userName.value == "ANONYMOUS") (firebaseAuth.currentUser?.displayName ?: "Me") else userName.value,
+                    name = localName,
                     email = currentEmail,
                     score = localXp,
                     photoUrl = localPhoto
@@ -1188,6 +1191,7 @@ class TaskViewModel @Inject constructor(
     fun updateUserName(newName: String) {
         if (newName.isNotBlank()) {
             userName.value = newName
+            _localUserName.value = newName
             prefs.edit().putString("user_name", newName).apply()
             syncProfileToFirestore()
             syncXpToFirestore() // Liderlik tablosundaki adı da güncelle
@@ -1213,23 +1217,22 @@ class TaskViewModel @Inject constructor(
                     localFile.absolutePath
                 }
 
-                // UI ve Cache'i anında yerel dosya ile güncelle
-                val timestamp = System.currentTimeMillis()
-                val cacheBustedPath = "file://$localPath"
-                
-                // KRİTİK: Zaman damgasını HEMEN güncelle ki senkronizasyon kilitlensin
-                prefs.edit()
-                    .putString("user_photo_url", localPath)
-                    .putLong("profile_last_local_update", timestamp)
-                    .apply()
-                
-                userPhotoUrl.value = cacheBustedPath
-                _localUserPhoto.value = cacheBustedPath
-
+                // 1. UI'yı ANINDA YEREL DOSYA İLE GÜNCELLE
+                val displayPath = "file://$localPath?t=${System.currentTimeMillis()}"
                 withContext(Dispatchers.Main) {
+                    userPhotoUrl.value = displayPath
+                    _localUserPhoto.value = displayPath
+                    
+                    initializeWorkers() // Ofis karakterlerini güncelle
+                    
                     Toast.makeText(application, "Profil fotoğrafı güncellendi.", Toast.LENGTH_SHORT).show()
-                    completeOnboardingTask("profile_pic") // GÖREVİ TAMAMLA
+                    completeOnboardingTask("profile_pic")
                 }
+                
+                prefs.edit()
+                    .putString("user_photo_url", displayPath)
+                    .putLong("profile_last_local_update", System.currentTimeMillis())
+                    .apply()
 
                 // 2. ARKA PLAN SENKRONİZASYONU (Firebase Storage)
                 isUploadingProfile.value = true
@@ -1244,7 +1247,7 @@ class TaskViewModel @Inject constructor(
                             ref.putBytes(bytes).await()
                             
                             val downloadUrl = ref.downloadUrl.await()
-                            val finalPhotoUrl = downloadUrl.toString()
+                            val finalPhotoUrl = "${downloadUrl}?t=${System.currentTimeMillis()}"
                             
                             // 1. ANINDA FIRESTORE GÜNCELLE
                             syncXpToFirestore(forcedPhotoUrl = finalPhotoUrl) 
@@ -1258,20 +1261,14 @@ class TaskViewModel @Inject constructor(
                                 .build()
                             user.updateProfile(profileUpdates).await()
 
-                            // 3. Firestore Genel Kullanıcı Dökümanını Güncelle
-                            val profileMap = mapOf(
-                                "photoUrl" to finalPhotoUrl,
-                                "last_sync" to System.currentTimeMillis()
-                            )
-                            firestore.collection("users").document(user.uid)
-                                .set(profileMap, com.google.firebase.firestore.SetOptions.merge()).await()
-                            
-                            user.reload().await()
-                            
                             withContext(Dispatchers.Main) {
                                 userPhotoUrl.value = finalPhotoUrl
                                 _localUserPhoto.value = finalPhotoUrl
+                                
+                                // En güncel veriyi tüm Firestore konumlarına (UID, Email, Leaderboard) gönder
+                                syncProfileToFirestore()
                             }
+                            
                             android.util.Log.d("FocusPathAuth", "Firebase senkronizasyonu başarılı.")
                         }
                     } catch (e: Exception) {
@@ -1283,10 +1280,7 @@ class TaskViewModel @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
-                android.util.Log.e("FocusPathAuth", "Yerel kayıt hatası", e)
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(application, "Resim kaydedilemedi.", Toast.LENGTH_LONG).show()
-                }
+                android.util.Log.e("FocusPathAuth", "Profil güncelleme hatası: ${e.message}")
             }
         }
     }
@@ -2256,12 +2250,13 @@ class TaskViewModel @Inject constructor(
         doc.getString("name")?.let { cloudName ->
             if (cloudName.isNotBlank() && cloudName != "ANONYMOUS") {
                 userName.value = cloudName
+                _localUserName.value = cloudName
                 prefs.edit().putString("user_name", cloudName).apply()
             }
         }
     }
 
-    private fun syncProfileToFirestore() {
+    fun syncProfileToFirestore() {
         val user = firebaseAuth.currentUser ?: return
         
         // Sadece HTTP veya Base64 olanları buluta gönder
@@ -2280,7 +2275,7 @@ class TaskViewModel @Inject constructor(
             else -> user.photoUrl?.toString() ?: ""
         }
         
-        val profileMap = mapOf(
+        val profileMap = mutableMapOf<String, Any?>(
             "uid" to user.uid,
             "name" to userName.value,
             "email" to (user.email?.lowercase() ?: ""),
@@ -2293,25 +2288,45 @@ class TaskViewModel @Inject constructor(
             "is_premium" to isPremium.value,
             "last_sync" to System.currentTimeMillis()
         )
-        // Hem UID hem Email ile dokümanı güncelleyelim ki uyuşmazlıklar tamamen ortadan kalksın
+
         val email = user.email?.lowercase()
+        
+        // 1. Update UID based doc
+        firestore.collection("users").document(user.uid)
+            .set(profileMap, com.google.firebase.firestore.SetOptions.merge())
+            .addOnSuccessListener { 
+                android.util.Log.d("FocusPathFirestore", "UID doc sync SUCCESS for ${user.uid}") 
+            }
+            .addOnFailureListener { e -> 
+                android.util.Log.e("FocusPathFirestore", "UID doc sync FAILED for ${user.uid}: ${e.message}") 
+            }
+
+        // 2. Update Email based doc (Important for friend requests/search)
         if (!email.isNullOrBlank()) {
-            firestore.collection("users").document(email).set(profileMap, com.google.firebase.firestore.SetOptions.merge())
+            firestore.collection("users").document(email)
+                .set(profileMap, com.google.firebase.firestore.SetOptions.merge())
+                .addOnSuccessListener { 
+                    android.util.Log.d("FocusPathFirestore", "Email doc sync SUCCESS for $email") 
+                }
+                .addOnFailureListener { e -> 
+                    android.util.Log.e("FocusPathFirestore", "Email doc sync FAILED for $email: ${e.message}") 
+                }
         }
 
-        // UID bazlı dokümanı da her zaman güncel tut (En güveniliri bu)
-        firestore.collection("users").document(user.uid).set(profileMap, com.google.firebase.firestore.SetOptions.merge())
-
-        // LEADERBOARD'U DA GÜNCELLE (XP ve Diğerleri burada da olmalı)
+        // 3. Update Leaderboard entry
         val leaderboardMap = mapOf(
             "uid" to user.uid,
             "name" to userName.value,
-            "email" to (user.email?.lowercase() ?: ""),
+            "email" to (email ?: ""),
             "score" to userXp.value.toLong(),
             "photoUrl" to remoteUrl,
             "timestamp" to System.currentTimeMillis()
         )
-        firestore.collection("leaderboard").document(user.uid).set(leaderboardMap, com.google.firebase.firestore.SetOptions.merge())
+        firestore.collection("leaderboard").document(user.uid)
+            .set(leaderboardMap, com.google.firebase.firestore.SetOptions.merge())
+            .addOnSuccessListener { android.util.Log.d("FocusPathFirestore", "Leaderboard entry sync SUCCESS") }
+        
+        syncWithBackend()
     }
 
     private val _searchQuery = MutableStateFlow("")
@@ -2625,32 +2640,51 @@ class TaskViewModel @Inject constructor(
     }
 
     fun fetchLeaderboard() {
-        android.util.Log.i("FocusPathBackend", "fetchLeaderboard: STARTED")
+        android.util.Log.i("FocusPathBackend", "fetchLeaderboard: STARTED (Hybrid Mode)")
         isLeaderboardLoading.value = true
         
         viewModelScope.launch(Dispatchers.IO) {
             try {
+                // 1. Fetch ranking from Custom Backend
                 val response = apiService.getLeaderboard()
+                
+                // 2. Fetch latest profile data from Firestore (Source of Truth for Photos)
+                val firestoreSnapshot = firestore.collection("leaderboard").limit(50).get().await()
+                val firestoreUsersMap = firestoreSnapshot.documents.associateBy(
+                    { it.getString("email")?.lowercase() ?: "" },
+                    { doc ->
+                        val photo = doc.get("photoUrl") ?: doc.get("photo_url")
+                        photo?.toString() ?: ""
+                    }
+                )
+
                 if (response.isSuccessful && response.body() != null) {
                     val users = response.body()!!.map { res ->
-                        android.util.Log.d("FocusPathBackend", "Leaderboard user: ${res.username}, photo: ${res.photoUrl}")
+                        val emailLower = res.email.lowercase()
+                        // Use Firestore photo if backend is missing it
+                        val finalPhoto = if (res.photoUrl.isNullOrBlank()) {
+                            firestoreUsersMap[emailLower]
+                        } else {
+                            res.photoUrl
+                        }
+
                         LeaderboardUser(
                             email = res.email,
                             name = res.username,
                             score = res.xp,
-                            photoUrl = res.photoUrl,
+                            photoUrl = finalPhoto,
                             level = res.level
                         )
                     }
                     _leaderboard.value = users
                     initializeWorkers()
-                    android.util.Log.i("FocusPathBackend", "Leaderboard loaded from Backend. Count: ${users.size}")
+                    android.util.Log.i("FocusPathBackend", "Leaderboard loaded Hybrid. Count: ${users.size}")
                 } else {
-                    android.util.Log.e("FocusPathBackend", "Leaderboard fetch error: ${response.code()}")
+                    android.util.Log.e("FocusPathBackend", "Backend failed, falling back to pure Firestore")
                     fetchLeaderboardFromFirestore()
                 }
             } catch (e: Exception) {
-                android.util.Log.e("FocusPathBackend", "Leaderboard fetch failed: ${e.message}")
+                android.util.Log.e("FocusPathBackend", "Hybrid fetch failed: ${e.message}")
                 fetchLeaderboardFromFirestore()
             } finally {
                 isLeaderboardLoading.value = false
@@ -2856,7 +2890,6 @@ class TaskViewModel @Inject constructor(
                 // FIRESTORE'DAKİ ESKİ VERİYİ ÜSTÜNE YAZMA (AVATAR YAPMA)
                 if (remoteUrl.isBlank() && currentPhoto?.startsWith("file://") == true) {
                     android.util.Log.d("FocusPathFirestore", "Local photo exists, skipping avatar fallback for sync")
-                    syncWithBackend(forcedPhotoUrl = currentPhoto)
                     return@launch
                 }
                 
@@ -2873,9 +2906,6 @@ class TaskViewModel @Inject constructor(
                     val cleanUrl = if (remoteUrl.contains("?t=")) remoteUrl.substringBefore("?t=") else remoteUrl
                     "$cleanUrl?t=${System.currentTimeMillis()}"
                 }
-
-                // BACKEND SENKRONİZASYONU (Hesaplanan finalUrl ile)
-                syncWithBackend(forcedPhotoUrl = finalUrl)
 
                 val updateMap = mutableMapOf<String, Any>(
                     "uid" to user.uid,

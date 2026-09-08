@@ -957,77 +957,131 @@ fun AccessibilityDisclosureDialog(
     onDismiss: () -> Unit,
     onAccept: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.PrivacyTip, null, tint = MaterialTheme.colorScheme.primary)
-                Spacer(Modifier.width(8.dp))
-                Text(if (isEnglish) "Prominent Disclosure" else "Belirgin Açıklama")
-            }
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text(
-                    text = if (isEnglish)
-                        "To provide the App Blocker feature, FocusPath needs to use the Accessibility API."
-                    else
-                        "Uygulama Engelleyici özelliğini sağlamak için FocusPath'in Erişilebilirlik API'sini kullanması gerekir.",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
-                
-                Text(
-                    text = if (isEnglish)
-                        "How FocusPath uses the Accessibility API:\n\n" +
-                        "• Monitoring foreground apps: We use this service to detect when a blacklisted distracting app is opened during your focus sessions.\n" +
-                        "• Automated blocking: If a distracting app is detected, FocusPath will automatically bring itself to the foreground to help you stay on track.\n\n" +
-                        "Data Privacy:\n" +
-                        "• No personal or sensitive user data is collected.\n" +
-                        "• No data is shared with third parties.\n" +
-                        "• This service is only active during focus sessions."
-                    else
-                        "FocusPath Erişilebilirlik API'sini nasıl kullanır:\n\n" +
-                        "• Ön plandaki uygulamaları izleme: Bu hizmeti, odaklanma seanslarınız sırasında kara listedeki dikkat dağıtıcı bir uygulamanın ne zaman açıldığını tespit etmek için kullanırız.\n" +
-                        "• Otomatik engelleme: Dikkat dağıtıcı bir uygulama tespit edilirse, FocusPath yolda kalmanıza yardımcı olmak için kendisini otomatik olarak ön plana çıkaracaktır.\n\n" +
-                        "Veri Gizliliği:\n" +
-                        "• Hiçbir kişisel veya hassas kullanıcı verisi toplanmaz.\n" +
-                        "• Hiçbir veri üçüncü taraflarla paylaşılmaz.\n" +
-                        "• Bu hizmet yalnızca odaklanma seansları sırasında aktiftir.",
-                    fontSize = 14.sp,
-                    lineHeight = 18.sp
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = onAccept,
-                modifier = Modifier.fillMaxWidth()
+    Dialog(
+        onDismissRequest = { /* Must be explicit action */ },
+        properties = DialogProperties(
+            dismissOnBackPress = false,
+            dismissOnClickOutside = false,
+            usePlatformDefaultWidth = false
+        )
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth(0.92f)
+                .wrapContentHeight()
+                .padding(vertical = 24.dp),
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 12.dp
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(if (isEnglish) "I AGREE" else "KABUL EDİYORUM")
-            }
-        },
-        dismissButton = {
-            Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                TextButton(
-                    onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(if (isEnglish) "NO THANKS" else "HAYIR, TEŞEKKÜRLER", color = Color.Gray)
-                }
-                
+                Icon(
+                    imageVector = Icons.Default.Security,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(56.dp)
+                )
+
                 Text(
-                    text = if(isEnglish) "By clicking I AGREE, you consent to the use of this service." else "KABUL EDİYORUM butonuna tıklayarak bu hizmetin kullanımına izin vermiş olursunuz.",
+                    text = if (isEnglish) "AccessibilityService API Consent" else "AccessibilityService API Onayı",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.ExtraBold,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Text(
+                    text = if (isEnglish)
+                        "FocusPath requires the AccessibilityService API to provide the \"App Blocker\" functionality."
+                    else
+                        "FocusPath, \"Uygulama Engelleyici\" özelliğini sunabilmek için AccessibilityService API\'sine ihtiyaç duyar.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Surface(
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+                ) {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(
+                            text = if (isEnglish) "How we use this API:" else "Bu API\'yi nasıl kullanıyoruz:",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        
+                        Text(
+                            text = if (isEnglish)
+                                "• Monitoring Application Launches: We detect when a distracting app from your blocklist is opened in the foreground while your focus session is active.\n" +
+                                "• Blocking Access: FocusPath will automatically return you to your focus workspace to prevent you from being distracted.\n\n" +
+                                "Data Collection & Privacy:\n" +
+                                "• We DO NOT collect or store any personal or sensitive information.\n" +
+                                "• We DO NOT share any data with third parties.\n" +
+                                "• This service works locally on your device and only during focus sessions."
+                            else
+                                "• Uygulama Başlatma Takibi: Odaklanma seansınız aktifken, engellenenler listenizdeki bir uygulamanın ön planda açılıp açılmadığını tespit ederiz.\n" +
+                                "• Erişimi Engelleme: FocusPath, dikkatinizin dağılmasını önlemek için sizi otomatik olarak odaklanma alanınıza geri döndürür.\n\n" +
+                                "Veri Toplama ve Gizlilik:\n" +
+                                "• Hiçbir kişisel veya hassas bilgiyi TOPLAMIYORUZ veya SAKLAMIYORUZ.\n" +
+                                "• Hiçbir veriyi üçüncü taraflarla PAYLAŞMIYORUZ.\n" +
+                                "• Bu hizmet sadece cihazınızda yerel olarak ve sadece odaklanma seansları sırasında çalışır.",
+                            style = MaterialTheme.typography.bodySmall,
+                            lineHeight = 18.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = onAccept,
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Text(
+                            if (isEnglish) "I AGREE" else "KABUL EDİYORUM",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Black,
+                            color = Color.Black
+                        )
+                    }
+
+                    TextButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            if (isEnglish) "NO THANKS / DECLINE" else "HAYIR / REDDET",
+                            color = Color.Gray,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                Text(
+                    text = if(isEnglish)
+                        "By clicking I AGREE, you consent to the usage of the AccessibilityService API. You will be redirected to system settings to enable the service manually."
+                    else
+                        "KABUL EDİYORUM butonuna tıklayarak AccessibilityService API kullanımına izin vermiş olursunuz. Servisi manuel olarak etkinleştirmek için sistem ayarlarına yönlendirileceksiniz.",
                     fontSize = 10.sp,
                     color = Color.Gray,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    lineHeight = 14.sp
                 )
             }
-        },
-        containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(20.dp)
-    )
+        }
+    }
 }
 
 @Composable
