@@ -24,6 +24,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "FocusPath"
 include(":app")
+include(":shared")
 include(":core:domain")
 include(":core:data")
 include(":baselineprofile")
