@@ -62,6 +62,7 @@ kotlin {
 }
 
 dependencies {
+    implementation(project(":shared"))
     implementation(project(":core:domain"))
     implementation(project(":core:data"))
     baselineProfile(project(":baselineprofile"))
