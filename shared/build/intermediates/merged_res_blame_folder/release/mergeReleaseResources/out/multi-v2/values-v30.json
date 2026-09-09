@@ -1,0 +1,34 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.focuspath.shared-release-40:/values-v30/values-v30.xml",
+            "map": [
+                {
+                    "source": "/Users/yigitbay/AndroidStudioProjects/FocusPath/caches/transforms-4/4c7cef4c6611dbf239836264fd42ab4f/transformed/jetified-material3-release/res/values-v30/values-v30.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "72",
+                        "endOffsets": "123"
+                    }
+                }
+            ]
+        },
+        {
+            "outputFile": "com.focuspath.shared-mergeReleaseResources-38:/values-v30/values-v30.xml",
+            "map": [
+                {
+                    "source": "/Users/yigitbay/AndroidStudioProjects/FocusPath/caches/transforms-4/4c7cef4c6611dbf239836264fd42ab4f/transformed/jetified-material3-release/res/values-v30/values-v30.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "72",
+                        "endOffsets": "123"
+                    }
+                }
+            ]
+        }
+    ]
+}

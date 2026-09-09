@@ -78,7 +78,7 @@ import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
 import com.focuspath.app.core.data.local.TaskEntity
 import com.focuspath.app.core.data.local.HabitEntity
-import com.focuspath.app.data.model.LeaderboardUser
+import com.focuspath.shared.model.LeaderboardUser
 import com.focuspath.app.receiver.ReminderReceiver
 import com.focuspath.app.ui.components.AnimatedIconButton
 import com.focuspath.app.ui.components.CoolGoogleSignInButton

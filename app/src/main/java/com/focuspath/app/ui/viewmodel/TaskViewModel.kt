@@ -24,7 +24,7 @@ import com.focuspath.app.core.data.local.TaskDao
 import com.focuspath.app.core.data.local.TaskEntity
 import com.focuspath.app.core.data.local.HabitEntity
 import com.focuspath.app.core.data.local.FocusHistoryEntity
-import com.focuspath.app.data.model.LeaderboardUser
+import com.focuspath.shared.model.LeaderboardUser
 import com.focuspath.app.data.model.Team
 import com.focuspath.app.data.remote.FocusPathApiService
 import com.focuspath.app.data.remote.TaskSyncRequest

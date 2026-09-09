@@ -1,0 +1,16 @@
+-- Merging decision tree log ---
+manifest
+ADDED from /Users/yigitbay/AndroidStudioProjects/FocusPath/core/data/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7497636272756545017.xml:2:13-83
+INJECTED from /Users/yigitbay/AndroidStudioProjects/FocusPath/core/data/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7497636272756545017.xml:2:13-83
+	package
+		INJECTED from /Users/yigitbay/AndroidStudioProjects/FocusPath/core/data/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7497636272756545017.xml
+	xmlns:android
+		ADDED from /Users/yigitbay/AndroidStudioProjects/FocusPath/core/data/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7497636272756545017.xml:2:23-81
+uses-sdk
+INJECTED from /Users/yigitbay/AndroidStudioProjects/FocusPath/core/data/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7497636272756545017.xml reason: use-sdk injection requested
+INJECTED from /Users/yigitbay/AndroidStudioProjects/FocusPath/core/data/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7497636272756545017.xml
+INJECTED from /Users/yigitbay/AndroidStudioProjects/FocusPath/core/data/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7497636272756545017.xml
+	android:targetSdkVersion
+		INJECTED from /Users/yigitbay/AndroidStudioProjects/FocusPath/core/data/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7497636272756545017.xml
+	android:minSdkVersion
+		INJECTED from /Users/yigitbay/AndroidStudioProjects/FocusPath/core/data/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest7497636272756545017.xml

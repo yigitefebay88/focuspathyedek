@@ -1,0 +1,392 @@
+[
+  {
+    "moduleId": "module org.jetbrains.compose.runtime:runtime:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.runtime-runtime-1.7.0-uikitMain-bWTFyg.klib",
+    "sourceSetName": "uikitMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.runtime:runtime:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.runtime-runtime-1.7.0-darwinMain-bWTFyg.klib",
+    "sourceSetName": "darwinMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.runtime:runtime:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.runtime-runtime-1.7.0-posixMain-9pDeVQ.klib",
+    "sourceSetName": "posixMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.runtime:runtime:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.runtime-runtime-1.7.0-nativeMain-9pDeVQ.klib",
+    "sourceSetName": "nativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.runtime:runtime:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.runtime-runtime-1.7.0-jsNativeMain-9pDeVQ.klib",
+    "sourceSetName": "jsNativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.runtime:runtime:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.runtime-runtime-1.7.0-jbMain-9pDeVQ.klib",
+    "sourceSetName": "jbMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.foundation:foundation:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.foundation-foundation-1.7.0-uikitMain-qEodUw.klib",
+    "sourceSetName": "uikitMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.foundation:foundation:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.foundation-foundation-1.7.0-darwinMain-qEodUw.klib",
+    "sourceSetName": "darwinMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.foundation:foundation:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.foundation-foundation-1.7.0-nativeMain-qEodUw.klib",
+    "sourceSetName": "nativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.foundation:foundation:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.foundation-foundation-1.7.0-jsNativeMain-Z4pWpg.klib",
+    "sourceSetName": "jsNativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.foundation:foundation:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.foundation-foundation-1.7.0-skikoMain-Z4pWpg.klib",
+    "sourceSetName": "skikoMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.material3:material3:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.material3-material3-1.7.0-darwinMain-Kuw-mA.klib",
+    "sourceSetName": "darwinMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.material3:material3:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.material3-material3-1.7.0-nativeMain-Kuw-mA.klib",
+    "sourceSetName": "nativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.material3:material3:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.material3-material3-1.7.0-jsNativeMain-HpF0Ww.klib",
+    "sourceSetName": "jsNativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.material3:material3:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.material3-material3-1.7.0-skikoMain-HpF0Ww.klib",
+    "sourceSetName": "skikoMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.material3:material3:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.material3-material3-1.7.0-nonJvmMain-HpF0Ww.klib",
+    "sourceSetName": "nonJvmMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.ui:ui:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.ui-ui-1.7.0-uikitMain-yJ1uLw.klib",
+    "sourceSetName": "uikitMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.ui:ui:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.ui-ui-1.7.0-darwinMain-yJ1uLw.klib",
+    "sourceSetName": "darwinMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.ui:ui:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.ui-ui-1.7.0-nativeMain-yJ1uLw.klib",
+    "sourceSetName": "nativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.ui:ui:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.ui-ui-1.7.0-jsNativeMain-byxhLA.klib",
+    "sourceSetName": "jsNativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.ui:ui:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.ui-ui-1.7.0-skikoMain-byxhLA.klib",
+    "sourceSetName": "skikoMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.components:components-resources:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.components-components-resources-1.7.0-iosMain-mlvQUA.klib",
+    "sourceSetName": "iosMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.components:components-resources:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.components-components-resources-1.7.0-nativeMain-mlvQUA.klib",
+    "sourceSetName": "nativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.components:components-resources:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.components-components-resources-1.7.0-skikoMain-Tn2Qyw.klib",
+    "sourceSetName": "skikoMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.collection-internal:collection:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.collection-internal-collection-1.7.0-jsNativeMain-5apXgA.klib",
+    "sourceSetName": "jsNativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.collection-internal:collection:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.collection-internal-collection-1.7.0-jbMain-5apXgA.klib",
+    "sourceSetName": "jbMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.collection-internal:collection:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.collection-internal-collection-1.7.0-commonMain-5apXgA.klib",
+    "sourceSetName": "commonMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.kotlinx:atomicfu:0.23.2",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.kotlinx-atomicfu-0.23.2-nativeMain-yBS35w.klib",
+    "sourceSetName": "nativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.kotlinx:atomicfu:0.23.2",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.kotlinx-atomicfu-0.23.2-commonMain-yBS35w.klib",
+    "sourceSetName": "commonMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.kotlinx-kotlinx-coroutines-core-1.8.0-nativeDarwinMain-sy5nKg.klib",
+    "sourceSetName": "nativeDarwinMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.kotlinx-kotlinx-coroutines-core-1.8.0-nativeMain-UxhG-g.klib",
+    "sourceSetName": "nativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.animation:animation:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.animation-animation-1.7.0-nativeMain-RuOUtg.klib",
+    "sourceSetName": "nativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.animation:animation:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.animation-animation-1.7.0-jsNativeMain-TojQLQ.klib",
+    "sourceSetName": "jsNativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.annotation-internal:annotation:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.annotation-internal-annotation-1.7.0-nonJvmMain-BD0V2w.klib",
+    "sourceSetName": "nonJvmMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.annotation-internal:annotation:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.annotation-internal-annotation-1.7.0-commonMain-BD0V2w.klib",
+    "sourceSetName": "commonMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.foundation:foundation-layout:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.foundation-foundation-layout-1.7.0-uikitMain-GYqBaA.klib",
+    "sourceSetName": "uikitMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.foundation:foundation-layout:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.foundation-foundation-layout-1.7.0-skikoMain-Nkt8ew.klib",
+    "sourceSetName": "skikoMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.foundation:foundation-layout:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.foundation-foundation-layout-1.7.0-jsNativeMain-Nkt8ew.klib",
+    "sourceSetName": "jsNativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.ui:ui-text:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.ui-ui-text-1.7.0-darwinMain-soKQsQ.klib",
+    "sourceSetName": "darwinMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.ui:ui-text:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.ui-ui-text-1.7.0-nativeMain-soKQsQ.klib",
+    "sourceSetName": "nativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.ui:ui-text:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.ui-ui-text-1.7.0-jsNativeMain-22Ga_g.klib",
+    "sourceSetName": "jsNativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.ui:ui-text:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.ui-ui-text-1.7.0-skikoMain-22Ga_g.klib",
+    "sourceSetName": "skikoMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.ui:ui-util:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.ui-ui-util-1.7.0-uikitMain-V6MLCQ.klib",
+    "sourceSetName": "uikitMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.ui:ui-util:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.ui-ui-util-1.7.0-nonJvmMain-3-t5Ow.klib",
+    "sourceSetName": "nonJvmMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.skiko:skiko:0.8.15",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.skiko-skiko-0.8.15-iosMain-SvRtdQ.klib",
+    "sourceSetName": "iosMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.skiko:skiko:0.8.15",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.skiko-skiko-0.8.15-uikitMain-SvRtdQ.klib",
+    "sourceSetName": "uikitMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.skiko:skiko:0.8.15",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.skiko-skiko-0.8.15-darwinMain-SvRtdQ.klib",
+    "sourceSetName": "darwinMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.skiko:skiko:0.8.15",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.skiko-skiko-0.8.15-nativeMain-7tIhOQ.klib",
+    "sourceSetName": "nativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.skiko:skiko:0.8.15",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.skiko-skiko-0.8.15-nativeJsMain-7tIhOQ.klib",
+    "sourceSetName": "nativeJsMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.skiko:skiko:0.8.15",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.skiko-skiko-0.8.15-commonMain-7tIhOQ.klib",
+    "sourceSetName": "commonMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.animation:animation-core:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.animation-animation-core-1.7.0-uikitMain-uWuQcA.klib",
+    "sourceSetName": "uikitMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.animation:animation-core:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.animation-animation-core-1.7.0-jsNativeMain-KAIxIA.klib",
+    "sourceSetName": "jsNativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.animation:animation-core:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.animation-animation-core-1.7.0-jbMain-KAIxIA.klib",
+    "sourceSetName": "jbMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.material:material-ripple:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.material-material-ripple-1.7.0-jbMain-hYj_-Q.klib",
+    "sourceSetName": "jbMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.ui:ui-graphics:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.ui-ui-graphics-1.7.0-nativeMain-aqjVUg.klib",
+    "sourceSetName": "nativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.ui:ui-graphics:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.ui-ui-graphics-1.7.0-skikoExcludingWebMain-nWZcXg.klib",
+    "sourceSetName": "skikoExcludingWebMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.ui:ui-graphics:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.ui-ui-graphics-1.7.0-jsNativeMain-nWZcXg.klib",
+    "sourceSetName": "jsNativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.ui:ui-graphics:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.ui-ui-graphics-1.7.0-skikoMain-nWZcXg.klib",
+    "sourceSetName": "skikoMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.kotlinx:kotlinx-datetime:0.6.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.kotlinx-kotlinx-datetime-0.6.0-darwinMain-O4UcJA.klib",
+    "sourceSetName": "darwinMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.kotlinx:kotlinx-datetime:0.6.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.kotlinx-kotlinx-datetime-0.6.0-tzdbOnFilesystemMain-v1Leig.klib",
+    "sourceSetName": "tzdbOnFilesystemMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.kotlinx:kotlinx-datetime:0.6.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.kotlinx-kotlinx-datetime-0.6.0-tzfileMain-v1Leig.klib",
+    "sourceSetName": "tzfileMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.kotlinx:kotlinx-datetime:0.6.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.kotlinx-kotlinx-datetime-0.6.0-nativeMain-v1Leig.klib",
+    "sourceSetName": "nativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.kotlinx:kotlinx-datetime:0.6.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.kotlinx-kotlinx-datetime-0.6.0-commonMain-v1Leig.klib",
+    "sourceSetName": "commonMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.androidx.lifecycle:lifecycle-common:2.8.3",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.androidx.lifecycle-lifecycle-common-2.8.3-nonJvmMain-FPlmfg.klib",
+    "sourceSetName": "nonJvmMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.androidx.lifecycle:lifecycle-common:2.8.3",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.androidx.lifecycle-lifecycle-common-2.8.3-commonMain-FPlmfg.klib",
+    "sourceSetName": "commonMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.androidx.lifecycle:lifecycle-runtime:2.8.3",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.androidx.lifecycle-lifecycle-runtime-2.8.3-nativeMain-P_jWsA.klib",
+    "sourceSetName": "nativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.androidx.lifecycle:lifecycle-runtime:2.8.3",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.androidx.lifecycle-lifecycle-runtime-2.8.3-nonJvmMain-P_jWsA.klib",
+    "sourceSetName": "nonJvmMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.androidx.lifecycle:lifecycle-runtime:2.8.3",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.androidx.lifecycle-lifecycle-runtime-2.8.3-commonMain-P_jWsA.klib",
+    "sourceSetName": "commonMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose:2.8.3",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.androidx.lifecycle-lifecycle-runtime-compose-2.8.3-nonAndroidMain-eB6IaQ.klib",
+    "sourceSetName": "nonAndroidMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose:2.8.3",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.androidx.lifecycle-lifecycle-runtime-compose-2.8.3-commonMain-eB6IaQ.klib",
+    "sourceSetName": "commonMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.androidx.lifecycle:lifecycle-viewmodel:2.8.3",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.androidx.lifecycle-lifecycle-viewmodel-2.8.3-nativeMain-I44vqw.klib",
+    "sourceSetName": "nativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.androidx.lifecycle:lifecycle-viewmodel:2.8.3",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.androidx.lifecycle-lifecycle-viewmodel-2.8.3-nonJvmMain-I44vqw.klib",
+    "sourceSetName": "nonJvmMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.androidx.lifecycle:lifecycle-viewmodel:2.8.3",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.androidx.lifecycle-lifecycle-viewmodel-2.8.3-commonMain-I44vqw.klib",
+    "sourceSetName": "commonMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.ui:ui-uikit:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.ui-ui-uikit-1.7.0-uikitMain-aNVDjg.klib",
+    "sourceSetName": "uikitMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.ui:ui-unit:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.ui-ui-unit-1.7.0-jsNativeMain-pR3KgA.klib",
+    "sourceSetName": "jsNativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.compose.ui:ui-unit:1.7.0",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.compose.ui-ui-unit-1.7.0-jbMain-pR3KgA.klib",
+    "sourceSetName": "jbMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.2",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.kotlinx-kotlinx-serialization-core-1.6.2-nativeMain-0z2eOA.klib",
+    "sourceSetName": "nativeMain"
+  },
+  {
+    "moduleId": "module org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.2",
+    "file": "/Users/yigitbay/AndroidStudioProjects/FocusPath/shared/build/kotlinTransformedMetadataLibraries/nativeMain/org.jetbrains.kotlinx-kotlinx-serialization-core-1.6.2-commonMain-0z2eOA.klib",
+    "sourceSetName": "commonMain"
+  }
+]

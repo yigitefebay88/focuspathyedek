@@ -43,6 +43,8 @@ import com.focuspath.app.ui.screens.TaskScreen
 import com.focuspath.app.ui.theme.FocusPathTypography
 import com.focuspath.app.ui.viewmodel.TaskViewModel
 import com.focuspath.app.util.UpdateManager
+import com.focuspath.shared.getPlatform
+import com.focuspath.shared.model.LeaderboardUser
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
@@ -104,6 +106,8 @@ class MainActivity : ComponentActivity(), BillingProvider {
 
         vm = androidx.lifecycle.ViewModelProvider(this)[TaskViewModel::class.java]
         enableEdgeToEdge()
+        
+        android.util.Log.d("FocusPathKMP", "KMP Platform: ${getPlatform().name}")
         
         // Timer Broadcast Receiver - Arka planda çalışırken de XP/Coin kaydı için
         val filter = android.content.IntentFilter().apply {
@@ -519,12 +523,12 @@ class MainActivity : ComponentActivity(), BillingProvider {
                 // 4. ARKADAŞ SİSTEMİ DİALOGU (İstekler, Arkadaşlar ve Karşılıklı Görev Gönderme)
                 if (showFriendsDialogState.value) {
                     var searchEmail by remember { mutableStateOf("") }
-                    var searchResultUser by remember { mutableStateOf<com.focuspath.app.data.model.LeaderboardUser?>(null) }
+                    var searchResultUser by remember { mutableStateOf<LeaderboardUser?>(null) }
                     var statusMessage by remember { mutableStateOf("") }
-                    var myFriendsList by remember { mutableStateOf<List<com.focuspath.app.data.model.LeaderboardUser>>(emptyList()) }
-                    var incomingRequests by remember { mutableStateOf<List<com.focuspath.app.data.model.LeaderboardUser>>(emptyList()) }
+                    var myFriendsList by remember { mutableStateOf<List<LeaderboardUser>>(emptyList()) }
+                    var incomingRequests by remember { mutableStateOf<List<LeaderboardUser>>(emptyList()) }
 
-                    var selectedFriendForTask by remember { mutableStateOf<com.focuspath.app.data.model.LeaderboardUser?>(null) }
+                    var selectedFriendForTask by remember { mutableStateOf<LeaderboardUser?>(null) }
                     var taskTitleInput by remember { mutableStateOf("") }
                     var taskRewardInput by remember { mutableStateOf("50") }
 
@@ -551,7 +555,7 @@ class MainActivity : ComponentActivity(), BillingProvider {
                                                 .whereIn("uid", friendUids)
                                                 .addSnapshotListener { lbSnapshot, _ ->
                                                     val list = lbSnapshot?.documents?.mapNotNull { 
-                                                        it.toObject(com.focuspath.app.data.model.LeaderboardUser::class.java) 
+                                                        it.toObject(LeaderboardUser::class.java) 
                                                     } ?: emptyList()
                                                     if (list.isNotEmpty()) {
                                                         myFriendsList = list
@@ -562,7 +566,7 @@ class MainActivity : ComponentActivity(), BillingProvider {
 
                                 userDocRef.collection("friend_requests")
                                     .addSnapshotListener { snapshot, _ ->
-                                        val reqs = snapshot?.documents?.mapNotNull { it.toObject(com.focuspath.app.data.model.LeaderboardUser::class.java) } ?: emptyList()
+                                        val reqs = snapshot?.documents?.mapNotNull { it.toObject(LeaderboardUser::class.java) } ?: emptyList()
                                         if (reqs.isNotEmpty()) {
                                             incomingRequests = reqs
                                         }
@@ -637,7 +641,7 @@ class MainActivity : ComponentActivity(), BillingProvider {
                                                     .addOnSuccessListener { documents ->
                                                         if (!documents.isEmpty) {
                                                             val doc = documents.documents[0]
-                                                            val user = doc.toObject(com.focuspath.app.data.model.LeaderboardUser::class.java)
+                                                            val user = doc.toObject(LeaderboardUser::class.java)
                                                             if (user != null) {
                                                                 // Agresif photo fallback
                                                                 val photoVal = doc.get("photoUrl") ?: doc.get("photo_url") ?: doc.get("photo") ?: doc.get("image")
