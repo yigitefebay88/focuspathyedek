@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">FocusPath</string>
-    <string name="accessibility_service_description">FocusPath uses the AccessibilityService API to detect which apps are launched during focus sessions. This is required to block distracting apps and help you stay on track. We do not collect, store, or share any personal data through this service.</string>
     <string name="plan_today">Plan Today</string>
     <string name="remember_tomorrow">Remember Tomorrow</string>
     <string name="planning_title">DAILY CYCLE</string>
+    <string name="default_web_client_id">208111707825-5fr1genn4gdi6kptalfq6tv2i87pfffs.apps.googleusercontent.com</string>
 </resources>

@@ -17,12 +17,11 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.focuspath.shared.model.WorkerAction
 import com.focuspath.shared.model.WorkerInfo
-import io.kamel.image.KamelImage
-import io.kamel.image.asyncImageResource
 
 @Composable
 fun WorkerModel(

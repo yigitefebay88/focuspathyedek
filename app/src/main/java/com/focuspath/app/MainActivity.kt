@@ -35,6 +35,10 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.focuspath.app.billing.BillingManager
 import com.focuspath.app.billing.BillingProvider
@@ -43,6 +47,10 @@ import com.focuspath.app.ui.screens.TaskScreen
 import com.focuspath.app.ui.theme.FocusPathTypography
 import com.focuspath.app.ui.viewmodel.TaskViewModel
 import com.focuspath.app.util.UpdateManager
+import com.focuspath.shared.FocusPathTheme
+import com.focuspath.shared.DarkBackground
+import com.focuspath.shared.SharedTaskItem
+import com.focuspath.shared.SharedDashboardHeader
 import com.focuspath.shared.getPlatform
 import com.focuspath.shared.model.LeaderboardUser
 import dagger.hilt.android.AndroidEntryPoint
@@ -96,9 +104,57 @@ class MainActivity : ComponentActivity(), BillingProvider {
 
     private var timerReceiver: android.content.BroadcastReceiver? = null
 
+    private val googleSignInLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        android.util.Log.d("FocusPathAuth", "onActivityResult: ${result.resultCode}")
+        
+        if (result.resultCode == Activity.RESULT_OK) {
+            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+            try {
+                val account = task.getResult(ApiException::class.java)
+                val idToken = account.idToken
+                android.util.Log.d("FocusPathAuth", "Google hesabı seçildi: ${account.email}")
+                
+                if (idToken != null) {
+                    vm.loginGoogle(
+                        context = this,
+                        idToken = idToken,
+                        onSuccess = { email ->
+                            Toast.makeText(this, "Hoş geldin, $email", Toast.LENGTH_SHORT).show()
+                        },
+                        onError = { error ->
+                            android.util.Log.e("FocusPathAuth", "Firebase hatası: $error")
+                            Toast.makeText(this, "Firebase Bağlantı Hatası: $error", Toast.LENGTH_LONG).show()
+                        }
+                    )
+                } else {
+                    android.util.Log.e("FocusPathAuth", "ID Token null döndü!")
+                    Toast.makeText(this, "Google servisi kimlik doğrulayamadı (Token Error).", Toast.LENGTH_LONG).show()
+                }
+            } catch (e: ApiException) {
+                val statusCode = e.statusCode
+                android.util.Log.e("FocusPathAuth", "Google Hatası Kod: $statusCode")
+                
+                val errorMeaning = when(statusCode) {
+                    10 -> "Hata 10 (DEVELOPER_ERROR): Uygulamanın SHA-1 kodu Firebase'de kayıtlı değil. Google Play Console'dan SHA-1'i alıp Firebase'e ekleyin."
+                    7 -> "İnternet bağlantısı yok."
+                    12500 -> "Google Play Servisleri güncel değil veya yapılandırma hatalı."
+                    else -> "Giriş Hatası (Kod: $statusCode). Lütfen internetinizi kontrol edin."
+                }
+                Toast.makeText(this, errorMeaning, Toast.LENGTH_LONG).show()
+            }
+        } else if (result.resultCode == Activity.RESULT_CANCELED) {
+            android.util.Log.d("FocusPathAuth", "Giriş kullanıcı tarafından iptal edildi.")
+        } else {
+            Toast.makeText(this, "Giriş başarısız oldu (Kod: ${result.resultCode})", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
+        logAppSignature() // Uygulama imzası loglanır
         
         // In-App Update Initialization
         updateManager = UpdateManager(this)
@@ -107,7 +163,7 @@ class MainActivity : ComponentActivity(), BillingProvider {
         vm = androidx.lifecycle.ViewModelProvider(this)[TaskViewModel::class.java]
         enableEdgeToEdge()
         
-        android.util.Log.d("FocusPathKMP", "KMP Platform: ${getPlatform().name}")
+        android.util.Log.d("FocusPathKMP", "KMP Platform: ${ getPlatform().name}")
         
         // Timer Broadcast Receiver - Arka planda çalışırken de XP/Coin kaydı için
         val filter = android.content.IntentFilter().apply {
@@ -134,7 +190,8 @@ class MainActivity : ComponentActivity(), BillingProvider {
         )
 
         setContent {
-            vm.billingProvider = this
+            FocusPathTheme {
+                vm.billingProvider = this
 
             billingManager = BillingManager(this) {
                 vm.isPremium.value = true
@@ -261,6 +318,10 @@ class MainActivity : ComponentActivity(), BillingProvider {
                     com.focuspath.app.ui.screens.task.AuthDialog(
                         vm = vm,
                         lang = if (vm.isLoggedIn.value) mapOf("signedInAs" to "Giriş yapıldı: ") else mapOf(),
+                        onGoogleSignIn = {
+                            showAuthDialog = false
+                            signInWithGoogle()
+                        },
                         onDismiss = { showAuthDialog = false }
                     )
                 }
@@ -1049,6 +1110,56 @@ class MainActivity : ComponentActivity(), BillingProvider {
             }
         }
     }
+}
+
+    private fun signInWithGoogle() {
+        val webClientId = "208111707825-5fr1genn4gdi6kptalfq6tv2i87pfffs.apps.googleusercontent.com"
+        
+        android.util.Log.d("FocusPathAuth", "Google Sign-in başlatılıyor. Client ID: $webClientId")
+
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(webClientId)
+            .requestEmail()
+            .build()
+
+        val googleSignInClient = GoogleSignIn.getClient(this, gso)
+        
+        // Önceki oturumu temizleyelim (hesap seçme penceresinin her seferinde çıkması için)
+        googleSignInClient.signOut().addOnCompleteListener {
+            val signInIntent = googleSignInClient.signInIntent
+            googleSignInLauncher.launch(signInIntent)
+        }
+    }
+
+    /**
+     * Uygulamanın şu anki imza (SHA-1) kodunu loglara basar.
+     * Google Play'de neden çalışmadığını anlamak için Logcat'te "AppSignature" aratın.
+     */
+    private fun logAppSignature() {
+        try {
+            val info = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                packageManager.getPackageInfo(packageName, android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES)
+            } else {
+                packageManager.getPackageInfo(packageName, android.content.pm.PackageManager.GET_SIGNATURES)
+            }
+            
+            val signatures = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                info.signingInfo?.signingCertificateHistory
+            } else {
+                @Suppress("DEPRECATION")
+                info.signatures
+            } ?: emptyArray()
+
+            for (signature in signatures) {
+                val md = java.security.MessageDigest.getInstance("SHA-1")
+                val digest = md.digest(signature.toByteArray())
+                val sha1 = digest.joinToString(":") { String.format("%02X", it) }
+                android.util.Log.e("AppSignature", "Kritik Bilgi - Firebase'e eklenmesi gereken SHA-1: $sha1")
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("AppSignature", "İmza alınamadı", e)
+        }
+    }
 
     override fun onResume() {
         super.onResume()
@@ -1116,6 +1227,5 @@ private fun FocusPathThemePreview() {
             }
         }
     }
+}
 
-
-    }

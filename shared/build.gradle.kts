@@ -26,15 +26,18 @@ kotlin {
         podfile = project.file("../iosApp/Podfile")
         framework {
             baseName = "shared"
-            isStatic = true
+            isStatic = false
+            // Bundle ID should be set via binaryOption, not linkerOpts
+            binaryOption("bundleId", "com.focuspath.shared")
         }
     }
 
     sourceSets {
         commonMain.dependencies {
-            implementation(compose.runtime)
+            api(compose.runtime)
             implementation(compose.foundation)
             implementation(compose.material3)
+            implementation(compose.materialIconsExtended)
             implementation(compose.ui)
             implementation(compose.components.resources)
             implementation(compose.components.uiToolingPreview)

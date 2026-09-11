@@ -579,32 +579,19 @@ class TaskViewModel @Inject constructor(
                 if (text.isNullOrBlank()) {
                     throw Exception(if(isEnglish) "AI returned an empty response" else "AI boş cevap döndürdü")
                 }
-
-                text.split("\n").forEach { line ->
-                    if (line.isNotBlank()) {
-                        val cleaned = line.replace(Regex("^[0-9.\\-* ]+"), "").trim()
-                        if (cleaned.isNotEmpty()) slicedTasks.add(cleaned)
-                    }
+                
+                text.lines().filter { it.isNotBlank() }.take(5).forEach {
+                    slicedTasks.add(it.trim().removePrefix("-").removePrefix("•").trim())
                 }
             } catch (e: Exception) {
-                android.util.Log.e("FocusPathAI", "Slice task error: ${e.message}", e)
-                val userError = when {
-                    e.message?.contains("Unable to resolve host", ignoreCase = true) == true || 
-                    e.cause?.message?.contains("Unable to resolve host", ignoreCase = true) == true ||
-                    e.toString().contains("UnknownHostException", ignoreCase = true) -> 
-                        if(isEnglish) "Network error. Please check your internet connection." else "İnternet bağlantısı yok. Lütfen bağlantınızı kontrol edin."
-                    
-                    e.message?.contains("API_KEY_INVALID", ignoreCase = true) == true -> 
-                        if(isEnglish) "Invalid API Key. Please check your local.properties." else "Geçersiz API Anahtarı. Lütfen local.properties dosyasını kontrol edin."
-                    
-                    e.message?.contains("unexpected", ignoreCase = true) == true -> {
-                        val detail = e.cause?.message ?: e.message
-                        if(isEnglish) "AI Service Error: $detail" else "AI Servis Hatası: $detail"
-                    }
-                    e.message?.contains("404") == true -> if(isEnglish) "Model Not Found" else "Model Bulunamadı"
-                    else -> if(isEnglish) "Error: ${e.localizedMessage}" else "Hata: ${e.localizedMessage}"
+                android.util.Log.e("FocusPathAI", "Slice error: ${e.message}")
+                val msg = e.toString()
+                val errorMsg = when {
+                    msg.contains("401") || msg.contains("API_KEY_INVALID") || msg.contains("invalid api key", ignoreCase = true) || msg.contains("not valid", ignoreCase = true) -> 
+                        if(isEnglish) "Invalid AI Key. Check local.properties" else "AI Anahtarı Geçersiz. local.properties dosyasını kontrol edin."
+                    else -> e.localizedMessage ?: "AI Error"
                 }
-                slicedTasks.add(userError)
+                slicedTasks.add("ERROR: $errorMsg")
             } finally {
                 isSlicingTask.value = false
             }
@@ -2966,7 +2953,8 @@ class TaskViewModel @Inject constructor(
                     // Yerel cevap yoksa hatayı göster
                     val errorMsg = when {
                         msg.contains("404") -> if(isEnglish) "Model Not Found" else "Model Bulunamadı"
-                        msg.contains("401") || msg.contains("API_KEY_INVALID") || msg.contains("invalid api key", ignoreCase = true) -> if(isEnglish) "Invalid API Key" else "Geçersiz API Anahtarı"
+                        msg.contains("401") || msg.contains("API_KEY_INVALID") || msg.contains("invalid api key", ignoreCase = true) || msg.contains("not valid", ignoreCase = true) -> 
+                            if(isEnglish) "Invalid API Key. Check local.properties" else "AI Anahtarı Geçersiz. local.properties dosyasını kontrol edin."
                         msg.contains("location is not supported") -> if(isEnglish) "Region Not Supported" else "Bölge Desteklenmiyor"
                         else -> "Detail: ${e.localizedMessage ?: msg}"
                     }
@@ -3408,15 +3396,19 @@ class TaskViewModel @Inject constructor(
                 // Hemen Firebase Auth'daki resmi al (Varsa)
                 user.photoUrl?.let { 
                     userPhotoUrl.value = it.toString() 
+                } ?: run {
+                    // Eğer Google/Firebase'den resim gelmediyse Firestore'daki yedek resme bak
+                    userPhotoUrl.value = null 
                 }
 
                 prefs.edit().apply {
                     putString("user_name", userName.value)
                     putString("user_photo_url", userPhotoUrl.value)
+                    // Önbelleği temizle ki Firestore'dan taze veri gelebilsin
+                    putLong("profile_last_local_update", 0L)
                 }.apply()
                 
-                syncXpToFirestore() 
-                fetchUserDataFromFirestore() // Buluttaki verileri (Firestore) hemen geri getir (XP, Coin, Foto vb.)
+                fetchUserDataFromFirestore() // ÖNCE BULUTTAKİ VERİLERİ GETİR (Fotoğraf, XP vb.)
                 fetchLeaderboard() 
                 startFriendRequestListener()
                 startFriendsListener()
@@ -3435,27 +3427,36 @@ class TaskViewModel @Inject constructor(
             firebaseAuth.signOut() 
             isLoggedIn.value = false 
             
-            // Kimlik ve ilerleme bilgilerini yerelde TUTUYORUZ (Kullanıcının isteği üzerine)
-            // Böylece oturum kapansa bile ana sayfadaki profil ve başarılar görünmeye devam eder.
-            // Sadece hassas canlı bağlantıları temizliyoruz.
+            // Hassas canlı bağlantıları temizliyoruz.
             userEmail.value = "" 
+            
+            // KRİTİK: Çıkış yaparken yerel profil bilgilerini TEMİZLEMİYORUZ (İstek üzerine)
+            // Ama tekrar giriş yapıldığında güncellenebilmesi için login metodunu güncelledik.
             
             android.util.Log.d("FocusPathAuth", "Oturum kapatıldı, yerel veriler korundu.")
         } 
     }
 
     fun loginEmail(email: String, pass: String, saveCredentials: Boolean = false, onSuccess: () -> Unit, onError: (String) -> Unit) { 
+        val cleanEmail = email.trim().lowercase()
+        val cleanPass = pass.trim()
+
+        if (cleanEmail.isBlank() || cleanPass.isBlank()) {
+            onError("Lütfen e-posta ve şifre girin.")
+            return
+        }
+
         viewModelScope.launch { 
             try { 
-                android.util.Log.d("FocusPathAuth", "Email login starting for: $email")
-                val result = firebaseAuth.signInWithEmailAndPassword(email, pass).await() 
+                android.util.Log.d("FocusPathAuth", "Email login starting for: $cleanEmail")
+                val result = firebaseAuth.signInWithEmailAndPassword(cleanEmail, cleanPass).await() 
                 val user = result.user
                 
                 if (user != null) {
                     if (saveCredentials) {
                         prefs.edit().apply {
-                            putString("saved_email", email)
-                            putString("saved_password", pass)
+                            putString("saved_email", cleanEmail)
+                            putString("saved_password", cleanPass)
                             putBoolean("remember_me", true)
                         }.apply()
                     } else {
@@ -3482,8 +3483,7 @@ class TaskViewModel @Inject constructor(
                     
                     android.util.Log.d("FocusPathAuth", "Email login successful: ${user.email}")
                     
-                    syncXpToFirestore() 
-                    fetchUserDataFromFirestore()
+                    fetchUserDataFromFirestore() // ÖNCE BULUTTAKİ VERİLERİ GETİR
                     fetchLeaderboard() 
                     startFriendRequestListener()
                     startFriendsListener()
@@ -3491,14 +3491,15 @@ class TaskViewModel @Inject constructor(
                     startPresenceHeartbeat()
                     onSuccess()
                 } else {
-                    throw Exception("Kullanıcı oluşturulamadı.")
+                    throw Exception("Kullanıcı bulunamadı.")
                 }
             } catch (e: Exception) { 
                 android.util.Log.e("FocusPathAuth", "Email login error", e)
                 val errorMessage = when {
                     e.message?.contains("password") == true || e is com.google.firebase.auth.FirebaseAuthInvalidCredentialsException -> "Hatalı e-posta veya şifre."
-                    e.message?.contains("user") == true -> "Kullanıcı bulunamadı."
+                    e.message?.contains("user-not-found") == true || e.message?.contains("no user") == true -> "Kullanıcı bulunamadı. Lütfen kayıt olun."
                     e.message?.contains("network") == true -> "Ağ hatası. İnternetinizi kontrol edin."
+                    e.message?.contains("invalid-email") == true -> "Geçersiz e-posta formatı."
                     else -> e.localizedMessage ?: "Giriş yapılamadı."
                 }
                 onError(errorMessage)
@@ -3507,9 +3508,17 @@ class TaskViewModel @Inject constructor(
     }
 
     fun registerEmail(email: String, pass: String, onSuccess: () -> Unit, onError: (String) -> Unit) { 
+        val cleanEmail = email.trim().lowercase()
+        val cleanPass = pass.trim()
+
+        if (cleanEmail.isBlank() || cleanPass.length < 6) {
+            onError("Geçerli bir e-posta ve en az 6 haneli şifre girin.")
+            return
+        }
+
         viewModelScope.launch { 
             try { 
-                val result = firebaseAuth.createUserWithEmailAndPassword(email, pass).await() 
+                val result = firebaseAuth.createUserWithEmailAndPassword(cleanEmail, cleanPass).await() 
                 val user = result.user
                 isLoggedIn.value = true 
                 userEmail.value = user?.email?.lowercase() ?: "" 
@@ -3532,7 +3541,11 @@ class TaskViewModel @Inject constructor(
                 onSuccess() 
             } catch (e: Exception) { 
                 android.util.Log.e("FocusPathAuth", "Registration error", e)
-                onError(e.localizedMessage ?: "Kayıt yapılamadı") 
+                val msg = when {
+                    e.message?.contains("email-already-in-use") == true -> "Bu e-posta zaten kullanımda."
+                    else -> e.localizedMessage ?: "Kayıt yapılamadı"
+                }
+                onError(msg) 
             } 
         } 
     }
@@ -3709,12 +3722,8 @@ class TaskViewModel @Inject constructor(
 
         nm.notify(System.currentTimeMillis().toInt(), notification)
     }
-    fun isAccessibilityServiceEnabled(context: Context): Boolean {
-        val enabled = android.provider.Settings.Secure.getString(context.contentResolver, android.provider.Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
-        return enabled?.contains("${context.packageName}/com.focuspath.app.service.FocusBlockerService") == true
-    }
+    /* Accessibility functions removed */
 
-    fun openAccessibilitySettings(context: Context) { context.startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }) }
 
     fun updateItemPosition(id: String, offset: Offset, isDragging: Boolean = true, floorSize: Float = 300f) {
         val collisionThreshold = 45f

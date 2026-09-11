@@ -10,29 +10,32 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.focuspath.shared.model.WorkerAction
 import com.focuspath.shared.model.WorkerInfo
 
 @Composable
 fun SharedOfficeScreen(
     workers: List<WorkerInfo>,
     officeLevel: Int = 1,
+    coins: Int = 120,
     isFocusActive: Boolean = false
 ) {
     var scale by remember { mutableStateOf(0.85f) }
+    val upgradeCost = officeLevel * 500
+    
     val ambientAlpha by animateFloatAsState(
         targetValue = if (isFocusActive) 0.5f else 1f,
         animationSpec = tween(1500)
     )
 
     Column(
-        modifier = Modifier.fillMaxSize().background(DarkBackground),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier = Modifier.fillMaxSize().background(DarkBackground).verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Office Header
         Row(
@@ -41,8 +44,8 @@ fun SharedOfficeScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
-                Text("VIRTUAL OFFICE", style = MaterialTheme.typography.titleLarge, color = TerminalGreen)
-                Text("Level $officeLevel • Operations Center", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                Text("YİME CENTER", style = MaterialTheme.typography.titleLarge, color = TerminalGreen)
+                Text("LVL $officeLevel • $coins 🪙", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
             }
         }
 
@@ -50,103 +53,64 @@ fun SharedOfficeScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(400.dp)
-                .padding(16.dp)
+                .padding(horizontal = 16.dp)
                 .clip(RoundedCornerShape(24.dp))
-                .background(Color.Black)
+                .background(Color(0xFF020202))
                 .border(1.dp, TerminalGreen.copy(alpha = 0.2f), RoundedCornerShape(24.dp)),
             contentAlignment = Alignment.Center
         ) {
-            // 3D Perspective Scene
-            Box(
-                modifier = Modifier
-                    .size(350.dp)
-                    .graphicsLayer {
-                        rotationX = 55f
-                        scaleX = scale
-                        scaleY = scale
-                        alpha = ambientAlpha
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                // Ground
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Brush.radialGradient(listOf(Color(0xFF222222), Color(0xFF050505))))
-                        .border(1.dp, Color.White.copy(alpha = 0.1f))
-                )
-
-                // Render Workers and Desks
+            // Main 3D Scene
+            Box(modifier = Modifier.size(350.dp).graphicsLayer { 
+                rotationX = 55f
+                scaleX = scale
+                scaleY = scale
+                alpha = ambientAlpha
+            }) {
+                Box(modifier = Modifier.align(Alignment.Center).size(300.dp).background(Brush.radialGradient(listOf(Color(0xFF222222), Color(0xFF050505)))))
+                
                 workers.forEach { worker ->
-                    WorkerDesk(worker)
+                    Box(modifier = Modifier.align(Alignment.Center).offset(x = worker.x.dp, y = worker.y.dp)) {
+                        DeskSetup(worker = worker, onWorkerClick = {})
+                    }
                 }
             }
         }
         
-        Spacer(Modifier.height(16.dp))
-        
-        // Status Bar
-        Surface(
-            modifier = Modifier.padding(horizontal = 24.dp),
-            shape = RoundedCornerShape(16.dp),
-            color = SurfaceColor
+        Card(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            colors = CardDefaults.cardColors(containerColor = SurfaceColor),
+            border = BorderStroke(1.dp, TerminalGreen.copy(alpha = 0.4f))
         ) {
-            Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(modifier = Modifier.size(10.dp).background(if(isFocusActive) TerminalGreen else Color.Gray, CircleShape))
-                Spacer(Modifier.width(12.dp))
-                Text(
-                    if(isFocusActive) "Deep Focus Session Active" else "Office on Standby",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if(isFocusActive) TerminalGreen else Color.White
-                )
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(text = "OFİS YÜKSELTMELERİ", style = MaterialTheme.typography.titleMedium, color = TerminalGreen)
+                Spacer(Modifier.height(8.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "$upgradeCost 🪙", fontWeight = FontWeight.Bold, color = AccentYellow)
+                    Button(
+                        onClick = { 
+                            // Basic feedback for upgrade
+                            if (coins >= upgradeCost) {
+                                // Logic to be handled in ViewModel
+                            }
+                         },
+                        colors = ButtonDefaults.buttonColors(containerColor = if (coins >= upgradeCost) TerminalGreen else Color.Gray),
+                        shape = RoundedCornerShape(8.dp)
+                    ) { 
+                        Text("YÜKSELT", color = Color.Black, fontWeight = FontWeight.Bold) 
+                    }
+                }
             }
         }
-    }
-}
 
-@Composable
-fun WorkerDesk(worker: WorkerInfo) {
-    val deskOffset = IntOffset(worker.x.toInt(), worker.y.toInt())
-    
-    Box(
-        modifier = Modifier
-            .offset { deskOffset }
-            .size(80.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        // Simple Desk Representation
-        Box(
-            modifier = Modifier
-                .size(60.dp, 30.dp)
-                .background(Color(0xFF3E2723), RoundedCornerShape(4.dp))
-                .border(1.dp, Color.White.copy(0.1f), RoundedCornerShape(4.dp))
-        )
-        
-        // Worker
-        Box(
-            modifier = Modifier
-                .offset(y = (-15).dp)
-                .size(32.dp)
-                .graphicsLayer { rotationX = -55f } // Counter-rotate to face camera
-                .background(if(worker.isMe) TerminalGreen else Color.Gray, CircleShape),
-            contentAlignment = Alignment.Center
+        Button(
+            onClick = { /* Join session logic */ },
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(56.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = TerminalGreen),
+            shape = RoundedCornerShape(12.dp)
         ) {
-            if (worker.photoUrl == null) {
-                Text(worker.name.take(1), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-            }
+            Text("AKTİF OTURUMA KATIL", color = Color.Black, fontWeight = FontWeight.Black)
         }
         
-        // Monitor Glow
-        if (worker.isFocusing) {
-            Box(
-                modifier = Modifier
-                    .offset(y = (-25).dp)
-                    .size(24.dp, 16.dp)
-                    .background(TerminalGreen.copy(0.3f), RoundedCornerShape(2.dp))
-            )
-        }
+        Spacer(Modifier.height(16.dp))
     }
 }

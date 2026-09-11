@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.RadioButtonUnchecked
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -45,9 +45,9 @@ fun SharedTaskItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = if (isCompleted) Icons.Default.CheckCircle else Icons.Default.RadioButtonUnchecked,
+                imageVector = if (isCompleted) Icons.Default.CheckCircle else Icons.Default.Add,
                 contentDescription = null,
-                tint = if (isCompleted) TerminalGreen else Color.Gray,
+                tint = if (isCompleted) TerminalGreen else Color.Gray.copy(alpha = 0.5f),
                 modifier = Modifier.size(24.dp)
             )
             
@@ -92,6 +92,6 @@ fun SharedDashboardHeader(title: String, subtitle: String) {
             color = Color.Gray
         )
         Spacer(Modifier.height(8.dp))
-        Divider(color = TerminalGreen.copy(alpha = 0.3f), thickness = 1.dp)
+        HorizontalDivider(color = TerminalGreen.copy(alpha = 0.3f), thickness = 1.dp)
     }
 }

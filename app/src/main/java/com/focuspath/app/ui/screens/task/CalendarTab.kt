@@ -26,6 +26,7 @@ import com.focuspath.app.core.data.local.TaskEntity
 import com.focuspath.app.core.data.local.HabitEntity
 import com.focuspath.app.ui.components.ProfileImage
 import com.focuspath.app.ui.screens.TomorrowPlanningDialog
+import com.focuspath.shared.model.LeaderboardUser
 import com.focuspath.app.ui.theme.AccentRed
 import com.focuspath.app.ui.theme.AccentYellow
 import com.focuspath.app.ui.viewmodel.TaskViewModel

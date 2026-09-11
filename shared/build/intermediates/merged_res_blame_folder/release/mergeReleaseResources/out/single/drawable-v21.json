@@ -1,6 +1,0 @@
-[
-    {
-        "merged": "com.focuspath.shared-release-40:/drawable-v21/notification_action_background.xml",
-        "source": "com.focuspath.shared-core-1.13.1-30:/drawable-v21/notification_action_background.xml"
-    }
-]

@@ -25,10 +25,6 @@
     <uses-permission android:name="android.permission.READ_CALENDAR" />
     <uses-permission android:name="android.permission.WRITE_CALENDAR" />
 
-    <!-- Konum İzinleri -->
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-
     <queries>
         <intent>
             <action android:name="android.intent.action.MAIN" />
@@ -74,18 +70,7 @@
             </intent-filter>
         </receiver>
 
-        <!-- Uygulama Bloklama Servisi (Accessibility) -->
-        <service
-            android:name=".service.FocusBlockerService"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/accessibility_service_config" />
-        </service>
+
 
         <!-- Odaklanma Zamanlayıcı Servisi (Foreground Service) -->
         <service

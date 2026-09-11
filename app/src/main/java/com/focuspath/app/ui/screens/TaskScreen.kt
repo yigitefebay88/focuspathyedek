@@ -2197,36 +2197,8 @@ private fun SettingsTabFull(vm: TaskViewModel, lang: Map<String, String>, isEngl
                     Text(if(isEnglish) "Block distracting apps during focus" else "Odaklanırken dikkat dağıtıcıları engelle", style = MaterialTheme.typography.labelSmall, color = Color.Gray) 
                 }
                 val context = LocalContext.current 
-                var showBlockerDialog by remember { mutableStateOf(false) }
-                var showDisclosureDialog by remember { mutableStateOf(false) }
-
-                if (showDisclosureDialog) {
-                    com.focuspath.app.ui.screens.task.AccessibilityDisclosureDialog(
-                        isEnglish = isEnglish,
-                        onDismiss = { showDisclosureDialog = false },
-                        onAccept = {
-                            showDisclosureDialog = false
-                            vm.openAccessibilitySettings(context)
-                        }
-                    )
-                }
-
-                Button(
-                    onClick = { 
-                        if (vm.isAccessibilityServiceEnabled(context)) { 
-                            showBlockerDialog = true 
-                        } else { 
-                            showDisclosureDialog = true 
-                        } 
-                    }, 
-                    shape = RoundedCornerShape(12.dp), 
-                    colors = ButtonDefaults.buttonColors(containerColor = if (vm.isAccessibilityServiceEnabled(context)) MaterialTheme.colorScheme.primary.copy(alpha = 0.8f) else AccentRed.copy(alpha = 0.8f))
-                ) { 
-                    Text(if (vm.isAccessibilityServiceEnabled(context)) (if(isEnglish) "CONFIGURE" else "YAPILANDIR") else (if(isEnglish) "ENABLE SERVICE" else "SERVİSİ AÇ"), color = Color.Black, fontSize = 11.sp) 
-                }
-                if (showBlockerDialog) { 
-                    com.focuspath.app.ui.screens.task.AppBlockerDialog(vm, isEnglish) { showBlockerDialog = false } 
-                } 
+                /* App Blocker removed to comply with Google Play Accessibility Policy */
+                Text(if(isEnglish) "Unavailable" else "Kullanılamıyor", color = Color.Gray, fontSize = 11.sp, modifier = Modifier.padding(8.dp))
             }
         }
     };

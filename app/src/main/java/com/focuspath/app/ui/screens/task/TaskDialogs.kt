@@ -34,7 +34,7 @@ import coil.compose.AsyncImage
 import com.focuspath.app.R
 import com.focuspath.app.core.data.local.TaskEntity
 import com.focuspath.app.core.data.local.HabitEntity
-import com.focuspath.app.data.model.LeaderboardUser
+import com.focuspath.shared.model.LeaderboardUser
 import com.focuspath.app.receiver.ReminderReceiver
 import com.focuspath.app.ui.components.CoolGoogleSignInButton
 import com.focuspath.app.ui.components.ProfileImage
@@ -713,6 +713,7 @@ fun LiveSessionDialog(
 fun AuthDialog(
     vm: TaskViewModel,
     lang: Map<String, String>,
+    onGoogleSignIn: () -> Unit,
     onDismiss: () -> Unit
 ) {
     var email by remember { mutableStateOf(vm.prefs.getString("saved_email", "") ?: "") }
@@ -729,9 +730,44 @@ fun AuthDialog(
         title = { Text(if (isResetPassword) "Şifre Sıfırla" else if (isRegister) "Kayıt Ol" else "Giriş Yap", color = MaterialTheme.colorScheme.primary) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("E-posta") }, modifier = Modifier.fillMaxWidth())
+                if (!isResetPassword && !isRegister) {
+                    CoolGoogleSignInButton(
+                        onClick = onGoogleSignIn,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                        text = if (lang["login"] != null) "Google ile Giriş" else "Google ile Giriş Yap"
+                    )
+                    
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 8.dp)) {
+                        HorizontalDivider(modifier = Modifier.weight(1f), color = Color.Gray.copy(alpha = 0.2f))
+                        Text(" veya ", fontSize = 10.sp, color = Color.Gray, modifier = Modifier.padding(horizontal = 8.dp))
+                        HorizontalDivider(modifier = Modifier.weight(1f), color = Color.Gray.copy(alpha = 0.2f))
+                    }
+                }
+
+                OutlinedTextField(
+                    value = email, 
+                    onValueChange = { email = it }, 
+                    label = { Text("E-posta") }, 
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Email,
+                        imeAction = androidx.compose.ui.text.input.ImeAction.Next
+                    ),
+                    singleLine = true
+                )
                 if (!isResetPassword) {
-                    OutlinedTextField(value = password, onValueChange = { password = it }, label = { Text("Şifre") }, modifier = Modifier.fillMaxWidth(), visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation())
+                    OutlinedTextField(
+                        value = password, 
+                        onValueChange = { password = it }, 
+                        label = { Text("Şifre") }, 
+                        modifier = Modifier.fillMaxWidth(), 
+                        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Password,
+                            imeAction = androidx.compose.ui.text.input.ImeAction.Done
+                        ),
+                        singleLine = true
+                    )
                     
                     if (!isRegister) {
                         Row(
@@ -875,214 +911,8 @@ fun DirectChatDialog(
     }
 }
 
-@Composable
-fun AppBlockerDialog(
-    vm: TaskViewModel,
-    isEnglish: Boolean,
-    onDismiss: () -> Unit
-) {
-    var installedApps by remember { mutableStateOf(emptyList<com.focuspath.app.ui.viewmodel.AppInfo>()) }
-    var isLoading by remember { mutableStateOf(true) }
-    var searchQuery by remember { mutableStateOf("") }
-    val filteredApps = remember(installedApps, searchQuery) {
-        if (searchQuery.isBlank()) installedApps
-        else installedApps.filter { it.name.contains(searchQuery, ignoreCase = true) || it.packageName.contains(searchQuery, ignoreCase = true) }
-    }
+/* Accessibility related dialogs removed */
 
-    LaunchedEffect(Unit) {
-        installedApps = vm.getInstalledApps()
-        isLoading = false
-    }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(if (isEnglish) "Block Distracting Apps" else "Dikkat Dağıtıcıları Engelle", color = MaterialTheme.colorScheme.primary) },
-        text = {
-            if (isLoading) {
-                Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-            } else {
-                Column {
-                    Text(
-                        if (isEnglish) "Selected apps will be blocked during focus sessions." 
-                        else "Seçilen uygulamalar odaklanma sırasında engellenecektir.",
-                        fontSize = 12.sp, color = Color.Gray
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    OutlinedTextField(
-                        value = searchQuery,
-                        onValueChange = { searchQuery = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text(if (isEnglish) "Search apps..." else "Uygulama ara...", fontSize = 12.sp) },
-                        leadingIcon = { Icon(Icons.Default.Search, null, modifier = Modifier.size(18.dp)) },
-                        singleLine = true,
-                        shape = RoundedCornerShape(8.dp)
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    LazyColumn(modifier = Modifier.height(300.dp)) {
-                        items(filteredApps) { app ->
-                            val isBlocked = vm.blockedApps.contains(app.packageName)
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text("📱", fontSize = 20.sp)
-                                Spacer(Modifier.width(12.dp))
-                                Text(app.name, modifier = Modifier.weight(1f), fontSize = 14.sp)
-                                Switch(
-                                    checked = isBlocked,
-                                    onCheckedChange = { vm.toggleBlockedApp(app.packageName) }
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            Button(onClick = onDismiss) {
-                Text(if (isEnglish) "DONE" else "TAMAM")
-            }
-        },
-        containerColor = MaterialTheme.colorScheme.surface
-    )
-}
-
-@Composable
-fun AccessibilityDisclosureDialog(
-    isEnglish: Boolean,
-    onDismiss: () -> Unit,
-    onAccept: () -> Unit
-) {
-    Dialog(
-        onDismissRequest = { /* Must be explicit action */ },
-        properties = DialogProperties(
-            dismissOnBackPress = false,
-            dismissOnClickOutside = false,
-            usePlatformDefaultWidth = false
-        )
-    ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth(0.92f)
-                .wrapContentHeight()
-                .padding(vertical = 24.dp),
-            shape = RoundedCornerShape(28.dp),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 12.dp
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(24.dp)
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Security,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(56.dp)
-                )
-
-                Text(
-                    text = if (isEnglish) "AccessibilityService API Consent" else "AccessibilityService API Onayı",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.ExtraBold,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Text(
-                    text = if (isEnglish)
-                        "FocusPath requires the AccessibilityService API to provide the \"App Blocker\" functionality."
-                    else
-                        "FocusPath, \"Uygulama Engelleyici\" özelliğini sunabilmek için AccessibilityService API\'sine ihtiyaç duyar.",
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Surface(
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
-                    shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
-                ) {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text(
-                            text = if (isEnglish) "How we use this API:" else "Bu API\'yi nasıl kullanıyoruz:",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        
-                        Text(
-                            text = if (isEnglish)
-                                "• Monitoring Application Launches: We detect when a distracting app from your blocklist is opened in the foreground while your focus session is active.\n" +
-                                "• Blocking Access: FocusPath will automatically return you to your focus workspace to prevent you from being distracted.\n\n" +
-                                "Data Collection & Privacy:\n" +
-                                "• We DO NOT collect or store any personal or sensitive information.\n" +
-                                "• We DO NOT share any data with third parties.\n" +
-                                "• This service works locally on your device and only during focus sessions."
-                            else
-                                "• Uygulama Başlatma Takibi: Odaklanma seansınız aktifken, engellenenler listenizdeki bir uygulamanın ön planda açılıp açılmadığını tespit ederiz.\n" +
-                                "• Erişimi Engelleme: FocusPath, dikkatinizin dağılmasını önlemek için sizi otomatik olarak odaklanma alanınıza geri döndürür.\n\n" +
-                                "Veri Toplama ve Gizlilik:\n" +
-                                "• Hiçbir kişisel veya hassas bilgiyi TOPLAMIYORUZ veya SAKLAMIYORUZ.\n" +
-                                "• Hiçbir veriyi üçüncü taraflarla PAYLAŞMIYORUZ.\n" +
-                                "• Bu hizmet sadece cihazınızda yerel olarak ve sadece odaklanma seansları sırasında çalışır.",
-                            style = MaterialTheme.typography.bodySmall,
-                            lineHeight = 18.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(
-                        onClick = onAccept,
-                        modifier = Modifier.fillMaxWidth().height(56.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                    ) {
-                        Text(
-                            if (isEnglish) "I AGREE" else "KABUL EDİYORUM",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Black,
-                            color = Color.Black
-                        )
-                    }
-
-                    TextButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            if (isEnglish) "NO THANKS / DECLINE" else "HAYIR / REDDET",
-                            color = Color.Gray,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-
-                Text(
-                    text = if(isEnglish)
-                        "By clicking I AGREE, you consent to the usage of the AccessibilityService API. You will be redirected to system settings to enable the service manually."
-                    else
-                        "KABUL EDİYORUM butonuna tıklayarak AccessibilityService API kullanımına izin vermiş olursunuz. Servisi manuel olarak etkinleştirmek için sistem ayarlarına yönlendirileceksiniz.",
-                    fontSize = 10.sp,
-                    color = Color.Gray,
-                    textAlign = TextAlign.Center,
-                    lineHeight = 14.sp
-                )
-            }
-        }
-    }
-}
 
 @Composable
 fun TeamManagementDialog(

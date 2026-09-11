@@ -24,5 +24,7 @@ data class WorkerInfo(
     val isMe: Boolean = false,
     val latestEmoji: String? = null,
     val emojiTime: Long = 0,
-    val isFacingRight: Boolean = true
+    val isFacingRight: Boolean = true,
+    val interactionText: String? = null,
+    val isLiveUser: Boolean = false
 )
