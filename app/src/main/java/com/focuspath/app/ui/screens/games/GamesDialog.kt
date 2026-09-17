@@ -511,7 +511,8 @@ fun ArcherGame(vm: TaskViewModel, onExit: () -> Unit) {
                 // Hız artışını dengeledik (0.005f -> 0.0004f) ve maksimum hız sınırı koyduk (0.12f)
                 val currentSpeed = (0.02f + (score * 0.0004f)).coerceAtMost(0.12f)
                 targetX += currentSpeed * direction; 
-                if (targetX > 0.8f || targetX < -0.8f) direction *= -1 
+                if (targetX > 0.72f) { targetX = 0.72f; direction = -1 }
+                else if (targetX < -0.72f) { targetX = -0.72f; direction = 1 }
             } 
         } else {
             // Refill arrows automatically
@@ -532,7 +533,7 @@ fun ArcherGame(vm: TaskViewModel, onExit: () -> Unit) {
                 score += 50; gameMessage = "TAM İSABET! 🎯" 
             } else { 
                 gameMessage = "ISKALADIN! 💨"
-                while (arrowY > -1.2f) { delay(10); arrowY -= 0.05f }
+                while (arrowY > -0.95f) { delay(10); arrowY -= 0.05f }
             }
             delay(800); isFiring = false; arrowY = 0f; shotsLeft--
             if (shotsLeft > 0) gameMessage = "SIRADAKİ ATIŞ..." 
@@ -554,7 +555,7 @@ fun ArcherGame(vm: TaskViewModel, onExit: () -> Unit) {
             }
             Text("Kalan Ok: $shotsLeft", fontWeight = FontWeight.Bold); Text(gameMessage, style = MaterialTheme.typography.labelSmall, color = terminalColor)
             Box(modifier = Modifier.height(350.dp).fillMaxWidth().padding(20.dp).background(Color.Black.copy(alpha = 0.2f), RoundedCornerShape(12.dp)).border(1.dp, terminalColor.copy(0.3f), RoundedCornerShape(12.dp)).clickable(enabled = !isFiring) { isFiring = true }, contentAlignment = Alignment.Center) {
-                Box(modifier = Modifier.align(Alignment.TopCenter).offset(x = (targetX * 150).dp, y = 20.dp).size(40.dp).background(Color.Red, CircleShape).border(4.dp, Color.White, CircleShape)) { Box(modifier = Modifier.size(10.dp).background(Color.Red, CircleShape).align(Alignment.Center)) }
+                Box(modifier = Modifier.align(Alignment.TopCenter).offset(x = (targetX * 140).dp, y = 20.dp).size(40.dp).background(Color.Red, CircleShape).border(4.dp, Color.White, CircleShape)) { Box(modifier = Modifier.size(10.dp).background(Color.Red, CircleShape).align(Alignment.Center)) }
                 Box(modifier = Modifier.align(Alignment.BottomCenter).offset(y = (arrowY * 300).dp).size(4.dp, 40.dp).background(if (isFiring) terminalColor else Color.Gray)) { Box(modifier = Modifier.align(Alignment.TopCenter).size(10.dp).graphicsLayer { rotationZ = 45f }.border(2.dp, if (isFiring) terminalColor else Color.Gray)) }
             }
             Spacer(Modifier.weight(1f))
@@ -1099,6 +1100,7 @@ fun MazeGame(vm: TaskViewModel, onExit: () -> Unit) {
         var mazeIndex by remember { mutableIntStateOf(0) }
         var timeLeft by remember { mutableIntStateOf(when(difficulty) { "EASY" -> 60 ; "MEDIUM" -> 45 ; else -> 30 }) }
         var isGameOver by remember { mutableStateOf(false) }
+        val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
 
         val mazes = remember(difficulty) {
             when(difficulty) {
@@ -1148,6 +1150,38 @@ fun MazeGame(vm: TaskViewModel, onExit: () -> Unit) {
                         listOf(1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1),
                         listOf(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1),
                         listOf(1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+                    ),
+                    listOf(
+                        listOf(0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+                        listOf(1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1),
+                        listOf(1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1),
+                        listOf(1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1),
+                        listOf(1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1),
+                        listOf(1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1),
+                        listOf(1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1),
+                        listOf(1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1),
+                        listOf(1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1),
+                        listOf(1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1),
+                        listOf(1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1),
+                        listOf(1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1),
+                        listOf(1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1),
+                        listOf(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0)
+                    ),
+                    listOf(
+                        listOf(0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+                        listOf(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1),
+                        listOf(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1),
+                        listOf(1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1),
+                        listOf(1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1),
+                        listOf(1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1),
+                        listOf(1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1),
+                        listOf(1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1),
+                        listOf(1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1),
+                        listOf(1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1),
+                        listOf(1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1),
+                        listOf(1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1),
+                        listOf(1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1),
+                        listOf(1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0)
                     )
                 )
                 else -> listOf(
@@ -1220,7 +1254,57 @@ fun MazeGame(vm: TaskViewModel, onExit: () -> Unit) {
                 }
                 }
                 Spacer(Modifier.height(8.dp))
-                Box(modifier = Modifier.size(280.dp).background(Color.Black.copy(alpha = 0.2f), RoundedCornerShape(8.dp)).border(1.dp, terminalColor.copy(0.3f), RoundedCornerShape(8.dp)).padding(4.dp)) {
+                var dragAccumulatorX by remember { mutableFloatStateOf(0f) }
+                var dragAccumulatorY by remember { mutableFloatStateOf(0f) }
+                val swipeThreshold = 50f 
+
+                Box(
+                    modifier = Modifier
+                        .size(280.dp)
+                        .background(Color.Black.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
+                        .border(1.dp, terminalColor.copy(0.3f), RoundedCornerShape(8.dp))
+                        .padding(4.dp)
+                        .pointerInput(currentMaze) {
+                            detectDragGestures(
+                                onDragStart = { dragAccumulatorX = 0f; dragAccumulatorY = 0f },
+                                onDrag = { change, dragAmount ->
+                                    change.consume()
+                                    dragAccumulatorX += dragAmount.x
+                                    dragAccumulatorY += dragAmount.y
+                                    
+                                    if (kotlin.math.abs(dragAccumulatorX) > swipeThreshold) {
+                                        if (dragAccumulatorX > 0) {
+                                            if (playerX < size - 1 && currentMaze[playerY][playerX + 1] == 0) { 
+                                                playerX++
+                                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                                            }
+                                        } else {
+                                            if (playerX > 0 && currentMaze[playerY][playerX - 1] == 0) { 
+                                                playerX--
+                                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                                            }
+                                        }
+                                        dragAccumulatorX = 0f
+                                        dragAccumulatorY = 0f
+                                    } else if (kotlin.math.abs(dragAccumulatorY) > swipeThreshold) {
+                                        if (dragAccumulatorY > 0) {
+                                            if (playerY < size - 1 && currentMaze[playerY + 1][playerX] == 0) { 
+                                                playerY++
+                                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                                            }
+                                        } else {
+                                            if (playerY > 0 && currentMaze[playerY - 1][playerX] == 0) { 
+                                                playerY--
+                                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                                            }
+                                        }
+                                        dragAccumulatorX = 0f
+                                        dragAccumulatorY = 0f
+                                    }
+                                }
+                            )
+                        }
+                ) {
                     val cellSize = 272.dp / size
                     Column {
                         for (y in 0 until size) {

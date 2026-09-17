@@ -100,7 +100,7 @@ fun CalendarTab(
                             shape = RoundedCornerShape(12.dp),
                             color = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface,
                             border = BorderStroke(1.dp, if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray.copy(alpha = 0.3f)),
-                            modifier = Modifier.size(width = 42.dp, height = 54.dp)
+                            modifier = Modifier.weight(1f).height(56.dp)
                         ) {
                             Column(
                                 modifier = Modifier.fillMaxSize(),
@@ -108,15 +108,16 @@ fun CalendarTab(
                                 verticalArrangement = Arrangement.Center
                             ) {
                                 Text(
-                                    text = SimpleDateFormat("E", Locale.getDefault()).format(cal.time),
-                                    fontSize = 8.sp,
+                                    text = SimpleDateFormat("E", Locale.getDefault()).format(cal.time).uppercase(),
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
                                     color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray
                                 )
                                 Text(
                                     text = "$dayNum",
                                     color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 15.sp
                                 )
                             }
                         }
@@ -333,47 +334,69 @@ fun CalendarTab(
                     }
                 }
                 Spacer(Modifier.height(12.dp))
-                Row(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
-                    Text("#", modifier = Modifier.width(30.dp), color = Color.Gray, fontSize = 10.sp)
+                Row(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("#", modifier = Modifier.width(28.dp), color = Color.Gray, fontSize = 10.sp, textAlign = TextAlign.Center)
                     Text("USER", modifier = Modifier.weight(1f), color = Color.Gray, fontSize = 10.sp)
-                    Text("UNVAN", modifier = Modifier.width(80.dp), color = Color.Gray, fontSize = 10.sp, textAlign = TextAlign.Center)
-                    Text("XP", modifier = Modifier.width(50.dp), color = Color.Gray, fontSize = 10.sp, textAlign = TextAlign.End)
+                    Text("RANK", modifier = Modifier.width(70.dp), color = Color.Gray, fontSize = 10.sp, textAlign = TextAlign.Center)
+                    Text("XP", modifier = Modifier.width(45.dp), color = Color.Gray, fontSize = 10.sp, textAlign = TextAlign.End)
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
                 if (lbUsers.isEmpty()) {
                     Text("FETCHING DATA...", modifier = Modifier.padding(16.dp).fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Gray, fontSize = 11.sp)
                 } else {
                     lbUsers.forEachIndexed { index, user ->
-                        val isMe = user.email.equals(vm.userEmail.value, ignoreCase = true)
+                        val isMe = vm.userEmail.value.isNotBlank() && user.email.equals(vm.userEmail.value, ignoreCase = true)
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .background(if (isMe) MaterialTheme.colorScheme.primary.copy(alpha = 0.05f) else Color.Transparent)
-                                .padding(vertical = 8.dp),
+                                .padding(vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
                                 "${index + 1}",
-                                modifier = Modifier.width(30.dp),
+                                modifier = Modifier.width(28.dp),
                                 color = if (index < 3) AccentYellow.copy(alpha = 0.9f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
+                                fontWeight = FontWeight.Black,
+                                fontSize = 12.sp,
+                                textAlign = TextAlign.Center
                             )
                             Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-                                val isMe = user.email.equals(vm.userEmail.value, ignoreCase = true)
                                 ProfileImage(
                                     photoUrl = if (isMe) vm.userPhotoUrl.value else user.photoUrl,
                                     name = user.name,
                                     email = user.email,
-                                    size = 20.dp
+                                    size = 24.dp
                                 )
-                                Spacer(Modifier.width(8.dp))
-                                val displayName = if (user.name.isNullOrBlank()) "ANONYMOUS USER" else user.name.uppercase()
-                                Text(text = displayName, color = if (isMe) MaterialTheme.colorScheme.primary.copy(alpha = 0.9f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Spacer(Modifier.width(10.dp))
+                                val displayName = if (user.name.isNullOrBlank()) "ANONYMOUS" else user.name.uppercase()
+                                Text(
+                                    text = displayName,
+                                    color = if (isMe) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                                    fontSize = 11.sp,
+                                    fontWeight = if(isMe) FontWeight.Bold else FontWeight.Medium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
                             }
                             val rank = com.focuspath.app.util.FocusRank.getTitle(user.score, isEnglish)
-                            Text(rank, modifier = Modifier.width(80.dp), color = Color.Gray.copy(alpha = 0.7f), fontSize = 8.sp, textAlign = TextAlign.Center)
-                            Text("${user.score}", modifier = Modifier.width(50.dp), color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f), fontSize = 12.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End)
+                            Text(
+                                rank,
+                                modifier = Modifier.width(70.dp),
+                                color = Color.Gray.copy(alpha = 0.7f),
+                                fontSize = 9.sp,
+                                textAlign = TextAlign.Center,
+                                maxLines = 1,
+                                overflow = TextOverflow.Clip
+                            )
+                            Text(
+                                "${user.score}",
+                                modifier = Modifier.width(45.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.End
+                            )
                         }
                     }
                 }

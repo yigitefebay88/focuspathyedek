@@ -14,16 +14,12 @@
       },
       "oauth_client": [
         {
-          "client_id": "208111707825-msmlcun89br2bmvvh5hlsn9rk303ttmv.apps.googleusercontent.com",
+          "client_id": "208111707825-lr3hfub72hhppq2mod33dv08ragro9hl.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.focuspath.app",
             "certificate_hash": "ce9b25853f7dbdfdde89898b0ec67e3483d767c2"
           }
-        },
-        {
-          "client_id": "208111707825-5fr1genn4gdi6kptalfq6tv2i87pfffs.apps.googleusercontent.com",
-          "client_type": 3
         }
       ],
       "api_key": [
@@ -33,12 +29,7 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "208111707825-5fr1genn4gdi6kptalfq6tv2i87pfffs.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }

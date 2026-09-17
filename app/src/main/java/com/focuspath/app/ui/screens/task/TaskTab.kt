@@ -110,18 +110,28 @@ fun TaskTab(
 
                         Surface(
                             onClick = { vm.setSelectedDate(dateMillis) },
-                            shape = RoundedCornerShape(8.dp),
+                            shape = RoundedCornerShape(12.dp),
                             color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
                             border = BorderStroke(1.dp, if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray.copy(alpha = 0.2f)),
-                            modifier = Modifier.size(width = 40.dp, height = 50.dp)
+                            modifier = Modifier.weight(1f).height(56.dp)
                         ) {
                             Column(
                                 modifier = Modifier.fillMaxSize(),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center
                             ) {
-                                Text(text = SimpleDateFormat("E", Locale.getDefault()).format(cal.time), fontSize = 8.sp, color = if (isSelected) Color.Black else Color.Gray)
-                                Text(text = "$dayNum", color = if (isSelected) Color.Black else MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                Text(
+                                    text = SimpleDateFormat("E", Locale.getDefault()).format(cal.time).uppercase(),
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isSelected) Color.Black else Color.Gray
+                                )
+                                Text(
+                                    text = "$dayNum",
+                                    color = if (isSelected) Color.Black else MaterialTheme.colorScheme.onSurface,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 15.sp
+                                )
                             }
                         }
                     }

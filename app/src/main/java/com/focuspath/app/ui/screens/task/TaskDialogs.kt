@@ -727,27 +727,13 @@ fun AuthDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (isResetPassword) "Şifre Sıfırla" else if (isRegister) "Kayıt Ol" else "Giriş Yap", color = MaterialTheme.colorScheme.primary) },
+        title = { Text(if (isResetPassword) "Şifre Sıfırla" else if (isRegister) "Yeni Hesap Oluştur" else "Hesabına Giriş Yap", color = MaterialTheme.colorScheme.primary) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (!isResetPassword && !isRegister) {
-                    CoolGoogleSignInButton(
-                        onClick = onGoogleSignIn,
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                        text = if (lang["login"] != null) "Google ile Giriş" else "Google ile Giriş Yap"
-                    )
-                    
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 8.dp)) {
-                        HorizontalDivider(modifier = Modifier.weight(1f), color = Color.Gray.copy(alpha = 0.2f))
-                        Text(" veya ", fontSize = 10.sp, color = Color.Gray, modifier = Modifier.padding(horizontal = 8.dp))
-                        HorizontalDivider(modifier = Modifier.weight(1f), color = Color.Gray.copy(alpha = 0.2f))
-                    }
-                }
-
                 OutlinedTextField(
                     value = email, 
                     onValueChange = { email = it }, 
-                    label = { Text("E-posta") }, 
+                    label = { Text("E-posta Adresi") }, 
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                         keyboardType = androidx.compose.ui.text.input.KeyboardType.Email,
@@ -769,32 +755,56 @@ fun AuthDialog(
                         singleLine = true
                     )
                     
-                    if (!isRegister) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.clickable { rememberMe = !rememberMe }.padding(vertical = 4.dp)
-                        ) {
-                            Checkbox(checked = rememberMe, onCheckedChange = { rememberMe = it })
-                            Text("Beni Hatırla", fontSize = 12.sp, color = Color.Gray)
-                        }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable { rememberMe = !rememberMe }.padding(vertical = 4.dp)
+                    ) {
+                        Checkbox(checked = rememberMe, onCheckedChange = { rememberMe = it })
+                        Text("Beni Hatırla (Otomatik Giriş)", fontSize = 12.sp, color = Color.Gray)
+                    }
+                }
+
+                if (!isResetPassword && !isRegister) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 8.dp)) {
+                        HorizontalDivider(modifier = Modifier.weight(1f), color = Color.Gray.copy(alpha = 0.2f))
+                        Text(" veya ", fontSize = 10.sp, color = Color.Gray, modifier = Modifier.padding(horizontal = 8.dp))
+                        HorizontalDivider(modifier = Modifier.weight(1f), color = Color.Gray.copy(alpha = 0.2f))
+                    }
+
+                    TextButton(
+                        onClick = onGoogleSignIn,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Google ile Devam Et", fontSize = 12.sp, color = Color.Gray)
                     }
                 }
                 
-                if (error.isNotEmpty()) { Text(error, color = Color.Red, fontSize = 12.sp) }
+                if (error.isNotEmpty()) { 
+                    Column(modifier = Modifier.fillMaxWidth().background(Color.Red.copy(0.1f)).padding(8.dp)) {
+                        Text(error, color = Color.Red, fontSize = 12.sp)
+                        if (error.contains("API key", ignoreCase = true) || error.contains("internal error", ignoreCase = true)) {
+                            TextButton(onClick = {
+                                vm.loginLocal(email, password, rememberMe)
+                                onDismiss()
+                            }) {
+                                Text("⚠️ Servis Hatası: Yerel Modda Devam Et", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
                 if (infoMessage.isNotEmpty()) { Text(infoMessage, color = MaterialTheme.colorScheme.primary, fontSize = 12.sp) }
                 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     TextButton(onClick = { isRegister = !isRegister; isResetPassword = false; error = ""; infoMessage = "" }) { 
-                        Text(if (isRegister) "Giriş Yap" else "Kayıt Ol", fontSize = 12.sp) 
+                        Text(if (isRegister) "Giriş Yap" else "Yeni Hesap", fontSize = 12.sp) 
                     }
-                    if (!isResetPassword) {
+                    if (!isResetPassword && !isRegister) {
                         TextButton(onClick = {
-                            isResetPassword = true; error = ""; infoMessage = ""
-                        }) { Text("Şifremi Unuttum", fontSize = 12.sp) }
-                    } else {
-                        TextButton(onClick = {
-                            isResetPassword = false; error = ""; infoMessage = ""
-                        }) { Text("Geri Dön", fontSize = 12.sp) }
+                            // Eğer kullanıcı e-posta kutusuna bir mail yazdıysa onu kullan, boş bıraktıysa varsayılanı kullan
+                            val guestEmail = if (email.isNotBlank() && email.contains("@")) email.trim().lowercase() else "guest_${System.currentTimeMillis() % 10000}@focuspath.local"
+                            vm.loginLocal(guestEmail, "", false)
+                            onDismiss()
+                        }) { Text("Misafir Girişi", fontSize = 12.sp, color = Color.Gray) }
                     }
                 }
             }

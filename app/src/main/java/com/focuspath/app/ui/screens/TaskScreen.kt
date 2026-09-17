@@ -7,6 +7,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import com.focuspath.app.ui.components.AdMobBanner
 
 import android.content.pm.PackageManager
 import android.content.res.Configuration
@@ -284,7 +285,7 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
             "data" to "Data & Storage", "about" to "Terminal Intel", "vibe" to "Haptic Feedback",
             "langLabel" to "Display Language", "themeLabel" to "Terminal Vibe", "logout" to "Disconnect Session",
             "login" to "Initialize Session", "clearAll" to "Wipe Database", "version" to "Build Version: 1.0.4-beta",
-            "premiumTitle" to "FocusPath Premium", "premiumDesc" to "Premium is required for some mini-games and exclusive features.",
+            "premiumTitle" to "FocusPath Premium", "premiumDesc" to "Removes ads, grants access to mini-games and exclusive features.",
             "upgrade" to "Upgrade Now", "premiumActive" to "Premium Active ⚡",
             "leaderboard" to "GLOBAL_LEADERBOARD",
             "office" to "Office",
@@ -311,7 +312,7 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
             "data" to "Veri ve Depolama", "about" to "Terminal Bilgisi", "vibe" to "Titreşim Geri Bildirimi",
             "langLabel" to "Görüntüleme Dili", "themeLabel" to "Terminal Modu", "logout" to "Bağlantıyı Kes",
             "login" to "Sisteme Bağlan", "clearAll" to "Veritabanını Sıfırla", "version" to "Versiyon: 1.0.4-beta",
-            "premiumTitle" to "FocusPath Premium", "premiumDesc" to "Bazı mini oyunlar ve özellikler için Premiumunuz olması gerekir.",
+            "premiumTitle" to "FocusPath Premium", "premiumDesc" to "Reklamları kaldırır, mini oyunlara ve özel özelliklere erişim sağlar.",
             "upgrade" to "Hemen Yükselt", "premiumActive" to "Premium Aktif ⚡",
             "leaderboard" to "LİDERLİK_TABLOSU",
             "office" to "Ofis",
@@ -505,50 +506,59 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
         },
 
         bottomBar = {
-            NavigationBar {
-                val tabs = listOf(
-                    Triple(0, Icons.Default.Home, lang["home"] ?: ""),
-                    Triple(1, Icons.Default.CheckCircle, lang["tasks"] ?: ""),
-                    Triple(2, Icons.Default.SmartToy, lang["ai"] ?: ""),
-                    Triple(3, Icons.Default.CalendarMonth, lang["cal"] ?: ""),
-                    Triple(4, Icons.Default.Business, lang["office"] ?: ""),
-                    Triple(5, Icons.Default.WaterDrop, lang["water"] ?: "")
-                )
-
-                tabs.forEach { (index, icon, label) ->
-                    val isSelected = selectedTab == index
-                    val animatedScale by animateFloatAsState(
-                        targetValue = if (isSelected) 1.2f else 1f,
-                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-                        label = "tabScale"
+            Column {
+                if (!vm.isPremium.value) {
+                    AdMobBanner()
+                }
+                NavigationBar {
+                    val tabs = listOf(
+                        Triple(0, Icons.Default.Home, lang["home"] ?: ""),
+                        Triple(1, Icons.Default.CheckCircle, lang["tasks"] ?: ""),
+                        Triple(2, Icons.Default.SmartToy, lang["ai"] ?: ""),
+                        Triple(3, Icons.Default.CalendarMonth, lang["cal"] ?: ""),
+                        Triple(4, Icons.Default.Business, lang["office"] ?: ""),
+                        Triple(5, Icons.Default.WaterDrop, lang["water"] ?: "")
                     )
 
-                    NavigationBarItem(
-                        icon = {
-                            Box(modifier = Modifier.graphicsLayer { scaleX = animatedScale; scaleY = animatedScale }) {
-                                if (index == 1) {
-                                    BadgedBox(badge = {
-                                        if (activeTaskCount > 0) { Badge(containerColor = AccentRed) { Text("$activeTaskCount") } }
-                                    }) { Icon(icon, null) }
-                                } else {
-                                    Icon(icon, null)
+                    tabs.forEach { (index, icon, label) ->
+                        val isSelected = selectedTab == index
+                        val animatedScale by animateFloatAsState(
+                            targetValue = if (isSelected) 1.2f else 1f,
+                            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+                            label = "tabScale"
+                        )
+
+                        NavigationBarItem(
+                            icon = {
+                                Box(modifier = Modifier.graphicsLayer {
+                                    scaleX = animatedScale; scaleY = animatedScale
+                                }) {
+                                    if (index == 1) {
+                                        BadgedBox(badge = {
+                                            if (activeTaskCount > 0) {
+                                                Badge(containerColor = AccentRed) { Text("$activeTaskCount") }
+                                            }
+                                        }) { Icon(icon, null) }
+                                    } else {
+                                        Icon(icon, null)
+                                    }
                                 }
-                            }
-                        },
-                        label = {
-                            Text(
-                                text = label,
-                                maxLines = 1,
-                                softWrap = false,
-                                overflow = TextOverflow.Ellipsis,
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    fontSize = if (label.length > 8) 9.sp else 11.sp
+                            },
+                            label = {
+                                Text(
+                                    text = label,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    overflow = TextOverflow.Ellipsis,
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontSize = if (label.length > 8) 9.sp else 11.sp
+                                    )
                                 )
-                            )
-                        },
-                        selected = isSelected,
-                        onClick = { coroutineScope.launch { pagerState.animateScrollToPage(index) } }
-                    )
+                            },
+                            selected = isSelected,
+                            onClick = { coroutineScope.launch { pagerState.animateScrollToPage(index) } }
+                        )
+                    }
                 }
             }
         }
@@ -566,7 +576,7 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
             ) { page ->
                 when (page) {
                     0 -> HomeTabFull(vm, allTasksList, lang, isEnglish, totalFocusMins, completedSessions, interruptedSessions) { coroutineScope.launch { pagerState.animateScrollToPage(it) } }
-                    1 -> TaskTabFull(vm, taskList, allTasksList, selectedDate, lang, isEnglish, greeting, currentQuote, haptic, context, isLandscape, { showClearDialog = true }, { showEditDialog = it }, { showDeleteConfirm = it }, { showReminderDialog = it }, { showQuoteHistory = true })
+                    1 -> TaskTabFull(vm, taskList, allTasksList, selectedDate, lang, isEnglish, greeting, currentQuote, haptic, context, isLandscape, { showClearDialog = true }, { showEditDialog = it }, { showDeleteConfirm = it }, { showReminderDialog = it }, { showQuoteHistory = true }, { coroutineScope.launch { pagerState.animateScrollToPage(2) } })
                     2 -> AiTabFull(vm, lang, isEnglish, context, chatHistory, isBotTyping, chatListState, taskList)
                     3 -> CalendarTabFull(vm, lang, currentMonthName, selectedDay, allTasksList, { selectedDay = it }, isEnglish, context, timerRunning, isPomodoroMode, timeLeft, timeElapsed, pomodoroTotalMillis, selectedFocusSound, completedSessions, { vm.toggleTimer(context, it) }, { vm.isPomodoroMode.value = it }, { vm.pomodoroTotalMillis.longValue = it ; vm.timeLeft.longValue = it }, { selectedFocusSound = it }, { showZenMode = true })
                     4 -> OfficeTabFull(vm, isEnglish, context, allTasksList, completedSessions, { showLiveSession = true }) { showDirectChat = it }
@@ -993,7 +1003,7 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
                                 LazyColumn(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                     val me = lbUsers.find { it.email == vm.userEmail.value }
                                     if (me != null) { item(key = "me") { UserLiveRow(me, isEnglish, true, vm) } }
-                                    items(lbUsers.filter { it.email != vm.userEmail.value }.take(15), key = { it.email }) { user ->
+                                    items(lbUsers.filter { it.email != vm.userEmail.value }.take(15), key = { it.uid }) { user ->
                                         UserLiveRow(user, isEnglish, false, vm)
                                     }
                                 }
@@ -1068,7 +1078,7 @@ fun UserLiveRow(user: LeaderboardUser, isEnglish: Boolean, isMe: Boolean, vm: Ta
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 
-private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksList: List<TaskEntity>, selectedDate: Long, lang: Map<String, String>, isEnglish: Boolean, greeting: String, currentQuote: String, haptic: androidx.compose.ui.hapticfeedback.HapticFeedback, context: Context, isLandscape: Boolean, onShowClearDialog: () -> Unit, onShowEditDialog: (TaskEntity) -> Unit, onShowDeleteConfirm: (TaskEntity) -> Unit, onShowReminderDialog: (TaskEntity) -> Unit, onShowQuoteHistory: () -> Unit) {
+private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksList: List<TaskEntity>, selectedDate: Long, lang: Map<String, String>, isEnglish: Boolean, greeting: String, currentQuote: String, haptic: androidx.compose.ui.hapticfeedback.HapticFeedback, context: Context, isLandscape: Boolean, onShowClearDialog: () -> Unit, onShowEditDialog: (TaskEntity) -> Unit, onShowDeleteConfirm: (TaskEntity) -> Unit, onShowReminderDialog: (TaskEntity) -> Unit, onShowQuoteHistory: () -> Unit, onNavigateToAi: () -> Unit) {
     var tabTaskInput by rememberSaveable { mutableStateOf("") }; var tabTaskNotes by rememberSaveable { mutableStateOf("") }
     var tabSelectedCategory by rememberSaveable { mutableStateOf("Genel") }; var tabSelectedPriority by rememberSaveable { mutableStateOf(1) }
     var tabDailyFocus by rememberSaveable { mutableStateOf("") }
@@ -1197,11 +1207,11 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
                                 shape = RoundedCornerShape(12.dp),
                                 color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
                                 border = BorderStroke(1.dp, if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray.copy(alpha = 0.2f)),
-                                modifier = Modifier.size(width = 40.dp, height = 50.dp)
+                                modifier = Modifier.weight(1f).height(56.dp)
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                                    Text(text = SimpleDateFormat("E", Locale.getDefault()).format(cal.time), fontSize = 8.sp, color = if (isSelected) Color.Black else Color.Gray)
-                                    Text(text = "$dayNum", color = if (isSelected) Color.Black else MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    Text(text = SimpleDateFormat("E", Locale.getDefault()).format(cal.time).uppercase(), fontSize = 9.sp, fontWeight = FontWeight.Bold, color = if (isSelected) Color.Black else Color.Gray)
+                                    Text(text = "$dayNum", color = if (isSelected) Color.Black else MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp)
                                 }
                             }
                         }
@@ -1336,9 +1346,8 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Button(
                                 onClick = {
-                                    val sum = taskList.joinToString { it.title }
-                                    vm.sendAiCommand(if(isEnglish) "Plan my day with these tasks: $sum" else "Bu görevlerle günümü planla: $sum", isEnglish)
-                                    Toast.makeText(context, if(isEnglish) "AI is planning your day..." else "Yapay zeka gününüzü planlıyor...", Toast.LENGTH_SHORT).show()
+                                    vm.planDayWithAi(isEnglish)
+                                    onNavigateToAi()
                                 },
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(12.dp),
@@ -1792,7 +1801,7 @@ private fun AiTabFull(vm: TaskViewModel, lang: Map<String, String>, isEnglish: B
         }
 
         Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            OutlinedButton(onClick = { val sum = taskList.joinToString { it.title }; vm.sendAiCommand(if(isEnglish) "Optimize: $sum" else "Günü planla: $sum", isEnglish) }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp)) { Text(lang["quick1"] ?: "", fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) };
+            OutlinedButton(onClick = { vm.planDayWithAi(isEnglish) }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp)) { Text(lang["quick1"] ?: "", fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) };
             OutlinedButton(onClick = { vm.sendAiCommand(if(isEnglish) "Code refactor advice?" else "Kod önerisi ver.", isEnglish) }, modifier = Modifier.weight(1f), shape = RoundedCornerShape(12.dp)) { Text(lang["quick2"] ?: "", fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) }
         }
 
@@ -1901,11 +1910,11 @@ private fun CalendarTabFull(vm: TaskViewModel, lang: Map<String, String>, curren
                             shape = RoundedCornerShape(12.dp),
                             color = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface,
                             border = BorderStroke(1.dp, if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray.copy(alpha = 0.3f)),
-                            modifier = Modifier.size(width = 42.dp, height = 54.dp)
+                            modifier = Modifier.weight(1f).height(56.dp)
                         ) {
                             Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                                Text(text = SimpleDateFormat("E", Locale.getDefault()).format(cal.time), fontSize = 8.sp, color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray)
-                                Text(text = "$dayNum", color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                Text(text = SimpleDateFormat("E", Locale.getDefault()).format(cal.time).uppercase(), fontSize = 9.sp, fontWeight = FontWeight.Bold, color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray)
+                                Text(text = "$dayNum", color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp)
                             }
                         }
                     }
@@ -2074,17 +2083,17 @@ private fun CalendarTabFull(vm: TaskViewModel, lang: Map<String, String>, curren
             } 
         } 
     };
- Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))) { Column(modifier = Modifier.padding(16.dp)) { Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(text = lang["leaderboard"] ?: "LEADERBOARD", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f), fontWeight = FontWeight.Bold); IconButton(onClick = { vm.fetchLeaderboard() }) { Icon(Icons.Default.Refresh, null, tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f), modifier = Modifier.size(20.dp)) } }; Spacer(Modifier.height(12.dp)); Row(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)) { Text("#", modifier = Modifier.width(30.dp), color = Color.Gray, fontSize = 10.sp); Text("USER", modifier = Modifier.weight(1f), color = Color.Gray, fontSize = 10.sp); Text("UNVAN", modifier = Modifier.width(80.dp), color = Color.Gray, fontSize = 10.sp, textAlign = TextAlign.Center); Text("XP", modifier = Modifier.width(50.dp), color = Color.Gray, fontSize = 10.sp, textAlign = TextAlign.End) }; HorizontalDivider(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)); if (lbUsers.isEmpty()) { Text("FETCHING DATA...", modifier = Modifier.padding(16.dp).fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Gray, fontSize = 11.sp) } else { lbUsers.forEachIndexed { index, user -> val isMe = user.email.equals(vm.userEmail.value, ignoreCase = true) ; Row(modifier = Modifier.fillMaxWidth().background(if (isMe) MaterialTheme.colorScheme.primary.copy(alpha = 0.05f) else Color.Transparent).padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) { Text("${index + 1}", modifier = Modifier.width(30.dp), color = if (index < 3) AccentYellow.copy(alpha = 0.9f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.7f), fontWeight = FontWeight.Bold, fontSize = 12.sp);                                 Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+ Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))) { Column(modifier = Modifier.padding(16.dp)) { Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(text = lang["leaderboard"] ?: "LEADERBOARD", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f), fontWeight = FontWeight.Bold); IconButton(onClick = { vm.fetchLeaderboard() }) { Icon(Icons.Default.Refresh, null, tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f), modifier = Modifier.size(20.dp)) } }; Spacer(Modifier.height(12.dp)); Row(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) { Text("#", modifier = Modifier.width(28.dp), color = Color.Gray, fontSize = 10.sp, textAlign = TextAlign.Center); Text("USER", modifier = Modifier.weight(1f), color = Color.Gray, fontSize = 10.sp); Text("RANK", modifier = Modifier.width(70.dp), color = Color.Gray, fontSize = 10.sp, textAlign = TextAlign.Center); Text("XP", modifier = Modifier.width(45.dp), color = Color.Gray, fontSize = 10.sp, textAlign = TextAlign.End) }; HorizontalDivider(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)); if (lbUsers.isEmpty()) { Text("FETCHING DATA...", modifier = Modifier.padding(16.dp).fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Gray, fontSize = 11.sp) } else { lbUsers.forEachIndexed { index, user -> val isMe = vm.userEmail.value.isNotBlank() && user.email.equals(vm.userEmail.value, ignoreCase = true) ; Row(modifier = Modifier.fillMaxWidth().background(if (isMe) MaterialTheme.colorScheme.primary.copy(alpha = 0.05f) else Color.Transparent).padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) { Text("${index + 1}", modifier = Modifier.width(28.dp), color = if (index < 3) AccentYellow.copy(alpha = 0.9f) else MaterialTheme.colorScheme.primary.copy(alpha = 0.7f), fontWeight = FontWeight.Black, fontSize = 12.sp, textAlign = TextAlign.Center);                                 Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
                                     com.focuspath.app.ui.components.ProfileImage(
                                         photoUrl = if (isMe) vm.userPhotoUrl.value else user.photoUrl,
                                         name = user.name,
                                         email = user.email,
-                                        size = 20.dp
+                                        size = 24.dp
                                     )
-                                    Spacer(Modifier.width(8.dp))
-                                    val displayName = if (user.name.isNullOrBlank()) "ANONYMOUS USER" else user.name.uppercase()
-                                    Text(text = displayName, color = if (isMe) MaterialTheme.colorScheme.primary.copy(alpha = 0.9f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f), fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                }; val rank = com.focuspath.app.util.FocusRank.getTitle(user.score, isEnglish); Text(rank, modifier = Modifier.width(80.dp), color = Color.Gray.copy(alpha = 0.7f), fontSize = 8.sp, textAlign = TextAlign.Center); Text("${user.score}", modifier = Modifier.width(50.dp), color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f), fontSize = 12.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End) } } } } }
+                                    Spacer(Modifier.width(10.dp))
+                                    val displayName = if (user.name.isNullOrBlank()) "ANONYMOUS" else user.name.uppercase()
+                                    Text(text = displayName, color = if (isMe) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f), fontSize = 11.sp, fontWeight = if(isMe) FontWeight.Bold else FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }; val rank = com.focuspath.app.util.FocusRank.getTitle(user.score, isEnglish); Text(rank, modifier = Modifier.width(70.dp), color = Color.Gray.copy(alpha = 0.7f), fontSize = 9.sp, textAlign = TextAlign.Center, maxLines = 1, overflow = TextOverflow.Clip); Text("${user.score}", modifier = Modifier.width(45.dp), color = MaterialTheme.colorScheme.primary, fontSize = 12.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.End) } } } } }
     }
 
     if (showBrainDump) {
@@ -2154,7 +2163,81 @@ private fun SettingsTabFull(vm: TaskViewModel, lang: Map<String, String>, isEngl
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(text = lang["settings"] ?: "Settings", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f))
-        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.5.dp, if (vm.isPremium.value) TerminalGreen.copy(alpha = 0.5f) else AccentYellow.copy(alpha = 0.3f))) { Column(modifier = Modifier.padding(16.dp)) { Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Column(modifier = Modifier.weight(1f)) { Text(text = lang["premiumTitle"] ?: "", style = MaterialTheme.typography.titleMedium, color = if (vm.isPremium.value) TerminalGreen.copy(alpha = 0.8f) else AccentYellow.copy(alpha = 0.8f), fontWeight = FontWeight.Bold); Text(text = if (vm.isPremium.value) (lang["premiumActive"] ?: "") else (lang["premiumDesc"] ?: ""), style = MaterialTheme.typography.bodySmall, color = Color.Gray) }; if (!vm.isPremium.value) { Button(onClick = { vm.buyPremium() }, shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = AccentYellow.copy(alpha = 0.8f))) { Text(lang["upgrade"] ?: "", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) } } else { Icon(Icons.Default.Verified, null, tint = TerminalGreen.copy(alpha = 0.8f)) } } } }; Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))) { Column(modifier = Modifier.padding(16.dp)) { Text(lang["appearance"] ?: "", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)); Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(lang["themeLabel"] ?: ""); Switch(checked = vm.isDarkMode.value, onCheckedChange = { vm.toggleTheme() }) }; if (vm.isPremium.value) { Spacer(Modifier.height(8.dp)); Text("Terminal Renk Şeması (Premium)", style = MaterialTheme.typography.labelSmall, color = Color.Gray); Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) { listOf(0 to TerminalGreen, 1 to Color(0xFFFFB000), 2 to Color(0xFF00E5FF), 3 to Color(0xFFFF5252)).forEach { (idx, color) -> Box(modifier = Modifier.size(32.dp).background(color.copy(alpha = 0.8f), RoundedCornerShape(4.dp)).border(width = if (vm.themeColorIndex.value == idx) 2.dp else 0.dp, color = Color.White.copy(alpha = 0.5f), shape = RoundedCornerShape(4.dp)).clickable { vm.setThemeColor(idx) }) } } }; Spacer(Modifier.height(8.dp)); Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(lang["langLabel"] ?: ""); TextButton(onClick = onToggleLanguage) { Text(if (isEnglish) "English" else "Türkçe", color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)) } }; Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(lang["vibe"] ?: "Haptic Feedback"); Switch(checked = vm.isHapticEnabled.value, onCheckedChange = { vm.setHapticEnabled(it) }) } } };
+        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.5.dp, if (vm.isPremium.value) TerminalGreen.copy(alpha = 0.5f) else AccentYellow.copy(alpha = 0.3f))) { Column(modifier = Modifier.padding(16.dp)) { Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Column(modifier = Modifier.weight(1f)) { Text(text = lang["premiumTitle"] ?: "", style = MaterialTheme.typography.titleMedium, color = if (vm.isPremium.value) TerminalGreen.copy(alpha = 0.8f) else AccentYellow.copy(alpha = 0.8f), fontWeight = FontWeight.Bold); Text(text = if (vm.isPremium.value) (lang["premiumActive"] ?: "") else (lang["premiumDesc"] ?: ""), style = MaterialTheme.typography.bodySmall, color = Color.Gray) }; if (!vm.isPremium.value) { Button(onClick = { vm.buyPremium() }, shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = AccentYellow.copy(alpha = 0.8f))) { Text(lang["upgrade"] ?: "", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) } } else { Icon(Icons.Default.Verified, null, tint = TerminalGreen.copy(alpha = 0.8f)) } } } };
+        
+        // Ödüllü Reklam Kartı
+        if (!vm.isPremium.value) {
+            val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+            val prefs = context.getSharedPreferences("focuspath_prefs", Context.MODE_PRIVATE)
+            var hasWatchedToday by remember { mutableStateOf(prefs.getString("LAST_REWARDED_WATCH_DATE", "") == todayStr) }
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (hasWatchedToday) MaterialTheme.colorScheme.surface.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                ),
+                border = BorderStroke(1.dp, if (hasWatchedToday) Color.Gray.copy(alpha = 0.2f) else AccentYellow.copy(alpha = 0.3f))
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = if (isEnglish) "🔥 FREE REWARDS" else "🔥 BEDAVA ÖDÜL KAZAN",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = if (hasWatchedToday) Color.Gray else AccentYellow,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = if (hasWatchedToday) {
+                                    if (isEnglish) "You have claimed today's reward! Come back tomorrow." else "Bugünün ödülünü aldın! Yarın tekrar gel."
+                                } else {
+                                    if (isEnglish) "Watch a short video to earn +50 Coins & +20 XP instantly!" else "Kısa bir video izleyerek anında +50 Jetton ve +20 XP kazan!"
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (hasWatchedToday) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Button(
+                            onClick = {
+                                if (hasWatchedToday) {
+                                    Toast.makeText(context, if (isEnglish) "Today's limit reached! Come back tomorrow." else "Bugünlük sınır doldu! Yarın tekrar bekleriz.", Toast.LENGTH_SHORT).show()
+                                    return@Button
+                                }
+                                (context as? android.app.Activity)?.let { act ->
+                                    com.focuspath.app.ui.components.AdMobRewardedManager.showAd(act) {
+                                        vm.addXp(20)
+                                        vm.addCoins(50)
+                                        // İzleme tarihini SharedPreferences'a kaydet
+                                        prefs.edit().putString("LAST_REWARDED_WATCH_DATE", todayStr).apply()
+                                        hasWatchedToday = true
+                                        Toast.makeText(context, if (isEnglish) "Success! Rewards added." else "Başarılı! Ödüller hesabınıza eklendi.", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            },
+                            enabled = !hasWatchedToday,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (hasWatchedToday) Color.Gray.copy(alpha = 0.3f) else MaterialTheme.colorScheme.primary,
+                                disabledContainerColor = Color.Gray.copy(alpha = 0.2f)
+                            )
+                        ) {
+                            Text(
+                                text = if (hasWatchedToday) (if (isEnglish) "Done" else "Alındı") else (if (isEnglish) "Watch & Earn" else "İzle & Kazan"),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp,
+                                color = if (hasWatchedToday) Color.Gray else Color.White
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        
+        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))) { Column(modifier = Modifier.padding(16.dp)) { Text(lang["appearance"] ?: "", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)); Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(lang["themeLabel"] ?: ""); Switch(checked = vm.isDarkMode.value, onCheckedChange = { vm.toggleTheme() }) }; if (vm.isPremium.value) { Spacer(Modifier.height(8.dp)); Text("Terminal Renk Şeması (Premium)", style = MaterialTheme.typography.labelSmall, color = Color.Gray); Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) { listOf(0 to TerminalGreen, 1 to Color(0xFFFFB000), 2 to Color(0xFF00E5FF), 3 to Color(0xFFFF5252)).forEach { (idx, color) -> Box(modifier = Modifier.size(32.dp).background(color.copy(alpha = 0.8f), RoundedCornerShape(4.dp)).border(width = if (vm.themeColorIndex.value == idx) 2.dp else 0.dp, color = Color.White.copy(alpha = 0.5f), shape = RoundedCornerShape(4.dp)).clickable { vm.setThemeColor(idx) }) } } }; Spacer(Modifier.height(8.dp)); Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(lang["langLabel"] ?: ""); TextButton(onClick = onToggleLanguage) { Text(if (isEnglish) "English" else "Türkçe", color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)) } }; Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(lang["vibe"] ?: "Haptic Feedback"); Switch(checked = vm.isHapticEnabled.value, onCheckedChange = { vm.setHapticEnabled(it) }) } } }
         Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(if(isEnglish) "ADHD TOOLS" else "DEHB ARAÇLARI", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f))
@@ -2190,18 +2273,6 @@ private fun SettingsTabFull(vm: TaskViewModel, lang: Map<String, String>, isEngl
                 }
             }
         }
-        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))) { Column(modifier = Modifier.padding(16.dp)) { Text(if(isEnglish) "PRODUCTIVITY" else "ÜRETKENLİK", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f));
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { 
-                Column(modifier = Modifier.weight(1f)) { 
-                    Text(if(isEnglish) "App Blocker" else "Uygulama Engelleyici")
-                    Text(if(isEnglish) "Block distracting apps during focus" else "Odaklanırken dikkat dağıtıcıları engelle", style = MaterialTheme.typography.labelSmall, color = Color.Gray) 
-                }
-                val context = LocalContext.current 
-                /* App Blocker removed to comply with Google Play Accessibility Policy */
-                Text(if(isEnglish) "Unavailable" else "Kullanılamıyor", color = Color.Gray, fontSize = 11.sp, modifier = Modifier.padding(8.dp))
-            }
-        }
-    };
         Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))) { Column(modifier = Modifier.padding(16.dp)) { Text(if(isEnglish) "NOTIFICATIONS & SOUND" else "BİLDİRİM VE SES", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)); Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Text(if(isEnglish) "End Session Notification" else "Seans Bitiş Bildirimi"); Switch(checked = vm.isNotificationEnabled.value, onCheckedChange = { vm.setNotificationEnabled(it) }) }; Spacer(Modifier.height(8.dp)); Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Column(modifier = Modifier.weight(1f)) { Text(if(isEnglish) "Auto Do Not Disturb" else "Otomatik Rahatsız Etmeyin"); Text(if(isEnglish) "Enable DND when focus starts" else "Odaklanınca modu otomatik aç", style = MaterialTheme.typography.labelSmall, color = Color.Gray) }; val context = LocalContext.current ; Switch(checked = vm.isAutoDndEnabled.value, onCheckedChange = { vm.setAutoDndEnabled(context, it) }) }; 
             
             Spacer(Modifier.height(12.dp))
@@ -4154,7 +4225,7 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
                         } else {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                                 top3.forEachIndexed { index, user ->
-                                    val isMe = user.email.equals(vm.userEmail.value, ignoreCase = true)
+                                    val isMe = vm.userEmail.value.isNotBlank() && user.email.equals(vm.userEmail.value, ignoreCase = true)
                                     val displayPhoto = if (isMe) vm.userPhotoUrl.value else user.photoUrl
                                     
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {

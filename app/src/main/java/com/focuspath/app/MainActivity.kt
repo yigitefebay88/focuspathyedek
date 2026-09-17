@@ -42,6 +42,13 @@ import com.google.android.gms.common.api.ApiException
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.focuspath.app.billing.BillingManager
 import com.focuspath.app.billing.BillingProvider
+import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.AdSize
+import com.google.android.gms.ads.AdView
+import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.interstitial.InterstitialAd
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.focuspath.app.ui.screens.SplashScreen
 import com.focuspath.app.ui.screens.TaskScreen
 import com.focuspath.app.ui.theme.FocusPathTypography
@@ -102,6 +109,26 @@ class MainActivity : ComponentActivity(), BillingProvider {
         var showGamesDialogState = mutableStateOf(false)
     }
 
+    private fun loadInterstitialAd() {
+        val adRequest = AdRequest.Builder().build()
+        InterstitialAd.load(this, "ca-app-pub-3940256099942544/1033173712", adRequest, 
+            object : InterstitialAdLoadCallback() {
+                override fun onAdLoaded(ad: InterstitialAd) {
+                    interstitialAd = ad
+                }
+                override fun onAdFailedToLoad(adError: LoadAdError) {
+                    interstitialAd = null
+                }
+            })
+    }
+
+    fun showInterstitialAd() {
+        if (interstitialAd != null) {
+            interstitialAd?.show(this)
+            loadInterstitialAd() // Load the next one
+        }
+    }
+
     private var timerReceiver: android.content.BroadcastReceiver? = null
 
     private val googleSignInLauncher = registerForActivityResult(
@@ -151,10 +178,21 @@ class MainActivity : ComponentActivity(), BillingProvider {
         }
     }
 
+    private var interstitialAd: InterstitialAd? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
-        logAppSignature() // Uygulama imzası loglanır
+        
+        // AdMob Initialization ile birlikte Test Cihazı Konfigürasyonu
+        MobileAds.initialize(this) { status ->
+            android.util.Log.d("FocusPathAds", "AdMob Initialization Status: Done")
+            // AdMob tamamen hazır olduğunda ödüllü reklam yüklemesini başlat
+            com.focuspath.app.ui.components.AdMobRewardedManager.loadAd(this)
+        }
+        loadInterstitialAd()
+
+        logAppSignature()
         
         // In-App Update Initialization
         updateManager = UpdateManager(this)
@@ -179,6 +217,9 @@ class MainActivity : ComponentActivity(), BillingProvider {
                 } else if (intent?.action == "com.focuspath.TIMER_FINISHED") {
                     android.util.Log.d("FocusPathReceiver", "Timer Finished, calling recordSessionResult")
                     vm.recordSessionResult(true)
+                    if (!vm.isPremium.value) {
+                        showInterstitialAd()
+                    }
                 }
             }
         }
@@ -194,9 +235,13 @@ class MainActivity : ComponentActivity(), BillingProvider {
                 vm.billingProvider = this
 
             billingManager = BillingManager(this) {
+                val p = getSharedPreferences("focuspath_prefs", MODE_PRIVATE)
+                val wasPremium = p.getBoolean("is_premium", false)
                 vm.isPremium.value = true
-                vm.addXp(500)
-                getSharedPreferences("focuspath_prefs", MODE_PRIVATE).edit().putBoolean("is_premium", true).apply()
+                if (!wasPremium) {
+                    vm.addXp(500)
+                }
+                p.edit().putBoolean("is_premium", true).apply()
             }
 
             var showSplash by remember { mutableStateOf(true) }
@@ -692,40 +737,49 @@ class MainActivity : ComponentActivity(), BillingProvider {
 
                                     Button(
                                         onClick = {
-                                            if (searchEmail.isNotBlank()) {
-                                                val cleanEmail = searchEmail.trim().lowercase()
-                                                statusMessage = "Aranıyor..."
-                                                com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                                                    .collection("leaderboard")
-                                                    .whereEqualTo("email", cleanEmail)
-                                                    .get()
-                                                    .addOnSuccessListener { documents ->
-                                                        if (!documents.isEmpty) {
-                                                            val doc = documents.documents[0]
-                                                            val user = doc.toObject(LeaderboardUser::class.java)
-                                                            if (user != null) {
-                                                                // Agresif photo fallback
-                                                                val photoVal = doc.get("photoUrl") ?: doc.get("photo_url") ?: doc.get("photo") ?: doc.get("image")
-                                                                val photoStr = photoVal?.toString()?.trim()
-                                                                if (!photoStr.isNullOrBlank() && photoStr.startsWith("http")) {
-                                                                    user.photoUrl = photoStr
+                                            if (vm.isLoggedIn.value) {
+                                                if (searchEmail.isNotBlank()) {
+                                                    val cleanEmail = searchEmail.trim().lowercase()
+                                                    statusMessage = "Aranıyor..."
+                                                    com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                                                        .collection("leaderboard")
+                                                        .whereEqualTo("email", cleanEmail)
+                                                        .get()
+                                                        .addOnSuccessListener { documents ->
+                                                            if (!documents.isEmpty) {
+                                                                val doc = documents.documents[0]
+                                                                val user = doc.toObject(LeaderboardUser::class.java)
+                                                                if (user != null) {
+                                                                    // Agresif photo fallback
+                                                                    val photoVal = doc.get("photoUrl") ?: doc.get("photo_url") ?: doc.get("photo") ?: doc.get("image")
+                                                                    val photoStr = photoVal?.toString()?.trim()
+                                                                    if (!photoStr.isNullOrBlank() && photoStr.startsWith("http")) {
+                                                                        user.photoUrl = photoStr
+                                                                    }
+                                                                    
+                                                                    // Firestore döküman ID'sini UID olarak set edelim
+                                                                    val emailVal = doc.getString("email") ?: cleanEmail
+                                                                    val populatedUser = user.copy(
+                                                                        uid = doc.id,
+                                                                        email = emailVal
+                                                                    )
+                                                                    searchResultUser = populatedUser
+                                                                    statusMessage = "Kullanıcı bulundu!"
+                                                                } else {
+                                                                    searchResultUser = null
+                                                                    statusMessage = "Kullanıcı verisi okunamadı."
                                                                 }
-                                                                // Firestore döküman ID'sini UID olarak set edelim (eğer döküman içinde yoksa)
-                                                                val populatedUser = if (user.uid.isBlank()) user.copy(uid = doc.id) else user
-                                                                searchResultUser = populatedUser
-                                                                statusMessage = "Kullanıcı bulundu!"
                                                             } else {
                                                                 searchResultUser = null
-                                                                statusMessage = "Kullanıcı verisi okunamadı."
+                                                                statusMessage = "Kullanıcı bulunamadı! (Kullanıcının sistemde kaydı olmayabilir)"
                                                             }
-                                                        } else {
-                                                            searchResultUser = null
-                                                            statusMessage = "Kullanıcı bulunamadı! (Kullanıcının sistemde kaydı olmayabilir)"
                                                         }
-                                                    }
-                                                    .addOnFailureListener {
-                                                        statusMessage = "Hata: ${it.localizedMessage}"
-                                                    }
+                                                        .addOnFailureListener {
+                                                            statusMessage = "Hata: ${it.localizedMessage}"
+                                                        }
+                                                }
+                                            } else {
+                                                Toast.makeText(this@MainActivity, "Arkadaş aramak için lütfen giriş yapın veya misafir oturumu açın.", Toast.LENGTH_LONG).show()
                                             }
                                         },
                                         modifier = Modifier.fillMaxWidth(),

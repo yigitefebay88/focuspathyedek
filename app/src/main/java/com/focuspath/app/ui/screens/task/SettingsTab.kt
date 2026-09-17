@@ -18,6 +18,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import coil.compose.AsyncImage
@@ -58,6 +59,51 @@ fun SettingsTab(
                         Button(onClick = { vm.buyPremium() }, colors = ButtonDefaults.buttonColors(containerColor = AccentYellow)) { Text(lang["upgrade"] ?: "", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 12.sp) }
                     } else {
                         Icon(Icons.Default.Verified, null, tint = TerminalGreen)
+                    }
+                }
+            }
+        }
+
+        // Rewarded Ad Card
+        if (!vm.isPremium.value) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
+                border = BorderStroke(1.dp, AccentYellow.copy(alpha = 0.3f))
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = if (isEnglish) "🔥 FREE REWARDS" else "🔥 BEDAVA ÖDÜL KAZAN",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = AccentYellow,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = if (isEnglish) "Watch a short video to earn +50 Coins & +20 XP instantly!" else "Kısa bir video izleyerek anında +50 Jetton ve +20 XP kazan!",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Button(
+                            onClick = {
+                                (context as? android.app.Activity)?.let { act ->
+                                    com.focuspath.app.ui.components.AdMobRewardedManager.showAd(act) {
+                                        vm.addXp(20)
+                                        vm.addCoins(50)
+                                        Toast.makeText(context, if (isEnglish) "Success! Rewards added." else "Başarılı! Ödüller hesabınıza eklendi.", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        ) {
+                            Text(if (isEnglish) "Watch & Earn" else "İzle & Kazan", fontWeight = FontWeight.Bold, fontSize = 11.sp, color = Color.White)
+                        }
                     }
                 }
             }

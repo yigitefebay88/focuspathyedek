@@ -57,6 +57,11 @@
             </intent-filter>
         </activity>
 
+        <!-- AdMob App ID -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-9916683255323941~2914958394"/>
+
         <!-- Hatırlatıcı Alarm Alıcısı -->
         <receiver android:name=".receiver.ReminderReceiver" android:exported="false" />
 
