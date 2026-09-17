@@ -64,8 +64,8 @@ class InteractiveFocusWidget : GlanceAppWidget() {
         coins: Int,
         xp: Int,
     ) {
-        val green = ColorProvider(R.color.terminal_green)
-        val black = ColorProvider(R.color.terminal_black)
+        val green = ColorProvider(androidx.compose.ui.graphics.Color(0xFF00FF41))
+        val black = ColorProvider(androidx.compose.ui.graphics.Color(0xFF000000))
 
         Column(
             modifier = GlanceModifier

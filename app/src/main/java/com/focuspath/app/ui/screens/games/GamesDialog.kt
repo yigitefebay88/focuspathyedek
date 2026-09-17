@@ -568,7 +568,7 @@ fun ArcherGame(vm: TaskViewModel, onExit: () -> Unit) {
 @Composable
 fun SudokuGame(vm: TaskViewModel, onExit: () -> Unit) {
     val levels = remember {
-        listOf(
+        val list = listOf(
             SudokuLevel(
                 board = listOf(listOf(1, 0, 3, 0), listOf(0, 0, 0, 2), listOf(0, 1, 0, 0), listOf(0, 0, 2, 0)),
                 solution = listOf(listOf(1, 2, 3, 4), listOf(3, 4, 1, 2), listOf(2, 1, 4, 3), listOf(4, 3, 2, 1))
@@ -586,6 +586,7 @@ fun SudokuGame(vm: TaskViewModel, onExit: () -> Unit) {
                 solution = listOf(listOf(1, 2, 3, 4), listOf(3, 4, 1, 2), listOf(4, 1, 2, 3), listOf(2, 3, 4, 1))
             )
         )
+        list
     }
 
     var levelIdx by remember { mutableIntStateOf(0) }
@@ -595,12 +596,13 @@ fun SudokuGame(vm: TaskViewModel, onExit: () -> Unit) {
 
     val userBoard = remember {
         val firstLevel = levels[0].board
-        listOf(
+        val board = listOf(
             mutableStateListOf<Int>().apply { addAll(firstLevel[0]) },
             mutableStateListOf<Int>().apply { addAll(firstLevel[1]) },
             mutableStateListOf<Int>().apply { addAll(firstLevel[2]) },
             mutableStateListOf<Int>().apply { addAll(firstLevel[3]) }
         )
+        board
     }
 
     LaunchedEffect(levelIdx) {
@@ -1491,7 +1493,12 @@ fun SlidingPuzzleGame(vm: TaskViewModel, onExit: () -> Unit) {
     } else {
         val size = when(difficulty) { "EASY" -> 3 ; "MEDIUM" -> 4 ; else -> 5 }
         val tileCount = size * size
-        val tiles = remember(difficulty) { mutableStateListOf<Int>().apply { addAll((1 until tileCount).toList() + 0); shuffle() } }
+        val tiles = remember(difficulty) {
+            val list = mutableStateListOf<Int>()
+            list.addAll((1 until tileCount).toList() + 0)
+            list.shuffle()
+            list
+        }
         var moves by remember { mutableIntStateOf(0) }
         val isSolved = tiles.toList() == (1 until tileCount).toList() + 0
 
