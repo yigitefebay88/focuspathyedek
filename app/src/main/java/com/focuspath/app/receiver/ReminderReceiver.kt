@@ -14,12 +14,10 @@ class ReminderReceiver : BroadcastReceiver() {
         val isWaterReminder = intent.getBooleanExtra("is_water_reminder", false)
         
         if (isWaterReminder) {
-            // Reschedule next water reminder
             val prefs = context.getSharedPreferences("focuspath_prefs", Context.MODE_PRIVATE)
             val interval = prefs.getInt("water_reminder_interval", 1)
             ReminderUtil.scheduleWaterReminder(context, interval)
 
-            // Son bildirim zamanını kaydet (Suistimal önleme için)
             prefs.edit().putLong("last_water_reminder_time", System.currentTimeMillis()).apply()
         }
 
@@ -46,7 +44,7 @@ class ReminderReceiver : BroadcastReceiver() {
         )
 
         val notification = NotificationCompat.Builder(context, "focuspath_channel")
-            .setSmallIcon(com.focuspath.app.R.drawable.ic_launcher_foregroundd) // Doğru ikon ismi
+            .setSmallIcon(com.focuspath.app.R.drawable.ic_launcher_foregroundd) 
             .setContentTitle(if (isWaterReminder) title else "Görev Vakti! 🎯")
             .setContentText(contentText)
             .setPriority(NotificationCompat.PRIORITY_MAX)

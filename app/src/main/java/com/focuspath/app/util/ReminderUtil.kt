@@ -21,7 +21,6 @@ object ReminderUtil {
 
         val triggerTime = System.currentTimeMillis() + (intervalHours * 3600 * 1000L)
         
-        // Use inexact repeating to save battery. Water reminder doesn't need second-precision.
         alarmManager.setInexactRepeating(
             AlarmManager.RTC_WAKEUP,
             triggerTime,

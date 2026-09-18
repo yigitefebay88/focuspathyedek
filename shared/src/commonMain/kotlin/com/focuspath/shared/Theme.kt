@@ -10,7 +10,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-// Shared Colors
 val AccentRed = Color(0xFFE57373)
 val AccentYellow = Color(0xFFFFD54F)
 val TerminalGreen = Color(0xFF81C784)

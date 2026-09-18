@@ -76,7 +76,6 @@ class InteractiveFocusWidget : GlanceAppWidget() {
             verticalAlignment = Alignment.Top,
             horizontalAlignment = Alignment.Start
         ) {
-            // Header
             Row(
                 modifier = GlanceModifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -92,7 +91,6 @@ class InteractiveFocusWidget : GlanceAppWidget() {
                 )
                 Spacer(modifier = GlanceModifier.defaultWeight())
                 
-                // Refresh Button
                 Box(
                     modifier = GlanceModifier
                         .size(24.dp)
@@ -113,7 +111,6 @@ class InteractiveFocusWidget : GlanceAppWidget() {
                 modifier = GlanceModifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Timer Section
                 Column(
                     modifier = GlanceModifier.defaultWeight(),
                     horizontalAlignment = Alignment.Start
@@ -138,7 +135,6 @@ class InteractiveFocusWidget : GlanceAppWidget() {
                     )
                 }
 
-                // Controls
                 Button(
                     text = if (isRunning) "STOP" else "START",
                     onClick = actionRunCallback<ToggleTimerAction>(
@@ -153,7 +149,6 @@ class InteractiveFocusWidget : GlanceAppWidget() {
 
             Spacer(modifier = GlanceModifier.height(8.dp))
 
-            // Stats
             Row(
                 modifier = GlanceModifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -207,7 +202,6 @@ class ToggleTimerAction : ActionCallback {
             context.startService(intent)
         }
         
-        // Update widget state immediately
         InteractiveFocusWidget().update(context, glanceId)
     }
 }

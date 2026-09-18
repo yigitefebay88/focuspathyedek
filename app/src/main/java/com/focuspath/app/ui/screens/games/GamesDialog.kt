@@ -249,13 +249,13 @@ fun StroopGame(vm: TaskViewModel, onExit: () -> Unit) {
         "PEMBE" to Color(0xFFE91E63),
         "TURKUAZ" to Color(0xFF00BCD4)
     )
-    var score by remember { mutableIntStateOf(0) }
-    var level by remember { mutableIntStateOf(1) }
+    var score by remember { mutableStateOf(0) }
+    var level by remember { mutableStateOf(1) }
     val currentColors = remember(level) { allColors.take((4 + level).coerceAtMost(allColors.size)) }
     var currentPair by remember { mutableStateOf(currentColors.random()) }
     var textColor by remember { mutableStateOf(currentColors.random().second) }
     var isFinished by remember { mutableStateOf(false) }
-    var timeLeft by remember { mutableIntStateOf(15) }
+    var timeLeft by remember { mutableStateOf(15) }
 
     LaunchedEffect(score) {
         if (score > 0 && score % 100 == 0) level++
@@ -317,8 +317,8 @@ fun MemoryGame(vm: TaskViewModel, onExit: () -> Unit) {
     var gameIcons by remember { mutableStateOf((icons + icons).shuffled()) }
     val revealed = remember { mutableStateListOf<Int>() }
     val matched = remember { mutableStateListOf<Int>() }
-    var score by remember { mutableIntStateOf(0) }
-    var level by remember { mutableIntStateOf(1) }
+    var score by remember { mutableStateOf(0) }
+    var level by remember { mutableStateOf(1) }
     var isFinished by remember { mutableStateOf(false) }
 
     LaunchedEffect(matched.size) { 
@@ -367,8 +367,8 @@ fun MemoryGame(vm: TaskViewModel, onExit: () -> Unit) {
 @Composable
 fun ReactionGame(vm: TaskViewModel, onExit: () -> Unit) {
     var gameState by remember { mutableStateOf("WAIT") }
-    var startTime by remember { mutableLongStateOf(0L) }
-    var reactionTime by remember { mutableLongStateOf(0L) }
+    var startTime by remember { mutableStateOf(0L) }
+    var reactionTime by remember { mutableStateOf(0L) }
     LaunchedEffect(gameState) { if (gameState == "READY") { delay(Random.nextLong(2000, 5000)); if (gameState == "READY") { gameState = "NOW"; startTime = System.currentTimeMillis() } } }
     Box(modifier = Modifier.fillMaxSize().background(when (gameState) { "READY" -> Color(0xFFD32F2F); "NOW" -> Color(0xFF388E3C); else -> Color.Transparent }, RoundedCornerShape(12.dp)).clickable { when (gameState) { "WAIT" -> gameState = "READY"; "READY" -> { gameState = "WAIT" }; "NOW" -> { reactionTime = System.currentTimeMillis() - startTime; gameState = "RESULT" }; "RESULT" -> gameState = "WAIT" } }, contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -383,10 +383,10 @@ fun CubeCountGame(vm: TaskViewModel, onExit: () -> Unit) {
     var gameState by remember { mutableStateOf("PREVIEW") }
     val cubeColors = listOf(Color.Red, Color.Blue, Color.Green, Color.Yellow)
     val counts = remember { mutableStateMapOf<Int, Int>() }
-    var activeCubeIndex by remember { mutableIntStateOf(-1) }
-    var targetColorIndex by remember { mutableIntStateOf(0) }
-    var score by remember { mutableIntStateOf(0) }
-    var level by remember { mutableIntStateOf(1) }
+    var activeCubeIndex by remember { mutableStateOf(-1) }
+    var targetColorIndex by remember { mutableStateOf(0) }
+    var score by remember { mutableStateOf(0) }
+    var level by remember { mutableStateOf(1) }
     var selectedOption by remember { mutableStateOf<Int?>(null) }
     var isFinished by remember { mutableStateOf(false) }
 
@@ -490,7 +490,7 @@ fun CubeCountGame(vm: TaskViewModel, onExit: () -> Unit) {
 
 @Composable
 fun ArcherGame(vm: TaskViewModel, onExit: () -> Unit) {
-    var targetX by remember { mutableFloatStateOf(0f) } ; var direction by remember { mutableIntStateOf(1) } ; var arrowY by remember { mutableFloatStateOf(0f) } ; var isFiring by remember { mutableStateOf(false) } ; var score by remember { mutableIntStateOf(0) } ; var shotsLeft by remember { mutableIntStateOf(5) } ; var gameMessage by remember { mutableStateOf("HEDEFE ODAKLAN VE DOKUN!") }
+    var targetX by remember { mutableStateOf(0f) } ; var direction by remember { mutableStateOf(1) } ; var arrowY by remember { mutableStateOf(0f) } ; var isFiring by remember { mutableStateOf(false) } ; var score by remember { mutableStateOf(0) } ; var shotsLeft by remember { mutableStateOf(5) } ; var gameMessage by remember { mutableStateOf("HEDEFE ODAKLAN VE DOKUN!") }
     var isFinished by remember { mutableStateOf(false) }
     val terminalColor = MaterialTheme.colorScheme.primary
 
@@ -576,7 +576,7 @@ fun SudokuGame(vm: TaskViewModel, onExit: () -> Unit) {
         list
     }
 
-    var levelIdx by remember { mutableIntStateOf(0) }
+    var levelIdx by remember { mutableStateOf(0) }
     val currentLevel = levels[levelIdx % levels.size]
     val fixedValues = currentLevel.board
     val solution = currentLevel.solution
@@ -601,8 +601,8 @@ fun SudokuGame(vm: TaskViewModel, onExit: () -> Unit) {
     }
 
     var selectedCell by remember { mutableStateOf<Pair<Int, Int>?>(null) }
-    var score by remember { mutableIntStateOf(0) }
-    var timeLeft by remember { mutableIntStateOf(60) }
+    var score by remember { mutableStateOf(0) }
+    var timeLeft by remember { mutableStateOf(60) }
     var isGameOver by remember { mutableStateOf(false) }
     var isFinished by remember { mutableStateOf(false) }
 
@@ -685,10 +685,10 @@ fun WordScrambleGame(vm: TaskViewModel, onExit: () -> Unit) {
     var currentWord by remember { mutableStateOf(wordList.random()) }
     val scrambledLetters = remember { mutableStateListOf<Char>() }
     val userLetters = remember { mutableStateListOf<Char>() }
-    var score by remember { mutableIntStateOf(0) }
-    var timeLeft by remember { mutableIntStateOf(30) }
+    var score by remember { mutableStateOf(0) }
+    var timeLeft by remember { mutableStateOf(30) }
     var isGameOver by remember { mutableStateOf(false) }
-    var totalWordsSolved by remember { mutableIntStateOf(0) }
+    var totalWordsSolved by remember { mutableStateOf(0) }
     var isQuitPressed by remember { mutableStateOf(false) }
 
     val terminalColor = MaterialTheme.colorScheme.primary
@@ -750,7 +750,6 @@ fun WordScrambleGame(vm: TaskViewModel, onExit: () -> Unit) {
             Text("Harfleri doğru sıraya diz!", style = MaterialTheme.typography.labelSmall)
             Spacer(Modifier.height(40.dp))
 
-            // Kullanıcının oluşturduğu kelime alanı
             @OptIn(ExperimentalLayoutApi::class)
             FlowRow(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
@@ -795,7 +794,6 @@ fun WordScrambleGame(vm: TaskViewModel, onExit: () -> Unit) {
 
             Spacer(Modifier.height(40.dp))
 
-            // Karışık harfler alanı
             @OptIn(ExperimentalLayoutApi::class)
             FlowRow(
                 modifier = Modifier.padding(16.dp),
@@ -829,11 +827,11 @@ fun WordScrambleGame(vm: TaskViewModel, onExit: () -> Unit) {
 
 @Composable
 fun MathBallGame(vm: TaskViewModel, onExit: () -> Unit) {
-    var score by remember { mutableIntStateOf(0) }
-    var level by remember { mutableIntStateOf(1) }
+    var score by remember { mutableStateOf(0) }
+    var level by remember { mutableStateOf(1) }
     var currentQuestion by remember { mutableStateOf(generateMathQuestion(level)) }
     var isFinished by remember { mutableStateOf(false) }
-    var timeLeft by remember { mutableIntStateOf(20) }
+    var timeLeft by remember { mutableStateOf(20) }
     val terminalColor = MaterialTheme.colorScheme.primary
 
     LaunchedEffect(currentQuestion, isFinished) {
@@ -909,10 +907,10 @@ fun generateMathQuestion(level: Int): MathQuestion {
 @Composable
 fun SpotDifferenceGame(vm: TaskViewModel, onExit: () -> Unit) {
     val sets = listOf(Pair("0", "O"), Pair("M", "N"), Pair("E", "F"), Pair("P", "R"), Pair("8", "B"), Pair("K", "X"), Pair("I", "L"), Pair("5", "S"))
-    var level by remember { mutableIntStateOf(1) } ; var score by remember { mutableIntStateOf(0) } ; var currentSet by remember { mutableStateOf(sets.random()) }
+    var level by remember { mutableStateOf(1) } ; var score by remember { mutableStateOf(0) } ; var currentSet by remember { mutableStateOf(sets.random()) }
     val gridSize = when { level <= 5 -> 6 ; level <= 10 -> 8 ; else -> 10 }
-    var differentIndex by remember { mutableIntStateOf(Random.nextInt(gridSize * gridSize)) }
-    var timeLeft by remember { mutableIntStateOf(30) } ; var isGameOver by remember { mutableStateOf(false) }
+    var differentIndex by remember { mutableStateOf(Random.nextInt(gridSize * gridSize)) }
+    var timeLeft by remember { mutableStateOf(30) } ; var isGameOver by remember { mutableStateOf(false) }
     var isFinished by remember { mutableStateOf(false) }
 
     LaunchedEffect(currentSet, isGameOver, isFinished) {
@@ -972,9 +970,9 @@ fun SpotDifferenceGame(vm: TaskViewModel, onExit: () -> Unit) {
 
 @Composable
 fun MemoryMatrixGame(vm: TaskViewModel, onExit: () -> Unit) {
-    var level by remember { mutableIntStateOf(1) } ; var score by remember { mutableIntStateOf(0) } ; var gameState by remember { mutableStateOf("PREVIEW") }
+    var level by remember { mutableStateOf(1) } ; var score by remember { mutableStateOf(0) } ; var gameState by remember { mutableStateOf("PREVIEW") }
     var isFinished by remember { mutableStateOf(false) }
-    var timeLeft by remember { mutableIntStateOf(10) }
+    var timeLeft by remember { mutableStateOf(10) }
     val gridSize = when { level <= 2 -> 3; level <= 4 -> 4; else -> 5 } ; val activeTileCount = level + 2
     val activeTiles = remember(level, gameState) { if (gameState == "SHOWING" || gameState == "PREVIEW") (0 until (gridSize * gridSize)).toList().shuffled().take(activeTileCount) else emptyList() }
     val currentTargetTiles = remember { mutableStateListOf<Int>() } ; val userSelectedTiles = remember { mutableStateListOf<Int>() }
@@ -1023,7 +1021,7 @@ fun MemoryMatrixGame(vm: TaskViewModel, onExit: () -> Unit) {
 
 @Composable
 fun FindBallGame(vm: TaskViewModel, onExit: () -> Unit) {
-    var gameState by remember { mutableStateOf("PREVIEW") } ; var ballCupIndex by remember { mutableIntStateOf(Random.nextInt(3)) } ; var selectedCupIndex by remember { mutableStateOf<Int?>(null) } ; var score by remember { mutableIntStateOf(0) } ; val cupPositions = remember { mutableStateListOf(0f, 1f, 2f) }
+    var gameState by remember { mutableStateOf("PREVIEW") } ; var ballCupIndex by remember { mutableStateOf(Random.nextInt(3)) } ; var selectedCupIndex by remember { mutableStateOf<Int?>(null) } ; var score by remember { mutableStateOf(0) } ; val cupPositions = remember { mutableStateListOf(0f, 1f, 2f) }
     var isFinished by remember { mutableStateOf(false) }
     LaunchedEffect(gameState) { if (gameState == "SHUFFLING") { delay(1000); repeat(10) { val idx1 = Random.nextInt(3); var idx2 = Random.nextInt(3); while (idx1 == idx2) idx2 = Random.nextInt(3); val temp = cupPositions[idx1]; cupPositions[idx1] = cupPositions[idx2]; cupPositions[idx2] = temp; delay(450) }; delay(500); gameState = "GUESSING" } }
     val terminalColor = MaterialTheme.colorScheme.primary
@@ -1070,12 +1068,12 @@ fun MazeGame(vm: TaskViewModel, onExit: () -> Unit) {
         }
     } else {
         val size = when(difficulty) { "EASY" -> 10 ; "MEDIUM" -> 12 ; else -> 14 }
-        var playerX by remember { mutableIntStateOf(0) }
-        var playerY by remember { mutableIntStateOf(0) }
-        var score by remember { mutableIntStateOf(0) }
+        var playerX by remember { mutableStateOf(0) }
+        var playerY by remember { mutableStateOf(0) }
+        var score by remember { mutableStateOf(0) }
         var isFinished by remember { mutableStateOf(false) }
-        var mazeIndex by remember { mutableIntStateOf(0) }
-        var timeLeft by remember { mutableIntStateOf(when(difficulty) { "EASY" -> 60 ; "MEDIUM" -> 45 ; else -> 30 }) }
+        var mazeIndex by remember { mutableStateOf(0) }
+        var timeLeft by remember { mutableStateOf(when(difficulty) { "EASY" -> 60 ; "MEDIUM" -> 45 ; else -> 30 }) }
         var isGameOver by remember { mutableStateOf(false) }
         val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
 
@@ -1231,8 +1229,8 @@ fun MazeGame(vm: TaskViewModel, onExit: () -> Unit) {
                 }
                 }
                 Spacer(Modifier.height(8.dp))
-                var dragAccumulatorX by remember { mutableFloatStateOf(0f) }
-                var dragAccumulatorY by remember { mutableFloatStateOf(0f) }
+                var dragAccumulatorX by remember { mutableStateOf(0f) }
+                var dragAccumulatorY by remember { mutableStateOf(0f) }
                 val swipeThreshold = 50f 
 
                 Box(
@@ -1316,7 +1314,7 @@ fun MazeGame(vm: TaskViewModel, onExit: () -> Unit) {
 @Composable
 fun IQTestGame(vm: TaskViewModel, onExit: () -> Unit) {
     val questions = remember { listOf(IQQuestion("Sayı Dizisi: 2, 4, 8, 16, ?\n\nSoru işareti yerine ne gelmelidir?", listOf("24", "32", "30", "20"), 1), IQQuestion("Mantık: Hangi sayı diğerlerinden farklıdır?", listOf("13", "17", "21", "19"), 2), IQQuestion("Hesaplama: 2 elma (5 TL) + 1 armut (10 TL) toplam kaç TL?", listOf("15", "25", "20", "30"), 2), IQQuestion("Analoji: Kitap : Sayfa :: Araba : ?", listOf("Tekerlek", "Hız", "Yol", "Sürücü"), 0), IQQuestion("Harf Dizisi: A, C, E, G, ?", listOf("H", "I", "J", "K"), 1)).shuffled() }
-    var curIdx by remember { mutableIntStateOf(0) } ; var score by remember { mutableIntStateOf(0) } ; var selectedOpt by remember { mutableStateOf<Int?>(null) } ; var isFinished by remember { mutableStateOf(false) }
+    var curIdx by remember { mutableStateOf(0) } ; var score by remember { mutableStateOf(0) } ; var selectedOpt by remember { mutableStateOf<Int?>(null) } ; var isFinished by remember { mutableStateOf(false) }
     if (isFinished) { GameResult(vm, score, "IQ Testi") { vm.addCoins(score / 5); onExit() } }
     else {
         val q = questions[curIdx] ; val terminalColor = MaterialTheme.colorScheme.primary
@@ -1331,7 +1329,7 @@ data class IQQuestion(val text: String, val options: List<String>, val correctId
 
 @Composable
 fun PatternRepeatGame(vm: TaskViewModel, onExit: () -> Unit) {
-    val pattern = remember { mutableStateListOf<Int>() } ; val userPattern = remember { mutableStateListOf<Int>() } ; var gameState by remember { mutableStateOf("START") } ; var activeTile by remember { mutableIntStateOf(-1) } ; var score by remember { mutableIntStateOf(0) }
+    val pattern = remember { mutableStateListOf<Int>() } ; val userPattern = remember { mutableStateListOf<Int>() } ; var gameState by remember { mutableStateOf("START") } ; var activeTile by remember { mutableStateOf(-1) } ; var score by remember { mutableStateOf(0) }
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxSize()) {
         Text("SKOR: $score", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary); Spacer(Modifier.height(24.dp))
         if (gameState == "START") { Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) { Button(onClick = { pattern.clear(); pattern.add(Random.nextInt(4)); gameState = "SHOWING" }) { Text("OYUNU BAŞLAT") } } }
@@ -1342,7 +1340,7 @@ fun PatternRepeatGame(vm: TaskViewModel, onExit: () -> Unit) {
 
 @Composable
 fun RingNailGame(vm: TaskViewModel, onExit: () -> Unit) {
-    var nailY by remember { mutableFloatStateOf(0f) } ; var ringX by remember { mutableFloatStateOf(0f) } ; var ringDir by remember { mutableIntStateOf(1) } ; var isFalling by remember { mutableStateOf(false) } ; var attempts by remember { mutableIntStateOf(5) } ; var score by remember { mutableIntStateOf(0) }
+    var nailY by remember { mutableStateOf(0f) } ; var ringX by remember { mutableStateOf(0f) } ; var ringDir by remember { mutableStateOf(1) } ; var isFalling by remember { mutableStateOf(false) } ; var attempts by remember { mutableStateOf(5) } ; var score by remember { mutableStateOf(0) }
     LaunchedEffect(attempts, isFalling) { 
         if (attempts > 0 && !isFalling) { 
             while (!isFalling) { 
@@ -1357,7 +1355,7 @@ fun RingNailGame(vm: TaskViewModel, onExit: () -> Unit) {
     if (attempts == 0 && !isFalling) { GameResult(vm, score, "Halka ve Çivi") { vm.addCoins(score / 10); onExit() } }
     else {
         Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Kalan Deneme: $attempts", fontWeight = FontWeight.Bold); Box(modifier = Modifier.weight(1f).fillMaxWidth().padding(20.dp).background(Color.Black.copy(0.2f), RoundedCornerShape(12.dp)).border(1.dp, MaterialTheme.colorScheme.primary.copy(0.4f), RoundedCornerShape(12.dp)).clickable(enabled = !isFalling) { isFalling = true }, contentAlignment = Alignment.Center) {
+            Text("Kalan Deneme: $attempts", fontWeight = FontWeight.Bold); Box(modifier = Modifier.weight(1f).fillMaxWidth().padding(20.dp).background(Color.Black.copy(alpha = 0.2f), RoundedCornerShape(12.dp)).border(1.dp, MaterialTheme.colorScheme.primary.copy(0.4f), RoundedCornerShape(12.dp)).clickable(enabled = !isFalling) { isFalling = true }, contentAlignment = Alignment.Center) {
                 Box(modifier = Modifier.align(Alignment.TopCenter).offset(y = (nailY * 300).dp).size(6.dp, 30.dp).background(if (isFalling) Color.White else MaterialTheme.colorScheme.primary))
                 Box(modifier = Modifier.align(Alignment.BottomCenter).offset(x = (ringX * 150).dp, y = (-20).dp).size(55.dp, 12.dp).border(3.dp, Color(0xFFFFD600), RoundedCornerShape(6.dp)))
             }
@@ -1367,12 +1365,12 @@ fun RingNailGame(vm: TaskViewModel, onExit: () -> Unit) {
 
 @Composable
 fun CubeTowerGame(vm: TaskViewModel, onExit: () -> Unit) {
-    var cubeX by remember { mutableFloatStateOf(0f) } ; var dir by remember { mutableIntStateOf(1) } ; val towerCubes = remember { mutableStateListOf<Float>() } ; var isGameOver by remember { mutableStateOf(false) } ; var score by remember { mutableIntStateOf(0) }
+    var cubeX by remember { mutableStateOf(0f) } ; var dir by remember { mutableStateOf(1) } ; val towerCubes = remember { mutableStateListOf<Float>() } ; var isGameOver by remember { mutableStateOf(false) } ; var score by remember { mutableStateOf(0) }
     LaunchedEffect(towerCubes.size, isGameOver) { if (!isGameOver) { while (true) { delay(16); cubeX += (0.02f + (towerCubes.size * 0.002f)) * dir; if (cubeX > 0.8f || cubeX < -0.8f) dir *= -1 } } }
     if (isGameOver) { GameResult(vm, score, "Küp Kulesi") { vm.addCoins(score / 5); onExit() } }
     else {
         Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Kat Sayısı: ${towerCubes.size}", fontWeight = FontWeight.Bold); Box(modifier = Modifier.weight(1f).fillMaxWidth().padding(20.dp).background(Color.Black.copy(0.2f), RoundedCornerShape(12.dp)).border(1.dp, MaterialTheme.colorScheme.primary.copy(0.3f), RoundedCornerShape(12.dp)).clickable { val lastX = if (towerCubes.isEmpty()) 0f else towerCubes.last(); if (towerCubes.isEmpty() || kotlin.math.abs(cubeX - lastX) < 0.4f) { towerCubes.add(cubeX); score += 20; cubeX = if (Random.nextBoolean()) -0.8f else 0.8f } else isGameOver = true }, contentAlignment = Alignment.BottomCenter) {
+            Text("Kat Sayısı: ${towerCubes.size}", fontWeight = FontWeight.Bold); Box(modifier = Modifier.weight(1f).fillMaxWidth().padding(20.dp).background(Color.Black.copy(alpha = 0.2f), RoundedCornerShape(12.dp)).border(1.dp, MaterialTheme.colorScheme.primary.copy(0.3f), RoundedCornerShape(12.dp)).clickable { val lastX = if (towerCubes.isEmpty()) 0f else towerCubes.last(); if (towerCubes.isEmpty() || kotlin.math.abs(cubeX - lastX) < 0.4f) { towerCubes.add(cubeX); score += 20; cubeX = if (Random.nextBoolean()) -0.8f else 0.8f } else isGameOver = true }, contentAlignment = Alignment.BottomCenter) {
                 towerCubes.forEachIndexed { i, x -> Box(modifier = Modifier.align(Alignment.BottomCenter).offset(x = (x * 150).dp, y = (-i * 30).dp).size(60.dp, 30.dp).background(MaterialTheme.colorScheme.primary.copy(0.8f - (i * 0.05f).coerceAtMost(0.5f))).border(1.dp, Color.White.copy(0.5f))) }
                 Box(modifier = Modifier.align(Alignment.BottomCenter).offset(x = (cubeX * 150).dp, y = (-(towerCubes.size * 30)).dp).size(60.dp, 30.dp).background(MaterialTheme.colorScheme.primary).border(2.dp, Color.White))
             }
@@ -1383,7 +1381,7 @@ fun CubeTowerGame(vm: TaskViewModel, onExit: () -> Unit) {
 @Composable
 fun ShadowMatchGame(vm: TaskViewModel, onExit: () -> Unit) {
     val items = listOf(Icons.Default.Adb, Icons.Default.AirplanemodeActive, Icons.Default.Anchor, Icons.Default.Brush, Icons.Default.Camera, Icons.Default.DirectionsCar, Icons.Default.Extension, Icons.Default.Favorite, Icons.Default.Home, Icons.Default.Key, Icons.Default.Lightbulb, Icons.Default.MusicNote, Icons.Default.RocketLaunch, Icons.Default.Star, Icons.Default.Timer, Icons.Default.WbSunny)
-    var currentItem by remember { mutableStateOf(items.random()) } ; var level by remember { mutableIntStateOf(1) } ; var score by remember { mutableIntStateOf(0) } ; var selectedOpt by remember { mutableStateOf<ImageVector?>(null) }
+    var currentItem by remember { mutableStateOf(items.random()) } ; var level by remember { mutableStateOf(1) } ; var score by remember { mutableStateOf(0) } ; var selectedOpt by remember { mutableStateOf<ImageVector?>(null) }
     val options = remember(currentItem) { val list = mutableListOf(currentItem); while (list.size < 4) { val fake = items.random(); if (!list.contains(fake)) list.add(fake) }; list.shuffled() }
     if (level > 5) { GameResult(vm, score, "Görsel Puzzle") { vm.addCoins(score / 5); onExit() } }
     else {
@@ -1399,7 +1397,7 @@ fun ShadowMatchGame(vm: TaskViewModel, onExit: () -> Unit) {
 @Composable
 fun WhatIsMissingGame(vm: TaskViewModel, onExit: () -> Unit) {
     val allIcons = listOf(Icons.Default.Favorite, Icons.Default.Star, Icons.Default.WbSunny, Icons.Default.Bolt, Icons.Default.Timer, Icons.Default.Settings, Icons.Default.Camera, Icons.Default.Anchor, Icons.Default.Brush, Icons.Default.Home, Icons.Default.Key, Icons.Default.RocketLaunch, Icons.Default.Extension, Icons.Default.DirectionsCar, Icons.Default.AirplanemodeActive)
-    var level by remember { mutableIntStateOf(1) } ; var gameState by remember { mutableStateOf("PREVIEW") } ; var currentIcons by remember { mutableStateOf<List<ImageVector>>(emptyList()) } ; var missingIcon by remember { mutableStateOf<ImageVector?>(null) } ; var options by remember { mutableStateOf<List<ImageVector>>(emptyList()) } ; var score by remember { mutableIntStateOf(0) }
+    var level by remember { mutableStateOf(1) } ; var gameState by remember { mutableStateOf("PREVIEW") } ; var currentIcons by remember { mutableStateOf<List<ImageVector>>(emptyList()) } ; var missingIcon by remember { mutableStateOf<ImageVector?>(null) } ; var options by remember { mutableStateOf<List<ImageVector>>(emptyList()) } ; var score by remember { mutableStateOf(0) }
     LaunchedEffect(level, gameState) { if (gameState == "PREVIEW") { val selected = allIcons.shuffled().take((level + 3).coerceAtMost(8)); currentIcons = selected; delay(3000); missingIcon = selected.random(); currentIcons = selected.toMutableList().apply { remove(missingIcon) }; options = (allIcons.filter { !selected.contains(it) }.shuffled().take(3) + missingIcon!!).shuffled(); gameState = "MISSING" } }
     if (level > 5) { GameResult(vm, score, "Ne Eksik?") { vm.addCoins(score / 5); onExit() } }
     else {
@@ -1415,9 +1413,9 @@ fun WhatIsMissingGame(vm: TaskViewModel, onExit: () -> Unit) {
 @Composable
 fun NumberPuzzleGame(vm: TaskViewModel, onExit: () -> Unit) {
     val numbers = remember { (1..12).toList().shuffled() }
-    var nextTarget by remember { mutableIntStateOf(1) }
-    var startTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
-    var wrongClicks by remember { mutableIntStateOf(0) }
+    var nextTarget by remember { mutableStateOf(1) }
+    var startTime by remember { mutableStateOf(System.currentTimeMillis()) }
+    var wrongClicks by remember { mutableStateOf(0) }
     val terminalColor = MaterialTheme.colorScheme.primary
 
     if (nextTarget > 12) {
@@ -1465,7 +1463,7 @@ fun SlidingPuzzleGame(vm: TaskViewModel, onExit: () -> Unit) {
             list.shuffle()
             list
         }
-        var moves by remember { mutableIntStateOf(0) }
+        var moves by remember { mutableStateOf(0) }
         val isSolved = tiles.toList() == (1 until tileCount).toList() + 0
 
         if (isSolved && moves > 0) {

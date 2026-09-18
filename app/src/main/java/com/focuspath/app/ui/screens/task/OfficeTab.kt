@@ -45,8 +45,8 @@ fun OfficeTab(
     val unlocked = vm.unlockedItems
     val upgradeCost = officeLevel * 500
 
-    var officeRotationY by remember { mutableFloatStateOf(-25f) }
-    var scale by remember { mutableFloatStateOf(1.1f) }
+    var officeRotationY by remember { mutableStateOf(-25f) }
+    var scale by remember { mutableStateOf(1.1f) }
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {

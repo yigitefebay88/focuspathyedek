@@ -72,7 +72,6 @@ fun ProfileImage(
                 }
             )
         } else {
-            // FALLBACK: Baş harfler
             Box(
                 modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center

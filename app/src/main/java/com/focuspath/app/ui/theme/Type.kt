@@ -9,14 +9,12 @@ import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.unit.sp
 import com.focuspath.app.R
 
-// Google Font Provider
 val provider = GoogleFont.Provider(
     providerAuthority = "com.google.android.gms.fonts",
     providerPackage = "com.google.android.gms",
     certificates = R.array.com_google_android_gms_fonts_certs
 )
 
-// Primary Font: Inter (Excellent for UI readability and ADHD focus)
 val InterFont = GoogleFont("Inter")
 
 val InterFamily = FontFamily(
@@ -26,7 +24,6 @@ val InterFamily = FontFamily(
     Font(googleFont = InterFont, fontProvider = provider, weight = FontWeight.Bold)
 )
 
-// Optimized Typography for Readability & Professionalism
 val FocusPathTypography = Typography(
     displayLarge = TextStyle(
         fontFamily = InterFamily,

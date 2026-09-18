@@ -13,7 +13,6 @@ class GetFocusRankUseCase {
         }
     }
 
-    // Domain katmanı Color bilmez, bu yüzden renk kodunu veya seviyesini döneriz.
     fun getRankLevel(score: Long): Int {
         return when {
             score <= 500 -> 1

@@ -32,7 +32,6 @@ interface TaskDao {
     @Query("DELETE FROM tasks WHERE parentId = :parentId")
     suspend fun deleteSubTasks(parentId: Long)
 
-    // FOCUS HISTORY
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertFocusHistory(history: FocusHistoryEntity)
 
@@ -57,7 +56,6 @@ interface TaskDao {
     @Query("UPDATE focus_history SET sessionsCompleted = sessionsCompleted + 1, sessionsInterrupted = sessionsInterrupted - 1 WHERE date = :date AND sessionsInterrupted > 0")
     suspend fun recoverInterruptedSession(date: String): Int
 
-    // HABITS
     @Query("SELECT * FROM habits")
     fun getAllHabits(): Flow<List<HabitEntity>>
 

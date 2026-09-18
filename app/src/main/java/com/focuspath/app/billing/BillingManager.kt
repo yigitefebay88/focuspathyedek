@@ -27,7 +27,6 @@ class BillingManager(
             }
 
             override fun onBillingServiceDisconnected() {
-                // Restart connection
             }
         })
     }

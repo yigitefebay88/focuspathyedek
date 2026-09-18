@@ -14,9 +14,6 @@ import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.InstallStatus
 import com.google.android.play.core.install.model.UpdateAvailability
 
-/**
- * Manages Google Play In-App Updates.
- */
 class UpdateManager(private val activity: Activity) {
 
     private val appUpdateManager: AppUpdateManager = AppUpdateManagerFactory.create(activity)
@@ -24,15 +21,10 @@ class UpdateManager(private val activity: Activity) {
 
     private val installStateUpdatedListener = InstallStateUpdatedListener { state ->
         if (state.installStatus() == InstallStatus.DOWNLOADED) {
-            // Flexible update downloaded, notify user to install
             showUpdateDownloadedToast()
         }
     }
 
-    /**
-     * Checks for updates and triggers the flow if available.
-     * Use [AppUpdateType.IMMEDIATE] for critical updates and [AppUpdateType.FLEXIBLE] for others.
-     */
     fun checkForUpdates(updateType: Int = AppUpdateType.FLEXIBLE) {
         val appUpdateInfoTask = appUpdateManager.appUpdateInfo
 
@@ -44,7 +36,6 @@ class UpdateManager(private val activity: Activity) {
             }
         }
         
-        // Register listener for flexible updates
         if (updateType == AppUpdateType.FLEXIBLE) {
             appUpdateManager.registerListener(installStateUpdatedListener)
         }
@@ -63,24 +54,16 @@ class UpdateManager(private val activity: Activity) {
         }
     }
 
-    /**
-     * Call this in Activity.onResume() to ensure an ongoing update is handled.
-     */
     fun onResume() {
         appUpdateManager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
             if (appUpdateInfo.updateAvailability() == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS) {
-                // If an immediate update is in progress, resume it
                 startUpdateFlow(appUpdateInfo, AppUpdateType.IMMEDIATE)
             } else if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
-                // If a flexible update is downloaded, remind user
                 showUpdateDownloadedToast()
             }
         }
     }
 
-    /**
-     * Unregisters the listener to prevent memory leaks.
-     */
     fun onDestroy() {
         appUpdateManager.unregisterListener(installStateUpdatedListener)
     }
@@ -92,13 +75,8 @@ class UpdateManager(private val activity: Activity) {
             Toast.LENGTH_LONG
         ).show()
         
-        // Optionally trigger completeUpdate() immediately or via a button
-        // appUpdateManager.completeUpdate()
     }
 
-    /**
-     * Completes the update and restarts the app.
-     */
     fun completeUpdate() {
         appUpdateManager.completeUpdate()
     }

@@ -19,7 +19,6 @@ import com.focuspath.app.R
 
 @Composable
 fun SplashScreen(terminalColor: Color, onStartClick: () -> Unit) {
-    // 3 SANİYE SONRA OTOMATİK GEÇİŞ
     LaunchedEffect(Unit) {
         kotlinx.coroutines.delay(3000)
         onStartClick()
@@ -28,19 +27,17 @@ fun SplashScreen(terminalColor: Color, onStartClick: () -> Unit) {
     Box(
         modifier = Modifier.fillMaxSize().background(Color.Black)
     ) {
-        // GPT GÖRSELİ (Ekrana Tam Sığdırıldı)
         AsyncImage(
             model = R.drawable.gpt_image,
             contentDescription = null,
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.7f) // Görselin çok yayılmasını engellemek için yükseklik sınırı
+                .fillMaxHeight(0.7f) 
                 .align(Alignment.TopCenter),
-            contentScale = ContentScale.Fit, // Görseli kırpma, tamamını göster
+            contentScale = ContentScale.Fit, 
             alpha = 0.85f
         )
 
-        // KARARTMA VE GRADYAN (Metinlerin okunması için optimize edildi)
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -55,7 +52,6 @@ fun SplashScreen(terminalColor: Color, onStartClick: () -> Unit) {
                 )
         )
 
-        // EN ALTTAKİ YÜKLENİYOR VE SLOGAN BÖLÜMÜ
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -63,7 +59,6 @@ fun SplashScreen(terminalColor: Color, onStartClick: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Bottom
         ) {
-            // SLOGANLAR (Yükleme çubuğunun tam üstüne çekildi)
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(5.dp)
@@ -74,7 +69,7 @@ fun SplashScreen(terminalColor: Color, onStartClick: () -> Unit) {
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.ExtraBold,
                         letterSpacing = 1.sp,
-                        fontSize = 20.sp // Biraz büyütüldü (18 -> 20)
+                        fontSize = 20.sp 
                     ),
                     textAlign = TextAlign.Center
                 )
@@ -84,7 +79,7 @@ fun SplashScreen(terminalColor: Color, onStartClick: () -> Unit) {
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.ExtraBold,
                         letterSpacing = 1.sp,
-                        fontSize = 20.sp // Biraz büyütüldü (18 -> 20)
+                        fontSize = 20.sp 
                     ),
                     textAlign = TextAlign.Center
                 )
@@ -94,13 +89,13 @@ fun SplashScreen(terminalColor: Color, onStartClick: () -> Unit) {
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.ExtraBold,
                         letterSpacing = 1.sp,
-                        fontSize = 20.sp // Biraz büyütüldü (18 -> 20)
+                        fontSize = 20.sp 
                     ),
                     textAlign = TextAlign.Center
                 )
             }
 
-            Spacer(Modifier.height(40.dp)) // Metni biraz aşağı aldım (90 -> 40)
+            Spacer(Modifier.height(40.dp)) 
 
             Text(
                 text = "Sistem Hazırlanıyor...",
@@ -115,11 +110,11 @@ fun SplashScreen(terminalColor: Color, onStartClick: () -> Unit) {
             
             LinearProgressIndicator(
                 modifier = Modifier
-                    .fillMaxWidth(0.7f) // Ekranın %70'ini kaplasın
-                    .height(8.dp),      // Daha kalın ve belirgin yapıldı
+                    .fillMaxWidth(0.7f) 
+                    .height(8.dp),      
                 color = terminalColor,
                 trackColor = Color.White.copy(alpha = 0.2f),
-                strokeCap = StrokeCap.Round // Köşeleri yuvarlatıldı
+                strokeCap = StrokeCap.Round 
             )
         }
     }

@@ -25,13 +25,11 @@ class FocusService : Service() {
         const val CHANNEL_ID = "focus_service_channel"
         const val NOTIFICATION_ID = 101
         
-        // Actions
         const val ACTION_START = "ACTION_START"
         const val ACTION_STOP = "ACTION_STOP"
         const val ACTION_PAUSE = "ACTION_PAUSE"
         const val ACTION_RESUME = "ACTION_RESUME"
         
-        // Extras
         const val EXTRA_IS_POMODORO = "EXTRA_IS_POMODORO"
         const val EXTRA_DURATION = "EXTRA_DURATION"
         
@@ -47,7 +45,6 @@ class FocusService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val prefs = getSharedPreferences("focuspath_prefs", android.content.Context.MODE_PRIVATE)
         
-        // KRİTİK: startForegroundService() çağrısından sonra ilk fırsatta çağrılmalı.
         startForeground(NOTIFICATION_ID, createNotification("Sistem Hazırlanıyor..."))
 
         when (intent?.action) {
@@ -55,7 +52,6 @@ class FocusService : Service() {
                 isPomodoro = intent.getBooleanExtra(EXTRA_IS_POMODORO, true)
                 val duration = intent.getLongExtra(EXTRA_DURATION, 25 * 60 * 1000L)
                 
-                // KALICI KAYIT: Bitiş zamanını kaydet
                 val targetEndTime = System.currentTimeMillis() + duration
                 prefs.edit()
                     .putLong("TIMER_TARGET_END", targetEndTime)
@@ -67,7 +63,7 @@ class FocusService : Service() {
                 startFocus(duration)
             }
             ACTION_STOP -> {
-                prefs.edit().remove("TIMER_TARGET_END").apply() // Kaydı temizle
+                prefs.edit().remove("TIMER_TARGET_END").apply() 
                 toggleDnd(false)
                 completionPlayer?.let { try { if(it.isPlaying) it.stop(); it.release() } catch(e: Exception) {} }
                 completionPlayer = null
@@ -88,7 +84,6 @@ class FocusService : Service() {
                 startFocus(duration)
             }
             null -> {
-                // Servis sistem tarafından yeniden başlatıldıysa (Sticky)
                 val targetEnd = prefs.getLong("TIMER_TARGET_END", 0L)
                 if (targetEnd > System.currentTimeMillis()) {
                     isPomodoro = prefs.getBoolean("TIMER_IS_POMODORO", true)
@@ -103,7 +98,7 @@ class FocusService : Service() {
     }
 
     private fun startFocus(duration: Long) {
-        timerJob?.cancel() // Mevcut varsa iptal et
+        timerJob?.cancel() 
         isRunning = true
         timeLeftMillis = duration
         timeElapsedMillis = 0L
@@ -145,7 +140,6 @@ class FocusService : Service() {
                     }
                 }
                 
-                // Widget'ı güncelle
                 if (currentTime % 10000 == 0L) {
                     serviceScope.launch {
                         try {
@@ -241,7 +235,6 @@ class FocusService : Service() {
                 if (completionPlayer == it) completionPlayer = null
             }
             
-            // 10 saniye sonra otomatik durdur
             serviceScope.launch {
                 delay(10000)
                 completionPlayer?.let {
@@ -274,7 +267,7 @@ class FocusService : Service() {
 
     private fun sendCompletionBroadcast() {
         val intent = Intent("com.focuspath.TIMER_FINISHED").apply {
-            setPackage(packageName) // Sadece bu uygulama yakalasın
+            setPackage(packageName) 
         }
         sendBroadcast(intent)
         android.util.Log.d("FocusService", "Completion Broadcast Sent")

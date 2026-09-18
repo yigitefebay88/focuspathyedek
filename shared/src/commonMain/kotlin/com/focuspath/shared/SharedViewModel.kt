@@ -61,15 +61,13 @@ class SharedViewModel {
     private val _workers = MutableStateFlow<List<WorkerInfo>>(emptyList())
     val workers: StateFlow<List<WorkerInfo>> = _workers.asStateFlow()
 
-    // Timer state
-    private val _timeLeft = MutableStateFlow(1500L) // 25 mins
+    private val _timeLeft = MutableStateFlow(1500L) 
     val timeLeft: StateFlow<Long> = _timeLeft.asStateFlow()
     
     private val _isTimerRunning = MutableStateFlow(false)
     val isTimerRunning: StateFlow<Boolean> = _isTimerRunning.asStateFlow()
 
     init {
-        // Demo data
         _tasks.value = listOf(
             Task(id = 1, title = "Design System Update", priority = 2, estimatedMinutes = 45),
             Task(id = 2, title = "Sync with iOS Team", priority = 1, estimatedMinutes = 30),

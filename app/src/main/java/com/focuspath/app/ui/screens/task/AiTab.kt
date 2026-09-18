@@ -50,7 +50,6 @@ fun AiTab(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // HEDEF KULLANICI GÖSTERGESİ
         val target = vm.selectedChatUser.value
         if (target != null) {
             Surface(

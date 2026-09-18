@@ -76,7 +76,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-// --- UI İÇİN VERİ MODELLERİ ---
 data class DailyQuestItem(
     val title: String,
     val target: Int,
@@ -100,7 +99,6 @@ class MainActivity : ComponentActivity(), BillingProvider {
     private lateinit var updateManager: UpdateManager
     private lateinit var vm: TaskViewModel
 
-    // Pencerelerin uygulamanın her yerinden tetiklenebilmesi için statik state'ler
     companion object {
         var showQuestDialogState = mutableStateOf(false)
         var showAchievementDialogState = mutableStateOf(false)
@@ -125,7 +123,7 @@ class MainActivity : ComponentActivity(), BillingProvider {
     fun showInterstitialAd() {
         if (interstitialAd != null) {
             interstitialAd?.show(this)
-            loadInterstitialAd() // Load the next one
+            loadInterstitialAd() 
         }
     }
 
@@ -184,17 +182,14 @@ class MainActivity : ComponentActivity(), BillingProvider {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         
-        // AdMob Initialization ile birlikte Test Cihazı Konfigürasyonu
         MobileAds.initialize(this) { status ->
             android.util.Log.d("FocusPathAds", "AdMob Initialization Status: Done")
-            // AdMob tamamen hazır olduğunda ödüllü reklam yüklemesini başlat
             com.focuspath.app.ui.components.AdMobRewardedManager.loadAd(this)
         }
         loadInterstitialAd()
 
         logAppSignature()
         
-        // In-App Update Initialization
         updateManager = UpdateManager(this)
         updateManager.checkForUpdates()
 
@@ -203,7 +198,6 @@ class MainActivity : ComponentActivity(), BillingProvider {
         
         android.util.Log.d("FocusPathKMP", "KMP Platform: ${ getPlatform().name}")
         
-        // Timer Broadcast Receiver - Arka planda çalışırken de XP/Coin kaydı için
         val filter = android.content.IntentFilter().apply {
             addAction("com.focuspath.TIMER_UPDATE")
             addAction("com.focuspath.TIMER_FINISHED")
@@ -248,31 +242,25 @@ class MainActivity : ComponentActivity(), BillingProvider {
             var showIntro by remember { mutableStateOf(false) }
             var showAuthDialog by remember { mutableStateOf(false) }
 
-            // --- YEREL DIALOG VE GÖREV STATE'LERİ ---
             val prefs = getSharedPreferences("focuspath_prefs", Context.MODE_PRIVATE)
 
-            // Günlük Ödül State'leri
             val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-            // Günlük Challenge State'leri
             val lastQuestDate = prefs.getString("LAST_QUEST_DATE", "") ?: ""
             if (lastQuestDate != todayStr) {
-                // Yeni bir gün başladı, değerleri sıfırla
                 prefs.edit()
                     .putString("LAST_QUEST_DATE", todayStr)
                     .putInt("DAILY_FOCUS_CURRENT", 0)
                     .putBoolean("DAILY_FOCUS_DONE", false)
-                    .putBoolean("DAILY_REWARD_CLAIMED_TODAY", false) // Ödül her gün sıfırlanır
+                    .putBoolean("DAILY_REWARD_CLAIMED_TODAY", false) 
                     .apply()
             }
             
-            // Verileri oku
             val claimedToday = prefs.getBoolean("DAILY_REWARD_CLAIMED_TODAY", false)
             val currentStreak = prefs.getInt("LOGIN_STREAK", 1)
             val showDailyRewardDialog = remember { mutableStateOf(!claimedToday) }
             val focusCurrent = prefs.getInt("DAILY_FOCUS_CURRENT", 0)
             val focusDone = prefs.getBoolean("DAILY_FOCUS_DONE", false)
 
-            // --- BİLDİRİM İZNİ (Android 13+) ---
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 val launcher = androidx.activity.compose.rememberLauncherForActivityResult(
                     androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
@@ -285,9 +273,6 @@ class MainActivity : ComponentActivity(), BillingProvider {
                 }
             }
 
-            // Bildirim İzni ve Diğer Başlangıçlar...
-            
-            // DEĞERLENDİRME DİALOGU KONTROLÜ
             if (vm.showReviewDialog.value) {
                 com.focuspath.app.ui.screens.games.ReviewDialog(
                     onDismiss = { vm.showReviewDialog.value = false },
@@ -306,10 +291,10 @@ class MainActivity : ComponentActivity(), BillingProvider {
 
             val darkTheme = vm.isDarkMode.value
             val terminalColor = when(vm.themeColorIndex.value) {
-                1 -> Color(0xFFFFB74D) // Muted Amber
-                2 -> Color(0xFF4DD0E1) // Muted Cyan
-                3 -> Color(0xFFE57373) // Muted Red
-                else -> Color(0xFF81C784) // Muted Emerald Green
+                1 -> Color(0xFFFFB74D) 
+                2 -> Color(0xFF4DD0E1) 
+                3 -> Color(0xFFE57373) 
+                else -> Color(0xFF81C784) 
             }
 
             MaterialTheme(
@@ -346,7 +331,6 @@ class MainActivity : ComponentActivity(), BillingProvider {
                     } else if (showIntro) {
                         com.focuspath.app.ui.screens.IntroScreen(terminalColor, onFinish = { showIntro = false })
                     } else {
-                        // ANA EKRAN
                         Box(modifier = Modifier.fillMaxSize()) {
                             TaskScreen(
                                 vm = vm,
@@ -358,7 +342,6 @@ class MainActivity : ComponentActivity(), BillingProvider {
                     }
                 }
 
-                // Auth Dialog
                 if (showAuthDialog) {
                     com.focuspath.app.ui.screens.task.AuthDialog(
                         vm = vm,
@@ -371,7 +354,6 @@ class MainActivity : ComponentActivity(), BillingProvider {
                     )
                 }
 
-                // 1. GÜNLÜK ÖDÜL POPUP
                 if (showDailyRewardDialog.value && !claimedToday && !showSplash) {
                     AlertDialog(
                         onDismissRequest = { },
@@ -400,7 +382,6 @@ class MainActivity : ComponentActivity(), BillingProvider {
                     )
                 }
 
-                // 3. OYUNLAR DİALOG
                 if (showGamesDialogState.value) {
                     com.focuspath.app.ui.screens.games.GamesDialog(
                         vm = vm,
@@ -408,7 +389,6 @@ class MainActivity : ComponentActivity(), BillingProvider {
                     )
                 }
 
-                // 2. GÜNLÜK CHALLENGE DIALOG
                 if (showQuestDialogState.value) {
                     val quests by remember {
                         derivedStateOf {
@@ -428,7 +408,6 @@ class MainActivity : ComponentActivity(), BillingProvider {
                             color = MaterialTheme.colorScheme.surface
                         ) {
                             Box(modifier = Modifier.fillMaxSize()) {
-                                // ARKA PLAN GÖRSELİ (Hedef/Başarı Temalı)
                                 AsyncImage(
                                     model = "https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=1000&auto=format&fit=crop",
                                     contentDescription = null,
@@ -436,11 +415,9 @@ class MainActivity : ComponentActivity(), BillingProvider {
                                     contentScale = ContentScale.Crop
                                 )
 
-                                // Karartma Gradyanı
                                 Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.5f)))))
 
                                 Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
-                                    // HEADER
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text("🎯", fontSize = 24.sp)
                                         Spacer(Modifier.width(12.dp))
@@ -511,7 +488,6 @@ class MainActivity : ComponentActivity(), BillingProvider {
                     }
                 }
 
-                // 3. ACHIEVEMENT (BAŞARIMLAR) DIALOG
                 if (showAchievementDialogState.value) {
                     val achievements by remember {
                         derivedStateOf {
@@ -536,7 +512,6 @@ class MainActivity : ComponentActivity(), BillingProvider {
                             color = MaterialTheme.colorScheme.surface
                         ) {
                             Box(modifier = Modifier.fillMaxWidth()) {
-                                // ARKA PLAN GÖRSELİ (Kupa/Başarı Temalı)
                                 AsyncImage(
                                     model = "https://images.unsplash.com/photo-1578262825743-a4e402caab76?q=80&w=1000&auto=format&fit=crop",
                                     contentDescription = null,
@@ -544,11 +519,9 @@ class MainActivity : ComponentActivity(), BillingProvider {
                                     contentScale = ContentScale.Crop
                                 )
 
-                                // Karartma Gradyanı
                                 Box(modifier = Modifier.matchParentSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f)))))
 
                                 Column(modifier = Modifier.fillMaxWidth().padding(20.dp)) {
-                                    // HEADER
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text("🏅", fontSize = 24.sp)
                                         Spacer(Modifier.width(12.dp))
@@ -626,7 +599,6 @@ class MainActivity : ComponentActivity(), BillingProvider {
                     }
                 }
 
-                // 4. ARKADAŞ SİSTEMİ DİALOGU (İstekler, Arkadaşlar ve Karşılıklı Görev Gönderme)
                 if (showFriendsDialogState.value) {
                     var searchEmail by remember { mutableStateOf("") }
                     var searchResultUser by remember { mutableStateOf<LeaderboardUser?>(null) }
@@ -645,7 +617,6 @@ class MainActivity : ComponentActivity(), BillingProvider {
                             val uid = currentUser.uid
                             val email = currentUser.email
 
-                            // Hem UID hem de Email bazlı dokümanları dinleyelim (uyuşmazlık olmasın diye)
                             val userDocRefs = mutableListOf(db.collection("users").document(uid))
                             if (!email.isNullOrBlank()) {
                                 userDocRefs.add(db.collection("users").document(email.lowercase()))
@@ -691,7 +662,6 @@ class MainActivity : ComponentActivity(), BillingProvider {
                             color = MaterialTheme.colorScheme.surface
                         ) {
                             Box(modifier = Modifier.fillMaxSize()) {
-                                // ARKA PLAN GÖRSELİ (Sosyal/Arkadaş Temalı)
                                 AsyncImage(
                                     model = "https://images.unsplash.com/photo-1511632765486-a01980e01a18?q=80&w=1000&auto=format&fit=crop",
                                     contentDescription = null,
@@ -699,11 +669,9 @@ class MainActivity : ComponentActivity(), BillingProvider {
                                     contentScale = ContentScale.Crop
                                 )
 
-                                // Karartma Gradyanı
                                 Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f)))))
 
                                 Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
-                                    // HEADER
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text("👥", fontSize = 24.sp)
                                         Spacer(Modifier.width(12.dp))
@@ -750,14 +718,12 @@ class MainActivity : ComponentActivity(), BillingProvider {
                                                                 val doc = documents.documents[0]
                                                                 val user = doc.toObject(LeaderboardUser::class.java)
                                                                 if (user != null) {
-                                                                    // Agresif photo fallback
                                                                     val photoVal = doc.get("photoUrl") ?: doc.get("photo_url") ?: doc.get("photo") ?: doc.get("image")
                                                                     val photoStr = photoVal?.toString()?.trim()
                                                                     if (!photoStr.isNullOrBlank() && photoStr.startsWith("http")) {
                                                                         user.photoUrl = photoStr
                                                                     }
                                                                     
-                                                                    // Firestore döküman ID'sini UID olarak set edelim
                                                                     val emailVal = doc.getString("email") ?: cleanEmail
                                                                     val populatedUser = user.copy(
                                                                         uid = doc.id,
@@ -1008,7 +974,6 @@ class MainActivity : ComponentActivity(), BillingProvider {
                     }
                 }
 
-                // 5. ARKADAŞLARDAN GELEN GÖREVLER DİALOGU
                 if (showIncomingTasksDialogState.value) {
                     var incomingTasksList by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
                     var taskDocumentIds by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -1046,7 +1011,6 @@ class MainActivity : ComponentActivity(), BillingProvider {
                             color = MaterialTheme.colorScheme.surface
                         ) {
                             Box(modifier = Modifier.fillMaxSize()) {
-                                // ARKA PLAN GÖRSELİ
                                 AsyncImage(
                                     model = "https://images.unsplash.com/photo-1516533075015-a3838414c3cb?q=80&w=1000&auto=format&fit=crop",
                                     contentDescription = null,
@@ -1054,11 +1018,9 @@ class MainActivity : ComponentActivity(), BillingProvider {
                                     contentScale = ContentScale.Crop
                                 )
                                 
-                                // Karartma Gradyanı
                                 Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f)))))
 
                                 Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
-                                    // HEADER
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Icon(Icons.Default.Inbox, null, tint = terminalColor)
                                         Spacer(Modifier.width(12.dp))
@@ -1178,17 +1140,12 @@ class MainActivity : ComponentActivity(), BillingProvider {
 
         val googleSignInClient = GoogleSignIn.getClient(this, gso)
         
-        // Önceki oturumu temizleyelim (hesap seçme penceresinin her seferinde çıkması için)
         googleSignInClient.signOut().addOnCompleteListener {
             val signInIntent = googleSignInClient.signInIntent
             googleSignInLauncher.launch(signInIntent)
         }
     }
 
-    /**
-     * Uygulamanın şu anki imza (SHA-1) kodunu loglara basar.
-     * Google Play'de neden çalışmadığını anlamak için Logcat'te "AppSignature" aratın.
-     */
     private fun logAppSignature() {
         try {
             val info = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -1282,4 +1239,3 @@ private fun FocusPathThemePreview() {
         }
     }
 }
-

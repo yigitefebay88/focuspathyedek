@@ -8,20 +8,12 @@ import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
 
-/**
- * FocusPath uygulaması için Ödüllü Reklam (Rewarded Ad) Yöneticisi.
- * En kolay ve etkili para kazanma modelini simüle eder.
- */
 object AdMobRewardedManager {
     private var rewardedAd: RewardedAd? = null
     private var isLoading = false
 
-    // Google AdMob Resmi Test Ödüllü Reklam ID'si
     private const val AD_UNIT_ID = "ca-app-pub-9916683255323941/1166087409"
 
-    /**
-     * Reklamı arka planda önceden yükler (Örn: Uygulama açılışında veya seans başladığında çağrılabilir)
-     */
     fun loadAd(context: Context) {
         if (rewardedAd != null) {
             android.util.Log.d("FocusPathAds", "Rewarded ad is already loaded, skipping reload.")
@@ -42,8 +34,6 @@ object AdMobRewardedManager {
                 rewardedAd = null
                 isLoading = false
                 
-                // Hata durumunda 10 saniye sonra otomatik olarak tekrar yüklemeyi dene (Network dalgalanmaları için)
-                // Bu sayede reklam hazır değil uyarısı kalıcı olmaz.
             }
 
             override fun onAdLoaded(ad: RewardedAd) {
@@ -54,16 +44,11 @@ object AdMobRewardedManager {
         })
     }
 
-    /**
-     * Reklamı gösterir ve kullanıcı sonuna kadar izlerse [onRewardEarned] callback'ini tetikler.
-     */
     fun showAd(activity: Activity, onRewardEarned: () -> Unit) {
         rewardedAd?.let { ad ->
             ad.show(activity) { _ ->
-                // Kullanıcı ödülü hak etti!
                 onRewardEarned()
                 rewardedAd = null
-                // Bir sonraki seans için reklamı hemen arka planda tekrar yüklemeye başla
                 loadAd(activity)
             }
         } ?: run {

@@ -47,7 +47,6 @@ fun SettingsTab(
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(text = lang["settings"] ?: "Settings", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
 
-        // Premium Card
         Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = if (vm.isPremium.value) TerminalGreen.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface), border = BorderStroke(2.dp, if (vm.isPremium.value) TerminalGreen else AccentYellow.copy(alpha = 0.5f))) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -64,7 +63,6 @@ fun SettingsTab(
             }
         }
 
-        // Rewarded Ad Card
         if (!vm.isPremium.value) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -109,7 +107,6 @@ fun SettingsTab(
             }
         }
 
-        // Appearance
         Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(lang["appearance"] ?: "", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
@@ -124,7 +121,6 @@ fun SettingsTab(
             }
         }
 
-        // Notifications & Sound
         Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(if(isEnglish) "NOTIFICATIONS & SOUND" else "BİLDİRİM VE SES", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
@@ -177,7 +173,6 @@ fun SettingsTab(
             }
         }
 
-        // Water Reminder
         Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(if(isEnglish) "HEALTH & WELLNESS" else "SAĞLIK VE YAŞAM", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
@@ -207,7 +202,6 @@ fun SettingsTab(
             }
         }
 
-        // Account
         Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(lang["account"] ?: "", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
@@ -248,7 +242,6 @@ fun SettingsTab(
             }
         }
 
-        // AI & Smart Insights
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -263,7 +256,6 @@ fun SettingsTab(
                 
                 Spacer(modifier = Modifier.height(8.dp))
                 
-                // Smart Break Suggestion
                 Text(
                     text = if (isEnglish) "Smart Break Suggestion:" else "Akıllı Mola Tavsiyesi:",
                     style = MaterialTheme.typography.labelMedium,
@@ -277,7 +269,6 @@ fun SettingsTab(
                 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
                 
-                // Distraction Analysis
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,

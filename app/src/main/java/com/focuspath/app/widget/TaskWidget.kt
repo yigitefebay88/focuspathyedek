@@ -116,7 +116,6 @@ class ToggleTaskAction : ActionCallback {
                     val updatedTask = task.copy(isCompleted = !task.isCompleted)
                     dao.updateTask(updatedTask)
                     
-                    // Refresh widget
                     TaskWidget().update(context, glanceId)
                 }
             } catch (e: Exception) {

@@ -24,7 +24,6 @@ import com.focuspath.app.R
 fun IntroScreen(terminalColor: Color, onFinish: () -> Unit) {
     val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.robot_says_hello))
 
-    // ARKA PLAN LİSTESİ
     val backgrounds = listOf(
         R.drawable.ancient_library,
         "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?q=80&w=1000&auto=format&fit=crop",
@@ -32,7 +31,6 @@ fun IntroScreen(terminalColor: Color, onFinish: () -> Unit) {
     )
     var currentBgIndex by remember { mutableIntStateOf(0) }
 
-    // 2 SANİYEDE BİR DEĞİŞTİRME MANTIĞI
     LaunchedEffect(Unit) {
         while (true) {
             kotlinx.coroutines.delay(2500)
@@ -44,7 +42,6 @@ fun IntroScreen(terminalColor: Color, onFinish: () -> Unit) {
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        // GEÇİŞLİ ARKA PLAN
         Crossfade(
             targetState = backgrounds[currentBgIndex],
             animationSpec = tween(1200),
@@ -60,7 +57,6 @@ fun IntroScreen(terminalColor: Color, onFinish: () -> Unit) {
             }
         }
 
-        // KARARTMA VE GRADYAN
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -78,7 +74,6 @@ fun IntroScreen(terminalColor: Color, onFinish: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // ROBOT ANİMASYONU
             LottieAnimation(
                 composition = composition,
                 iterations = LottieConstants.IterateForever,
@@ -89,7 +84,6 @@ fun IntroScreen(terminalColor: Color, onFinish: () -> Unit) {
             
             Spacer(Modifier.height(32.dp))
             
-            // ODAKLANMAYA HAZIR MISIN?
             Text(
                 text = "ODAKLANMAYA HAZIR MISIN?",
                 color = terminalColor,

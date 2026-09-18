@@ -92,7 +92,6 @@ fun TaskTab(
 
     val taskInputSection = @Composable {
         Column {
-            // DATE PICKER ROW
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -138,7 +137,6 @@ fun TaskTab(
                 }
             }
             Spacer(Modifier.height(8.dp))
-            // STATUS CARD
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -281,7 +279,7 @@ fun TaskTab(
     val taskListSection = @Composable {
         Column {
             OutlinedTextField(value = searchQuery, onValueChange = { searchQuery = it }, placeholder = { Text(lang["search"] ?: "", color = Color.Gray) }, leadingIcon = { Icon(Icons.Default.Search, null, tint = Color.Gray) }, modifier = Modifier.fillMaxWidth(), singleLine = true)
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(6.6.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 ScrollableTabRow(selectedTabIndex = taskFilter, edgePadding = 0.dp, containerColor = Color.Transparent, divider = {}, modifier = Modifier.weight(1f)) {
                     listOf(lang["all"] to 0, lang["active"] to 1, lang["completed"] to 2).forEach { (label, index) ->
@@ -421,7 +419,6 @@ fun TaskTab(
                                 }
                             }
                             
-                            // SUB TASKS LIST
                             if (subTasks.isNotEmpty()) {
                                 Column(modifier = Modifier.padding(start = 32.dp, top = 4.dp)) {
                                     subTasks.forEach { subTask ->
@@ -568,7 +565,7 @@ fun HabitCard(habit: HabitEntity, vm: TaskViewModel, isEnglish: Boolean, onLongC
                     modifier = Modifier.size(24.dp)
                 )
             }
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(6.6.dp))
             Text(habit.title, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurface)
             Text("${habit.streak} 🔥", fontSize = 10.sp, color = AccentRed, fontWeight = FontWeight.ExtraBold)
         }
@@ -582,5 +579,3 @@ private fun isSameDayLocal(millis1: Long, millis2: Long): Boolean {
     return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
            cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
 }
-
-

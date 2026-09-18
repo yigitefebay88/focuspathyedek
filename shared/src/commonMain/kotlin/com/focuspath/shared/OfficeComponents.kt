@@ -48,7 +48,6 @@ fun WorkerModel(
     val isSitting = worker.isFocusing && worker.deskId.isNotEmpty() && worker.currentAction != WorkerAction.WALKING
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        // Name Tag
         Surface(
             color = Color.Black.copy(alpha = 0.6f),
             shape = RoundedCornerShape(4.dp),
@@ -88,26 +87,21 @@ fun WorkerModel(
                     0 -> Color(0xFF1B5E20); 1 -> Color(0xFF0D47A1); else -> Color(0xFF37474F)
                 }
 
-                // Torso
                 drawRoundRect(color = clothesColor, topLeft = Offset(w * 0.22f, h * 0.28f), size = Size(w * 0.56f, h * 0.38f), cornerRadius = CornerRadius(8f, 8f))
 
-                // Legs
                 val legHeight = if (isSitting) h * 0.34f else h * 0.42f
                 drawRoundRect(color = Color(0xFF212121), topLeft = Offset(w * 0.18f, h * 0.58f), size = Size(w * 0.28f, legHeight), cornerRadius = CornerRadius(6f, 6f))
                 drawRoundRect(color = Color(0xFF212121), topLeft = Offset(w * 0.54f, h * 0.58f), size = Size(w * 0.28f, legHeight), cornerRadius = CornerRadius(6f, 6f))
 
-                // Arms
                 val leftArmOffset = if(isTyping) typingOffset else 0f
                 val rightArmOffset = if(isTyping) -typingOffset else if(isMouse) typingOffset else 0f
                 drawRoundRect(color = clothesColor, topLeft = Offset(w * 0.08f, h * 0.32f + leftArmOffset), size = Size(w * 0.18f, h * 0.22f), cornerRadius = CornerRadius(4f, 4f))
                 drawRoundRect(color = clothesColor, topLeft = Offset(w * 0.74f, h * 0.32f + rightArmOffset), size = Size(w * 0.18f, h * 0.22f), cornerRadius = CornerRadius(4f, 4f))
 
-                // Head
                 val headY = h * 0.18f + (if(isThinking || isAsking) headBob else 0f)
                 val hairColor = if (worker.name.length % 2 == 0) Color(0xFF3E2723) else Color(0xFF212121)
                 drawCircle(color = hairColor, radius = w * 0.21f, center = Offset(w * 0.50f, headY))
                 
-                // Status Dot
                 val statusColor = when(worker.currentAction) {
                     WorkerAction.WORKING, WorkerAction.TYPING, WorkerAction.MOUSE -> TerminalGreen
                     WorkerAction.COFFEE, WorkerAction.RESTING -> AccentYellow
@@ -126,17 +120,14 @@ fun DeskSetup(
     onWorkerClick: () -> Unit
 ) {
     Box(modifier = Modifier.size(100.dp), contentAlignment = Alignment.Center) {
-        // Chair
         Box(modifier = Modifier.align(Alignment.BottomCenter).offset(y = 45.dp)) {
             Box(modifier = Modifier.size(36.dp, 26.dp).background(Color(0xFF2C2C2C), RoundedCornerShape(12.dp)))
         }
         
-        // Desk
         Box(modifier = Modifier.width(if (isPremium) 76.dp else 70.dp).height(34.dp)) {
             Box(modifier = Modifier.fillMaxSize().background(if (isPremium) Color.Black else Color(0xFF3E2723), RoundedCornerShape(12.dp)).border(1.dp, Color.White.copy(0.1f), RoundedCornerShape(12.dp)))
         }
         
-        // Monitor
         Box(modifier = Modifier.align(Alignment.TopCenter).offset(y = (-30).dp).size(44.dp, 32.dp)) {
             Box(modifier = Modifier.fillMaxSize().background(Color(0xFF121212), RoundedCornerShape(4.dp)).border(1.dp, Color(0xFF333333), RoundedCornerShape(4.dp))) {
                 if(worker.isFocusing) {
@@ -145,7 +136,6 @@ fun DeskSetup(
             }
         }
         
-        // Worker on Desk
         Box(modifier = Modifier.align(Alignment.Center)) {
             WorkerModel(worker = worker, fixedRotationX = 55f, onClick = onWorkerClick)
         }

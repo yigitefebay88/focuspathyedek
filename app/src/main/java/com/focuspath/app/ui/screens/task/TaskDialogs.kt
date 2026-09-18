@@ -187,10 +187,8 @@ fun WeeklyAnalyticsDialog(vm: TaskViewModel, isEnglish: Boolean, onDismiss: () -
                         }
                     }
 
-                    // Bar Chart
                     FocusBarChart(history = history)
 
-                    // AI INSIGHTS SECTION
                     val aiInsight by vm.aiHistoryInsight
                     val isAnalyzing by vm.isAnalyzingHistory
 
@@ -298,7 +296,7 @@ fun DopamineMenuDialog(
                                 onClick = { 
                                     vm.completeDopamineActivity(item, isEnglish, context) 
                                     if (item.actionType == "BREATHING") {
-                                        onNavigateToTab(3) // Timer/Calendar Sekmesi
+                                        onNavigateToTab(3) 
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth(),
@@ -352,7 +350,7 @@ fun EditTaskDialog(
 ) {
     var editTitle by remember { mutableStateOf(task.title) }
     var editNotes by remember { mutableStateOf(task.notes) }
-    var editPriority by remember { mutableIntStateOf(task.priority) }
+    var editPriority by remember { mutableStateOf(task.priority) }
     var editDuration by remember { mutableStateOf(task.estimatedMinutes.toString()) }
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -390,8 +388,8 @@ fun ReminderDialog(
     context: Context,
     onDismiss: () -> Unit
 ) {
-    var selectedHour by remember { mutableIntStateOf(Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) }
-    var selectedMinute by remember { mutableIntStateOf(Calendar.getInstance().get(Calendar.MINUTE)) }
+    var selectedHour by remember { mutableStateOf(Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) }
+    var selectedMinute by remember { mutableStateOf(Calendar.getInstance().get(Calendar.MINUTE)) }
     var isTimeSelected by remember { mutableStateOf(false) }
 
     val timePickerDialog = android.app.TimePickerDialog(
@@ -441,9 +439,7 @@ fun ReminderDialog(
                 enabled = isTimeSelected,
                 onClick = {
                     val calendar = Calendar.getInstance()
-                    // Mevcut görevin tarihini al (gün/ay/yıl)
                     calendar.timeInMillis = task.dueDate
-                    // Seçilen saati üzerine ekle
                     calendar.set(Calendar.HOUR_OF_DAY, selectedHour)
                     calendar.set(Calendar.MINUTE, selectedMinute)
                     calendar.set(Calendar.SECOND, 0)
@@ -529,7 +525,6 @@ fun ZenModeDialog(
 
         Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
             Box(contentAlignment = Alignment.Center) {
-                // BREATHING CIRCLE
                 Box(
                     modifier = Modifier
                         .size(280.dp)
@@ -564,7 +559,6 @@ fun ZenModeDialog(
                     
                     Spacer(Modifier.height(40.dp))
                     
-                    // FOCUS RADIO SECTION
                     Text(
                         text = if(isEnglish) "FOCUS RADIO" else "ODAK RADYOSU", 
                         style = MaterialTheme.typography.labelSmall, 
@@ -663,7 +657,6 @@ fun LiveSessionDialog(
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss, properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(modifier = Modifier.fillMaxSize(), color = Color.Black.copy(alpha = 0.95f)) {
             Column(modifier = Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                // KÜTÜPHANE GÖRSELİ
                 Card(
                     modifier = Modifier.fillMaxWidth().height(140.dp).padding(bottom = 16.dp),
                     shape = RoundedCornerShape(12.dp),
@@ -800,7 +793,6 @@ fun AuthDialog(
                     }
                     if (!isResetPassword && !isRegister) {
                         TextButton(onClick = {
-                            // Eğer kullanıcı e-posta kutusuna bir mail yazdıysa onu kullan, boş bıraktıysa varsayılanı kullan
                             val guestEmail = if (email.isNotBlank() && email.contains("@")) email.trim().lowercase() else "guest_${System.currentTimeMillis() % 10000}@focuspath.local"
                             vm.loginLocal(guestEmail, "", false)
                             onDismiss()
@@ -865,7 +857,6 @@ fun DirectChatDialog(
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
         ) {
             Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                // Header
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Person, null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.width(8.dp))
@@ -876,7 +867,6 @@ fun DirectChatDialog(
                 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Color.Gray.copy(0.2f))
 
-                // Chat Messages
                 LazyColumn(state = listState, modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(directMessages) { msg ->
                         val isUser = msg.from == vm.userEmail.value
@@ -894,7 +884,6 @@ fun DirectChatDialog(
 
                 Spacer(Modifier.height(12.dp))
 
-                // Input Area
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     OutlinedTextField(
                         value = chatInput,
@@ -921,8 +910,6 @@ fun DirectChatDialog(
     }
 }
 
-/* Accessibility related dialogs removed */
-
 
 @Composable
 fun TeamManagementDialog(
@@ -948,7 +935,6 @@ fun TeamManagementDialog(
             color = MaterialTheme.colorScheme.surface
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                // background Image
                 AsyncImage(
                     model = "https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=1000&auto=format&fit=crop",
                     contentDescription = null,
@@ -956,7 +942,6 @@ fun TeamManagementDialog(
                     contentScale = ContentScale.Crop
                 )
 
-                // dark Gradient
                 Box(
                     modifier = Modifier
                         .matchParentSize()
@@ -968,7 +953,6 @@ fun TeamManagementDialog(
                 )
 
                 Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
-                    // HEADER
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -997,12 +981,10 @@ fun TeamManagementDialog(
                             CircularProgressIndicator(color = terminalColor)
                         }
                     } else if (userTeam == null) {
-                        // NO TEAM STATE
                         Column(
                             modifier = Modifier.weight(1f),
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            // CREATE TEAM CARD
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.4f)),
@@ -1054,7 +1036,6 @@ fun TeamManagementDialog(
                                 }
                             }
 
-                            // JOIN TEAM CARD
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.4f)),
@@ -1109,14 +1090,12 @@ fun TeamManagementDialog(
                             }
                         }
                     } else {
-                        // ACTIVE TEAM STATE
                         val currentTeam = userTeam
                         if (currentTeam != null) {
                             Column(
                                 modifier = Modifier.weight(1f),
                                 verticalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
-                            // TEAM HEADER CARD
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = CardDefaults.cardColors(containerColor = terminalColor.copy(alpha = 0.15f)),
@@ -1152,7 +1131,6 @@ fun TeamManagementDialog(
                                             }
                                         }
                                         
-                                        // Level Badge
                                         Surface(
                                             color = Color.Black.copy(0.4f),
                                             shape = RoundedCornerShape(8.dp),
@@ -1170,7 +1148,6 @@ fun TeamManagementDialog(
                                     
                                     Spacer(Modifier.height(16.dp))
                                     
-                                    // PROGRESS
                                     val progress = (userTeam!!.currentWeeklyXp.toFloat() / userTeam!!.weeklyXpGoal).coerceIn(0f, 1f)
                                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                         Text(if (isEnglish) "WEEKLY SPRINT" else "HAFTALIK HEDEF", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color.White)
@@ -1188,7 +1165,6 @@ fun TeamManagementDialog(
                                         Text("${userTeam!!.weeklyXpGoal} XP", fontSize = 10.sp, color = Color.Gray)
                                     }
 
-                                    // BADGES
                                     if (userTeam!!.badges.isNotEmpty()) {
                                         Spacer(Modifier.height(12.dp))
                                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1216,7 +1192,6 @@ fun TeamManagementDialog(
                                 }
                             }
 
-                            // MEMBERS LIST
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     if (isEnglish) "OPERATIVES" else "EKİP ÜYELERİ",
@@ -1309,6 +1284,5 @@ fun TeamManagementDialog(
         }
     }
 }
-
-
     }
+

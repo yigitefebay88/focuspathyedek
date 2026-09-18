@@ -18,12 +18,12 @@ object FocusRank {
     fun getColor(score: Long): Color {
         return when {
             score <= 500 -> Color.Gray
-            score <= 2000 -> Color(0xFF81C784) // Emerald
-            score <= 7500 -> Color(0xFF64B5F6) // Blue
-            score <= 20000 -> Color(0xFFBA68C8) // Purple
-            score <= 50000 -> Color(0xFFFFB74D) // Amber
-            score <= 150000 -> Color(0xFFE57373) // Red
-            else -> Color(0xFFFFD700) // Gold
+            score <= 2000 -> Color(0xFF81C784) 
+            score <= 7500 -> Color(0xFF64B5F6) 
+            score <= 20000 -> Color(0xFFBA68C8) 
+            score <= 50000 -> Color(0xFFFFB74D) 
+            score <= 150000 -> Color(0xFFE57373) 
+            else -> Color(0xFFFFD700) 
         }
     }
 }

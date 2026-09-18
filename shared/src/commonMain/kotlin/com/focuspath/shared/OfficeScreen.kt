@@ -37,7 +37,6 @@ fun SharedOfficeScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Office Header
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -59,7 +58,6 @@ fun SharedOfficeScreen(
                 .border(1.dp, TerminalGreen.copy(alpha = 0.2f), RoundedCornerShape(24.dp)),
             contentAlignment = Alignment.Center
         ) {
-            // Main 3D Scene
             Box(modifier = Modifier.size(350.dp).graphicsLayer { 
                 rotationX = 55f
                 scaleX = scale
@@ -88,10 +86,6 @@ fun SharedOfficeScreen(
                     Text(text = "$upgradeCost 🪙", fontWeight = FontWeight.Bold, color = AccentYellow)
                     Button(
                         onClick = { 
-                            // Basic feedback for upgrade
-                            if (coins >= upgradeCost) {
-                                // Logic to be handled in ViewModel
-                            }
                          },
                         colors = ButtonDefaults.buttonColors(containerColor = if (coins >= upgradeCost) TerminalGreen else Color.Gray),
                         shape = RoundedCornerShape(8.dp)
@@ -103,7 +97,7 @@ fun SharedOfficeScreen(
         }
 
         Button(
-            onClick = { /* Join session logic */ },
+            onClick = { },
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(56.dp),
             colors = ButtonDefaults.buttonColors(containerColor = TerminalGreen),
             shape = RoundedCornerShape(12.dp)

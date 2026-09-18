@@ -62,7 +62,6 @@ fun WaterTabFull(
             color = MaterialTheme.colorScheme.primary
         )
 
-        // Water Progress Circle
         Box(
             modifier = Modifier
                 .size(200.dp)
@@ -71,7 +70,6 @@ fun WaterTabFull(
                 .padding(8.dp),
             contentAlignment = Alignment.Center
         ) {
-            // Background Circle
             Surface(
                 modifier = Modifier.fillMaxSize(),
                 shape = CircleShape,
@@ -79,7 +77,6 @@ fun WaterTabFull(
                 border = BorderStroke(4.dp, Color.Blue.copy(alpha = 0.2f))
             ) {}
 
-            // Progress Fill (Simple version)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -132,7 +129,6 @@ fun WaterTabFull(
             )
         }
 
-        // Settings Card
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
@@ -187,7 +183,6 @@ fun WaterTabFull(
             }
         }
 
-        // Motivation Text
         Text(
             text = if (isEnglish) 
                 "Drinking water improves focus and reduces fatigue." 

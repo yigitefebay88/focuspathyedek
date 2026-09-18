@@ -83,7 +83,7 @@ object AppModule {
             .build()
 
         return retrofit2.Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:8080/") // Localhost for Android Emulator (Spring Boot port 8080)
+            .baseUrl("http://10.0.2.2:8080/") 
             .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
             .client(client)
             .build()

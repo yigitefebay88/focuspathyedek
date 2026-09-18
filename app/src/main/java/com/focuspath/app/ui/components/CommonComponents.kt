@@ -170,7 +170,6 @@ fun CoolGoogleSignInButton(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
-            // Google Colors for the 'G'
             Text(
                 "G",
                 style = MaterialTheme.typography.headlineSmall.copy(

@@ -38,7 +38,6 @@ enum class AppState {
 fun App() {
     val viewModel = remember { SharedViewModel() }
     
-    // Safety: ensure default states are used if collectAsState fails (unlikely but good for stability)
     val user by viewModel.user.collectAsState()
     val tasks by viewModel.tasks.collectAsState()
     val leaderboard by viewModel.leaderboard.collectAsState()
@@ -154,7 +153,6 @@ fun MainScaffold(
         }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).background(Color.Black)) {
-            // Header
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -168,7 +166,6 @@ fun MainScaffold(
                 }
             }
 
-            // Sub Nav (Quick Access)
             LazyRow(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 val buttons = listOf("GÖREV" to "QUEST", "GELEN" to "INCOMING", "OYUN" to "GAMES", "BAŞARIM" to "ACHIEVE")
                 items(buttons) { (label, key) ->
@@ -189,7 +186,6 @@ fun MainScaffold(
         }
     }
 
-    // Handle Dialogs
     activeDialog?.let { type ->
         Dialog(onDismissRequest = { onDialogChange(null) }) {
             Surface(
