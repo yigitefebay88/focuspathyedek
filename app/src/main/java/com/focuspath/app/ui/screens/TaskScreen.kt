@@ -147,6 +147,7 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
     val isBotTyping by vm.isBotTyping
     val chatListState = rememberLazyListState()
     val focusActive by vm.isFocusActive
+    var showLiveSession by rememberSaveable { mutableStateOf(false) }
     var isEnglish by rememberSaveable { mutableStateOf(false) }
 
     // Persistent Notification logic in ViewModel or simple UI check
@@ -181,9 +182,9 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
     val isAnyTyping by remember { derivedStateOf { vm.workers.any { it.currentAction == WorkerAction.TYPING } } }
     val isAnyMousing by remember { derivedStateOf { vm.workers.any { it.currentAction == WorkerAction.MOUSE } } }
 
-    LaunchedEffect(isAnyTyping, isAnyMousing, focusActive) {
-        vm.playKeyboardSound(isAnyTyping && focusActive)
-        vm.playMouseSound(isAnyMousing && focusActive)
+    LaunchedEffect(isAnyTyping, isAnyMousing, focusActive, showLiveSession) {
+        vm.playKeyboardSound(isAnyTyping && focusActive && !showLiveSession)
+        vm.playMouseSound(isAnyMousing && focusActive && !showLiveSession)
     }
     val prefs = remember { context.getSharedPreferences("focuspath_prefs", android.content.Context.MODE_PRIVATE) }
     
@@ -201,7 +202,6 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
     var showDirectChat by remember { mutableStateOf<String?>(null) }
     var isSortByPriority by rememberSaveable { mutableStateOf(false) }
     var showZenMode by rememberSaveable { mutableStateOf(false) }
-    var showLiveSession by rememberSaveable { mutableStateOf(false) }
     var selectedFocusSound by rememberSaveable { mutableStateOf("rain") }
     var dailyFocus by rememberSaveable { mutableStateOf("") }
     
