@@ -69,7 +69,6 @@ fun GamesDialog(vm: TaskViewModel, onDismiss: () -> Unit) {
             color = MaterialTheme.colorScheme.surface
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                // ARKA PLAN GÖRSELİ (Oyun/Teknoloji Temalı)
                 AsyncImage(
                     model = "https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=1000&auto=format&fit=crop",
                     contentDescription = null,
@@ -77,11 +76,9 @@ fun GamesDialog(vm: TaskViewModel, onDismiss: () -> Unit) {
                     contentScale = ContentScale.Crop
                 )
 
-                // Karartma Gradyanı
                 Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f)))))
 
                 Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
-                    // HEADER
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.SportsEsports, null, tint = terminalColor, modifier = Modifier.size(28.dp))
                         Spacer(Modifier.width(12.dp))
@@ -152,7 +149,6 @@ fun GameSelectionMenu(vm: TaskViewModel, onGameSelect: (String) -> Unit) {
         Triple("Sudoku", "Sayısal Mantık ve Odak", Icons.Default.GridOn),
         Triple("Kelime Avcısı", "Sözel Zeka ve Hız", Icons.Default.Spellcheck),
         Triple("Matematik Fırtınası", "Dört İşlem ve Hız", Icons.Default.Calculate),
-        // --- Buradan Sonrası Premium ---
         Triple("Farkı Bul", "Görsel Tarama ve Dikkat", Icons.Default.Search),
         Triple("Hafıza Matrisi", "Görsel-Mekansal Bellek", Icons.Default.GridView),
         Triple("Bardak Bulmacası", "Görsel Takip ve Odak", Icons.Default.SportsBasketball),
@@ -241,7 +237,6 @@ fun HintButton(vm: TaskViewModel, onHint: () -> Unit) {
     }
 }
 
-// --- 1. STROOP GAME ---
 @Composable
 fun StroopGame(vm: TaskViewModel, onExit: () -> Unit) {
     val allColors = listOf(
@@ -273,7 +268,6 @@ fun StroopGame(vm: TaskViewModel, onExit: () -> Unit) {
                 delay(1000L)
                 timeLeft--
             }
-            // Süre biterse otomatik değiştir ve puan kır
             score = (score - 5).coerceAtLeast(0)
             currentPair = currentColors.random()
             textColor = currentColors.random().second
@@ -317,7 +311,6 @@ fun StroopGame(vm: TaskViewModel, onExit: () -> Unit) {
     }
 }
 
-// --- 2. MEMORY GAME ---
 @Composable
 fun MemoryGame(vm: TaskViewModel, onExit: () -> Unit) {
     val icons = listOf(Icons.Default.Favorite, Icons.Default.Star, Icons.Default.WbSunny, Icons.Default.Bolt, Icons.Default.Settings, Icons.Default.Timer)
@@ -331,7 +324,7 @@ fun MemoryGame(vm: TaskViewModel, onExit: () -> Unit) {
     LaunchedEffect(matched.size) { 
         if (matched.size == gameIcons.size && matched.size > 0) {
             delay(1000L)
-            score += 50 // Level bonus
+            score += 50
             level++
             matched.clear()
             revealed.clear()
@@ -371,7 +364,6 @@ fun MemoryGame(vm: TaskViewModel, onExit: () -> Unit) {
     }
 }
 
-// --- 3. REACTION GAME ---
 @Composable
 fun ReactionGame(vm: TaskViewModel, onExit: () -> Unit) {
     var gameState by remember { mutableStateOf("WAIT") }
@@ -386,7 +378,6 @@ fun ReactionGame(vm: TaskViewModel, onExit: () -> Unit) {
     }
 }
 
-// --- 4. CUBE COUNT GAME ---
 @Composable
 fun CubeCountGame(vm: TaskViewModel, onExit: () -> Unit) {
     var gameState by remember { mutableStateOf("PREVIEW") }
@@ -497,7 +488,6 @@ fun CubeCountGame(vm: TaskViewModel, onExit: () -> Unit) {
     }
 }
 
-// --- 5. ARCHER GAME ---
 @Composable
 fun ArcherGame(vm: TaskViewModel, onExit: () -> Unit) {
     var targetX by remember { mutableFloatStateOf(0f) } ; var direction by remember { mutableIntStateOf(1) } ; var arrowY by remember { mutableFloatStateOf(0f) } ; var isFiring by remember { mutableStateOf(false) } ; var score by remember { mutableIntStateOf(0) } ; var shotsLeft by remember { mutableIntStateOf(5) } ; var gameMessage by remember { mutableStateOf("HEDEFE ODAKLAN VE DOKUN!") }
@@ -508,14 +498,12 @@ fun ArcherGame(vm: TaskViewModel, onExit: () -> Unit) {
         if (shotsLeft > 0) { 
             while (!isFiring) { 
                 delay(16)
-                // Hız artışını dengeledik (0.005f -> 0.0004f) ve maksimum hız sınırı koyduk (0.12f)
                 val currentSpeed = (0.02f + (score * 0.0004f)).coerceAtMost(0.12f)
                 targetX += currentSpeed * direction; 
                 if (targetX > 0.72f) { targetX = 0.72f; direction = -1 }
                 else if (targetX < -0.72f) { targetX = -0.72f; direction = 1 }
             } 
         } else {
-            // Refill arrows automatically
             delay(1000)
             shotsLeft = 5
             gameMessage = "OKLAR YENİLENDİ!"
@@ -564,7 +552,6 @@ fun ArcherGame(vm: TaskViewModel, onExit: () -> Unit) {
     }
 }
 
-// --- 6. SUDOKU GAME ---
 @Composable
 fun SudokuGame(vm: TaskViewModel, onExit: () -> Unit) {
     val levels = remember {
@@ -691,7 +678,6 @@ fun SudokuGame(vm: TaskViewModel, onExit: () -> Unit) {
     }
 }
 
-// --- 7. WORD SCRAMBLE GAME (Sonsuz Mod) ---
 @Composable
 fun WordScrambleGame(vm: TaskViewModel, onExit: () -> Unit) {
     val wordList = listOf("ODAK", "ZİHİN", "DİKKAT", "BAŞARI", "HAFIZA", "MANTIK", "BİLGİ", "ZEKA", "DİSİPLİN", "GELİŞİM", "SABIR", "AZİM", "HEDEF", "PLAN", "ZAMAN", "VERİMLİ", "ANALİZ", "STRATEJİ", "ÇÖZÜM", "SİSTEM", "DÜZEN", "HUZUR", "MUTLULUK", "ÖZGÜVEN", "CESARET", "MERAK", "ÖĞRENME", "EĞİTİM", "KİTAP", "ANLAM", "KAVRAM", "TEKNOLOJİ", "GELECEK", "HAYAL", "GERÇEK", "BİLİM", "SANAT", "KÜLTÜR", "DOĞA", "EVREN", "YAŞAM", "İNSAN", "TOPLUM", "DOSTLUK", "SEVGİ", "SAYGI", "YARDIM", "BİRLİK", "GÜÇ", "KUVVET", "SAĞLIK", "ENERJİ", "NEFES", "GÜZEL", "HARİKA", "MÜKEMMEL", "ÖNEMLİ", "DEĞERLİ", "ÖZEL", "YARATICI", "ÜRETKEN", "AKTİF", "CANLI", "HIZLI", "SAKİN", "DİNGİN", "DERİN", "GENİŞ", "TÜRKİYE", "KÜRESEL", "VİZYON", "MİSYON", "DEĞİŞİM", "KONTROL", "DENGE", "ADALET", "ÖZGÜRLÜK", "BARIŞ", "UMUT", "IŞIK", "GÜNEŞ", "YILDIZ", "DENİZ", "ORMAN", "TOPRAK", "HAVA", "ATEŞ", "MİLLİ", "TARİH", "COĞRAFYA", "FELSEFE", "EDEBİYAT", "MÜZİK", "SİNEMA", "TİYATRO", "RESİM", "HEYKEL", "MİMARİ")
@@ -707,14 +693,12 @@ fun WordScrambleGame(vm: TaskViewModel, onExit: () -> Unit) {
 
     val terminalColor = MaterialTheme.colorScheme.primary
 
-    // Başlangıç Kurulumu
     LaunchedEffect(currentWord) {
         scrambledLetters.clear()
         scrambledLetters.addAll(currentWord.toList().shuffled())
         userLetters.clear()
     }
 
-    // Zamanlayıcı
     LaunchedEffect(isGameOver, isQuitPressed) {
         if (!isGameOver && !isQuitPressed) {
             while (timeLeft > 0) {
@@ -725,12 +709,11 @@ fun WordScrambleGame(vm: TaskViewModel, onExit: () -> Unit) {
         }
     }
 
-    // Kazanma Kontrolü (Sonsuz geçiş)
     LaunchedEffect(userLetters.size) {
         if (userLetters.joinToString("") == currentWord) {
             score += 50
             totalWordsSolved++
-            timeLeft = (timeLeft + 15).coerceAtMost(60) // Bilince 15 sn ekle
+            timeLeft = (timeLeft + 15).coerceAtMost(60)
             currentWord = wordList.random()
         }
     }
@@ -776,7 +759,6 @@ fun WordScrambleGame(vm: TaskViewModel, onExit: () -> Unit) {
             ) {
                 currentWord.forEachIndexed { i, _ ->
                     val char = userLetters.getOrNull(i)
-                    // HATA KONTROLÜ: Girilen harf asıl kelimenin o sıradaki harfiyle eşleşmiyor mu?
                     val isWrong = char != null && char != currentWord[i]
 
                     Box(
@@ -845,7 +827,6 @@ fun WordScrambleGame(vm: TaskViewModel, onExit: () -> Unit) {
     }
 }
 
-// --- 8. MATH BALL GAME ---
 @Composable
 fun MathBallGame(vm: TaskViewModel, onExit: () -> Unit) {
     var score by remember { mutableIntStateOf(0) }
@@ -855,15 +836,13 @@ fun MathBallGame(vm: TaskViewModel, onExit: () -> Unit) {
     var timeLeft by remember { mutableIntStateOf(20) }
     val terminalColor = MaterialTheme.colorScheme.primary
 
-    // Zamanlayıcı Efekti
     LaunchedEffect(currentQuestion, isFinished) {
         if (!isFinished) {
-            timeLeft = (20 - (level / 2)).coerceAtLeast(5) // Seviye arttıkça süre azalır
+            timeLeft = (20 - (level / 2)).coerceAtLeast(5)
             while (timeLeft > 0) {
                 delay(1000L)
                 timeLeft--
             }
-            // Süre biterse yeni soruya geç ama ceza puanı ver
             score = (score - 10).coerceAtLeast(0)
             currentQuestion = generateMathQuestion(level)
         }
@@ -927,7 +906,6 @@ fun generateMathQuestion(level: Int): MathQuestion {
     return MathQuestion(n1, n2, op, correct, options.shuffled())
 }
 
-// --- 9. SPOT DIFFERENCE GAME ---
 @Composable
 fun SpotDifferenceGame(vm: TaskViewModel, onExit: () -> Unit) {
     val sets = listOf(Pair("0", "O"), Pair("M", "N"), Pair("E", "F"), Pair("P", "R"), Pair("8", "B"), Pair("K", "X"), Pair("I", "L"), Pair("5", "S"))
@@ -992,7 +970,6 @@ fun SpotDifferenceGame(vm: TaskViewModel, onExit: () -> Unit) {
     }
 }
 
-// --- 10. MEMORY MATRIX GAME ---
 @Composable
 fun MemoryMatrixGame(vm: TaskViewModel, onExit: () -> Unit) {
     var level by remember { mutableIntStateOf(1) } ; var score by remember { mutableIntStateOf(0) } ; var gameState by remember { mutableStateOf("PREVIEW") }
@@ -1044,7 +1021,6 @@ fun MemoryMatrixGame(vm: TaskViewModel, onExit: () -> Unit) {
     }
 }
 
-// --- 11. FIND BALL GAME ---
 @Composable
 fun FindBallGame(vm: TaskViewModel, onExit: () -> Unit) {
     var gameState by remember { mutableStateOf("PREVIEW") } ; var ballCupIndex by remember { mutableIntStateOf(Random.nextInt(3)) } ; var selectedCupIndex by remember { mutableStateOf<Int?>(null) } ; var score by remember { mutableIntStateOf(0) } ; val cupPositions = remember { mutableStateListOf(0f, 1f, 2f) }
@@ -1077,7 +1053,6 @@ fun FindBallGame(vm: TaskViewModel, onExit: () -> Unit) {
     }
 }
 
-// --- 12. MAZE GAME ---
 @Composable
 fun MazeGame(vm: TaskViewModel, onExit: () -> Unit) {
     var difficulty by remember { mutableStateOf<String?>(null) }
@@ -1338,7 +1313,6 @@ fun MazeGame(vm: TaskViewModel, onExit: () -> Unit) {
     }
 }
 
-// --- 13. IQ TEST GAME ---
 @Composable
 fun IQTestGame(vm: TaskViewModel, onExit: () -> Unit) {
     val questions = remember { listOf(IQQuestion("Sayı Dizisi: 2, 4, 8, 16, ?\n\nSoru işareti yerine ne gelmelidir?", listOf("24", "32", "30", "20"), 1), IQQuestion("Mantık: Hangi sayı diğerlerinden farklıdır?", listOf("13", "17", "21", "19"), 2), IQQuestion("Hesaplama: 2 elma (5 TL) + 1 armut (10 TL) toplam kaç TL?", listOf("15", "25", "20", "30"), 2), IQQuestion("Analoji: Kitap : Sayfa :: Araba : ?", listOf("Tekerlek", "Hız", "Yol", "Sürücü"), 0), IQQuestion("Harf Dizisi: A, C, E, G, ?", listOf("H", "I", "J", "K"), 1)).shuffled() }
@@ -1355,7 +1329,6 @@ fun IQTestGame(vm: TaskViewModel, onExit: () -> Unit) {
 }
 data class IQQuestion(val text: String, val options: List<String>, val correctIdx: Int)
 
-// --- 14. PATTERN REPEAT GAME ---
 @Composable
 fun PatternRepeatGame(vm: TaskViewModel, onExit: () -> Unit) {
     val pattern = remember { mutableStateListOf<Int>() } ; val userPattern = remember { mutableStateListOf<Int>() } ; var gameState by remember { mutableStateOf("START") } ; var activeTile by remember { mutableIntStateOf(-1) } ; var score by remember { mutableIntStateOf(0) }
@@ -1367,7 +1340,6 @@ fun PatternRepeatGame(vm: TaskViewModel, onExit: () -> Unit) {
     }
 }
 
-// --- 15. RING AND NAIL GAME ---
 @Composable
 fun RingNailGame(vm: TaskViewModel, onExit: () -> Unit) {
     var nailY by remember { mutableFloatStateOf(0f) } ; var ringX by remember { mutableFloatStateOf(0f) } ; var ringDir by remember { mutableIntStateOf(1) } ; var isFalling by remember { mutableStateOf(false) } ; var attempts by remember { mutableIntStateOf(5) } ; var score by remember { mutableIntStateOf(0) }
@@ -1375,7 +1347,6 @@ fun RingNailGame(vm: TaskViewModel, onExit: () -> Unit) {
         if (attempts > 0 && !isFalling) { 
             while (!isFalling) { 
                 delay(16)
-                // Hız artışını dengeledik (0.002f -> 0.0005f) ve maksimum hız sınırı koyduk (0.1f)
                 val currentSpeed = (0.015f + (score * 0.0005f)).coerceAtMost(0.1f)
                 ringX += currentSpeed * ringDir
                 if (ringX > 0.8f || ringX < -0.8f) ringDir *= -1 
@@ -1394,7 +1365,6 @@ fun RingNailGame(vm: TaskViewModel, onExit: () -> Unit) {
     }
 }
 
-// --- 16. CUBE TOWER GAME ---
 @Composable
 fun CubeTowerGame(vm: TaskViewModel, onExit: () -> Unit) {
     var cubeX by remember { mutableFloatStateOf(0f) } ; var dir by remember { mutableIntStateOf(1) } ; val towerCubes = remember { mutableStateListOf<Float>() } ; var isGameOver by remember { mutableStateOf(false) } ; var score by remember { mutableIntStateOf(0) }
@@ -1410,7 +1380,6 @@ fun CubeTowerGame(vm: TaskViewModel, onExit: () -> Unit) {
     }
 }
 
-// --- 17. SHADOW MATCH GAME ---
 @Composable
 fun ShadowMatchGame(vm: TaskViewModel, onExit: () -> Unit) {
     val items = listOf(Icons.Default.Adb, Icons.Default.AirplanemodeActive, Icons.Default.Anchor, Icons.Default.Brush, Icons.Default.Camera, Icons.Default.DirectionsCar, Icons.Default.Extension, Icons.Default.Favorite, Icons.Default.Home, Icons.Default.Key, Icons.Default.Lightbulb, Icons.Default.MusicNote, Icons.Default.RocketLaunch, Icons.Default.Star, Icons.Default.Timer, Icons.Default.WbSunny)
@@ -1427,7 +1396,6 @@ fun ShadowMatchGame(vm: TaskViewModel, onExit: () -> Unit) {
     }
 }
 
-// --- 18. WHAT IS MISSING GAME ---
 @Composable
 fun WhatIsMissingGame(vm: TaskViewModel, onExit: () -> Unit) {
     val allIcons = listOf(Icons.Default.Favorite, Icons.Default.Star, Icons.Default.WbSunny, Icons.Default.Bolt, Icons.Default.Timer, Icons.Default.Settings, Icons.Default.Camera, Icons.Default.Anchor, Icons.Default.Brush, Icons.Default.Home, Icons.Default.Key, Icons.Default.RocketLaunch, Icons.Default.Extension, Icons.Default.DirectionsCar, Icons.Default.AirplanemodeActive)
@@ -1444,7 +1412,6 @@ fun WhatIsMissingGame(vm: TaskViewModel, onExit: () -> Unit) {
     }
 }
 
-// --- 19. NUMBER PUZZLE GAME ---
 @Composable
 fun NumberPuzzleGame(vm: TaskViewModel, onExit: () -> Unit) {
     val numbers = remember { (1..12).toList().shuffled() }
@@ -1474,7 +1441,6 @@ fun NumberPuzzleGame(vm: TaskViewModel, onExit: () -> Unit) {
     }
 }
 
-// --- 20. SLIDING PUZZLE GAME ---
 @Composable
 fun SlidingPuzzleGame(vm: TaskViewModel, onExit: () -> Unit) {
     var difficulty by remember { mutableStateOf<String?>(null) }
@@ -1531,7 +1497,6 @@ fun SlidingPuzzleGame(vm: TaskViewModel, onExit: () -> Unit) {
 
 @Composable
 fun GameResult(vm: TaskViewModel, score: Int, type: String, onOk: () -> Unit) {
-    // Ses Efekti: Başarı durumunda tik sesi
     LaunchedEffect(Unit) {
         if (score > 0) {
             vm.playTickSound()
@@ -1539,7 +1504,7 @@ fun GameResult(vm: TaskViewModel, score: Int, type: String, onOk: () -> Unit) {
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Konfeti Efekti: Sadece başarılı skorlarda (Herhangi bir kazançta)
+
         if (score > 0) {
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
