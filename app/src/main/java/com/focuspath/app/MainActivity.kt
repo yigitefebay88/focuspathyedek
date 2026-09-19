@@ -194,6 +194,18 @@ class MainActivity : ComponentActivity(), BillingProvider {
         updateManager.checkForUpdates()
 
         vm = androidx.lifecycle.ViewModelProvider(this)[TaskViewModel::class.java]
+        vm.billingProvider = this
+        
+        billingManager = BillingManager(this) {
+            val p = getSharedPreferences("focuspath_prefs", MODE_PRIVATE)
+            val wasPremium = p.getBoolean("is_premium", false)
+            vm.isPremium.value = true
+            if (!wasPremium) {
+                vm.addXp(500)
+            }
+            p.edit().putBoolean("is_premium", true).apply()
+        }
+        
         enableEdgeToEdge()
         
         android.util.Log.d("FocusPathKMP", "KMP Platform: ${ getPlatform().name}")
@@ -226,19 +238,7 @@ class MainActivity : ComponentActivity(), BillingProvider {
 
         setContent {
             FocusPathTheme {
-                vm.billingProvider = this
-
-            billingManager = BillingManager(this) {
-                val p = getSharedPreferences("focuspath_prefs", MODE_PRIVATE)
-                val wasPremium = p.getBoolean("is_premium", false)
-                vm.isPremium.value = true
-                if (!wasPremium) {
-                    vm.addXp(500)
-                }
-                p.edit().putBoolean("is_premium", true).apply()
-            }
-
-            var showSplash by remember { mutableStateOf(true) }
+                var showSplash by remember { mutableStateOf(true) }
             var showIntro by remember { mutableStateOf(false) }
             var showAuthDialog by remember { mutableStateOf(false) }
 

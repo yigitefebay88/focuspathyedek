@@ -81,7 +81,11 @@
         <service
             android:name=".service.FocusService"
             android:foregroundServiceType="specialUse"
-            android:exported="false" />
+            android:exported="false">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Focus timer for productivity tracking and notification management" />
+        </service>
 
         <!-- Widgets -->
         <receiver android:name=".widget.TaskWidgetReceiver"
