@@ -625,19 +625,17 @@ class MainActivity : ComponentActivity(), BillingProvider {
                             userDocRefs.forEach { userDocRef ->
                                 userDocRef.collection("friends")
                                     .addSnapshotListener { friendsSnapshot, _ ->
-                                        val friendUids = friendsSnapshot?.documents?.mapNotNull { it.id } ?: emptyList()
-                                        
-                                        if (friendUids.isNotEmpty()) {
-                                            db.collection("leaderboard")
-                                                .whereIn("uid", friendUids)
-                                                .addSnapshotListener { lbSnapshot, _ ->
-                                                    val list = lbSnapshot?.documents?.mapNotNull { 
-                                                        it.toObject(LeaderboardUser::class.java) 
-                                                    } ?: emptyList()
-                                                    if (list.isNotEmpty()) {
-                                                        myFriendsList = list
-                                                    }
+                                        val list = friendsSnapshot?.documents?.mapNotNull { 
+                                            it.toObject(LeaderboardUser::class.java) 
+                                        } ?: emptyList()
+                                        if (list.isNotEmpty()) {
+                                            val current = myFriendsList.toMutableList()
+                                            list.forEach { newUser ->
+                                                if (current.none { it.uid == newUser.uid }) {
+                                                    current.add(newUser)
                                                 }
+                                            }
+                                            myFriendsList = current
                                         }
                                     }
 
@@ -645,7 +643,13 @@ class MainActivity : ComponentActivity(), BillingProvider {
                                     .addSnapshotListener { snapshot, _ ->
                                         val reqs = snapshot?.documents?.mapNotNull { it.toObject(LeaderboardUser::class.java) } ?: emptyList()
                                         if (reqs.isNotEmpty()) {
-                                            incomingRequests = reqs
+                                            val current = incomingRequests.toMutableList()
+                                            reqs.forEach { newReq ->
+                                                if (current.none { it.uid == newReq.uid }) {
+                                                    current.add(newReq)
+                                                }
+                                            }
+                                            incomingRequests = current
                                         }
                                     }
                             }
@@ -736,8 +740,50 @@ class MainActivity : ComponentActivity(), BillingProvider {
                                                                     statusMessage = "Kullanıcı verisi okunamadı."
                                                                 }
                                                             } else {
-                                                                searchResultUser = null
-                                                                statusMessage = "Kullanıcı bulunamadı! (Kullanıcının sistemde kaydı olmayabilir)"
+                                                                // Leaderboard'da yoksa users koleksiyonuna bak (Yerel moddaki kullanıcılar için)
+                                                                com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                                                                    .collection("users")
+                                                                    .whereEqualTo("email", cleanEmail)
+                                                                    .get()
+                                                                    .addOnSuccessListener { userDocs ->
+                                                                        if (!userDocs.isEmpty) {
+                                                                            val doc = userDocs.documents[0]
+                                                                            val user = doc.toObject(LeaderboardUser::class.java)
+                                                                            if (user != null) {
+                                                                                // Yerel modda XP 'user_xp' olarak kaydedilmiş olabilir
+                                                                                val xpVal = doc.get("score") ?: doc.get("user_xp") ?: 0L
+                                                                                val xpLong = when(xpVal) {
+                                                                                    is Long -> xpVal
+                                                                                    is Int -> xpVal.toLong()
+                                                                                    else -> 0L
+                                                                                }
+                                                                                
+                                                                                val photoVal = doc.get("photoUrl") ?: doc.get("photo_url") ?: doc.get("photo") ?: doc.get("image")
+                                                                                val photoStr = photoVal?.toString()?.trim()
+                                                                                if (!photoStr.isNullOrBlank() && photoStr.startsWith("http")) {
+                                                                                    user.photoUrl = photoStr
+                                                                                }
+                                                                                
+                                                                                val emailVal = doc.getString("email") ?: cleanEmail
+                                                                                val populatedUser = user.copy(
+                                                                                    uid = doc.id,
+                                                                                    email = emailVal,
+                                                                                    score = xpLong
+                                                                                )
+                                                                                searchResultUser = populatedUser
+                                                                                statusMessage = "Kullanıcı bulundu!"
+                                                                            } else {
+                                                                                searchResultUser = null
+                                                                                statusMessage = "Kullanıcı verisi okunamadı."
+                                                                            }
+                                                                        } else {
+                                                                            searchResultUser = null
+                                                                            statusMessage = "Kullanıcı bulunamadı! (Kullanıcının sistemde kaydı olmayabilir)"
+                                                                        }
+                                                                    }
+                                                                    .addOnFailureListener {
+                                                                        statusMessage = "Hata: ${it.localizedMessage}"
+                                                                    }
                                                             }
                                                         }
                                                         .addOnFailureListener {

@@ -27,7 +27,7 @@ android {
         applicationId = "com.focuspath.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 111
+        versionCode = 113
         versionName = "1.2.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -114,8 +114,8 @@ dependencies {
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
 
     // Google Play Billing (Real Money Purchases)
-    implementation("com.android.billingclient:billing:7.1.1")
-    implementation("com.android.billingclient:billing-ktx:7.1.1")
+    implementation("com.android.billingclient:billing:8.0.0")
+    implementation("com.android.billingclient:billing-ktx:8.0.0")
 
     // Coil for image loading
     implementation("io.coil-kt:coil-compose:2.6.0")

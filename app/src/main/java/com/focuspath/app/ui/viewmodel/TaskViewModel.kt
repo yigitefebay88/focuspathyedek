@@ -1792,7 +1792,7 @@ class TaskViewModel @Inject constructor(
         
         val remoteUrl = if (currentPhoto?.startsWith("http") == true) currentPhoto else user?.photoUrl?.toString() ?: ""
         val profileMap = mutableMapOf(
-            "uid" to (user?.uid ?: "guest_${email.hashCode()}"),
+            "uid" to (user?.uid ?: "local_${email.hashCode()}"),
             "name" to userName.value,
             "email" to email,
             "photoUrl" to remoteUrl,
@@ -2160,7 +2160,7 @@ class TaskViewModel @Inject constructor(
                 }
 
                 val user = firebaseAuth.currentUser
-                val myUid = user?.uid ?: "guest_${email.hashCode()}"
+                val myUid = user?.uid ?: "local_${email.hashCode()}"
                 
                 val updateMap = mutableMapOf<String, Any>(
                     "uid" to myUid,
@@ -2586,6 +2586,7 @@ class TaskViewModel @Inject constructor(
                 }
                 // Misafir kullanıcının verilerini bulutla senkronize etmeye başla
                 syncProfileToFirestore()
+                syncXpToFirestore()
                 fetchUserDataFromFirestore()
                 fetchLeaderboard()
             } catch (e: Exception) {
