@@ -577,7 +577,7 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
                 when (page) {
                     0 -> HomeTabFull(vm, allTasksList, lang, isEnglish, totalFocusMins, completedSessions, interruptedSessions) { coroutineScope.launch { pagerState.animateScrollToPage(it) } }
                     1 -> TaskTabFull(vm, taskList, allTasksList, selectedDate, lang, isEnglish, greeting, currentQuote, haptic, context, isLandscape, { showClearDialog = true }, { showEditDialog = it }, { showDeleteConfirm = it }, { showReminderDialog = it }, { showQuoteHistory = true }, { coroutineScope.launch { pagerState.animateScrollToPage(2) } })
-                    2 -> AiTabFull(vm, lang, isEnglish, context, chatHistory, isBotTyping, chatListState, taskList)
+                    2 -> AiTabFull(vm, lang, isEnglish, context, chatHistory, isBotTyping, chatListState, taskList) { coroutineScope.launch { pagerState.animateScrollToPage(1) } }
                     3 -> CalendarTabFull(vm, lang, currentMonthName, selectedDay, allTasksList, { selectedDay = it }, isEnglish, context, timerRunning, isPomodoroMode, timeLeft, timeElapsed, pomodoroTotalMillis, selectedFocusSound, completedSessions, { vm.toggleTimer(context, it) }, { vm.isPomodoroMode.value = it }, { vm.pomodoroTotalMillis.longValue = it ; vm.timeLeft.longValue = it }, { selectedFocusSound = it }, { showZenMode = true })
                     4 -> OfficeTabFull(vm, isEnglish, context, allTasksList, completedSessions, { showLiveSession = true }) { showDirectChat = it }
                     5 -> WaterTabFull(vm, isEnglish)
@@ -1697,7 +1697,7 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
 }
 
 @Composable
-private fun AiTabFull(vm: TaskViewModel, lang: Map<String, String>, isEnglish: Boolean, context: Context, chatHistory: List<String>, isBotTyping: Boolean, chatListState: LazyListState, taskList: List<TaskEntity>) {
+private fun AiTabFull(vm: TaskViewModel, lang: Map<String, String>, isEnglish: Boolean, context: Context, chatHistory: List<String>, isBotTyping: Boolean, chatListState: LazyListState, taskList: List<TaskEntity>, onNavigateToTasks: () -> Unit) {
     var aiInput by rememberSaveable { mutableStateOf("") }
     var isListening by remember { mutableStateOf(false) }
 
@@ -1836,12 +1836,42 @@ private fun AiTabFull(vm: TaskViewModel, lang: Map<String, String>, isEnglish: B
                     LazyColumn(state = chatListState, modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(chatHistory) { message ->
                             val isUser = message.startsWith("Siz: ") || message.startsWith("You: ");
-                            val text = message.substringAfter(": ");
+                            val isNoTasksAction = !isUser && message.contains("NO_TASKS_ACTION|");
+                            
+                            val text = if (isNoTasksAction) {
+                                message.replace("NO_TASKS_ACTION|", "")
+                            } else {
+                                message
+                            }
+                            
+                            val copyText = text.substringAfter(": ");
+                            
                             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = if (isUser) Alignment.CenterEnd else Alignment.CenterStart) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    if(!isUser) IconButton(onClick = { (context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).setPrimaryClip(android.content.ClipData.newPlainText("YimeBot", text)) ; Toast.makeText(context, "Kopyalandı", Toast.LENGTH_SHORT).show() }) { Icon(Icons.Default.ContentCopy, null, modifier = Modifier.size(14.dp), tint = Color.Gray) };
+                                    if(!isUser) IconButton(onClick = { (context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager).setPrimaryClip(android.content.ClipData.newPlainText("YimeBot", copyText)) ; Toast.makeText(context, "Kopyalandı", Toast.LENGTH_SHORT).show() }) { Icon(Icons.Default.ContentCopy, null, modifier = Modifier.size(14.dp), tint = Color.Gray) };
                                     Surface(color = if (isUser) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, if (isUser) MaterialTheme.colorScheme.primary else Color.Gray.copy(alpha = 0.3f))) {
-                                        Text(text = message, modifier = Modifier.padding(8.dp), fontSize = 13.sp)
+                                        if (isNoTasksAction) {
+                                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(8.dp)) {
+                                                Text(text = text, fontSize = 13.sp, modifier = Modifier.weight(1f, fill = false))
+                                                Spacer(Modifier.width(8.dp))
+                                                Button(
+                                                    onClick = {
+                                                        vm.addTask(if(isEnglish) "New Focus Task" else "Yeni Odak Görevi", "", "Genel", 1)
+                                                        onNavigateToTasks()
+                                                    },
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                                                    modifier = Modifier.height(30.dp),
+                                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                                                ) {
+                                                    Icon(Icons.Default.Add, null, modifier = Modifier.size(16.dp), tint = Color.Black)
+                                                    Spacer(Modifier.width(4.dp))
+                                                    Text(if(isEnglish) "Create" else "Oluştur", fontSize = 10.sp, color = Color.Black, fontWeight = FontWeight.Bold)
+                                                }
+                                            }
+                                        } else {
+                                            Text(text = text, modifier = Modifier.padding(8.dp), fontSize = 13.sp)
+                                        }
                                     }
                                 }
                             }

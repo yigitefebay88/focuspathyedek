@@ -2285,7 +2285,7 @@ class TaskViewModel @Inject constructor(
             val tasks = taskDao.getAllTasksOnce().filter { !it.isCompleted }
             val taskSummary = tasks.joinToString { it.title }
             if (taskSummary.isBlank()) {
-                chatHistory.add("YimeBot: ${if (isEnglish) "You have no active tasks to plan!" else "Planlayacak aktif bir görevin yok!"}")
+                chatHistory.add("YimeBot: NO_TASKS_ACTION|${if (isEnglish) "Currently no tasks created!" else "Şuanlık oluşturduğumuz görev yok."}")
                 return@launch
             }
             val prompt = if (isEnglish) {
