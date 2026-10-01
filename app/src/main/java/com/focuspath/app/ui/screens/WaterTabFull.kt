@@ -120,7 +120,7 @@ fun WaterTabFull(
         ) {
             Icon(Icons.Default.LocalDrink, null)
             Spacer(Modifier.width(8.dp))
-            
+
             val coinText = if (vm.isWaterRewardAvailable.value) " (+5 Coin)" else ""
             Text(
                 text = (if (isEnglish) "I DRANK WATER" else "SU İÇTİM") + coinText,
@@ -184,9 +184,9 @@ fun WaterTabFull(
         }
 
         Text(
-            text = if (isEnglish) 
-                "Drinking water improves focus and reduces fatigue." 
-            else 
+            text = if (isEnglish)
+                "Drinking water improves focus and reduces fatigue."
+            else
                 "Su içmek odaklanmayı artırır ve yorgunluğu azaltır.",
             style = MaterialTheme.typography.bodyMedium,
             color = Color.Gray,
