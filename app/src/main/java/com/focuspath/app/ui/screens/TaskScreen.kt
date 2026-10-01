@@ -382,7 +382,7 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
                                 when(selectedTab) {
                                     0 -> if(isEnglish) "Home" else "Ana Sayfa"
                                     1 -> if(isEnglish) "Tasks" else "Görevler"
-                                    2 -> if(isEnglish) "AI Assistant" else "AI Asistan"
+                                    2 -> if(isEnglish) "Games" else "Oyunlar"
                                     3 -> if(isEnglish) "Calendar" else "Takvim"
                                     4 -> if(isEnglish) "Virtual Office" else "Sanal Ofis"
                                     5 -> if(isEnglish) "Water Reminder" else "Su Hatırlatıcı"
@@ -457,17 +457,15 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         val navLabels = if (isEnglish)
-                            listOf("QUEST", "INCOMING", "GAMES", "ACHIEVE", "FRIENDS", "WATER")
+                            listOf("QUEST", "INCOMING", "ACHIEVE", "FRIENDS")
                         else
-                            listOf("GÖREV", "GELEN", "OYUNLAR", "BAŞARIM", "ARKADAŞLAR", "SU")
+                            listOf("GÖREV", "GELEN", "BAŞARIM", "ARKADAŞLAR")
 
                         val navActions: List<() -> Unit> = listOf(
                             { com.focuspath.app.MainActivity.showQuestDialogState.value = true },
                             { com.focuspath.app.MainActivity.showIncomingTasksDialogState.value = true },
-                            { com.focuspath.app.MainActivity.showGamesDialogState.value = true },
                             { com.focuspath.app.MainActivity.showAchievementDialogState.value = true },
-                            { com.focuspath.app.MainActivity.showFriendsDialogState.value = true },
-                            { coroutineScope.launch { pagerState.animateScrollToPage(5) } }
+                            { com.focuspath.app.MainActivity.showFriendsDialogState.value = true }
                         )
 
                         navLabels.forEachIndexed { index, label ->
@@ -481,7 +479,7 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
                                     color = terminalColor,
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         fontWeight = FontWeight.Black,
-                                        fontSize = 8.sp // Sıkışmayı önlemek için 9'dan 8'e düşürüldü
+                                        fontSize = 9.sp
                                     ),
                                     maxLines = 1,
                                     softWrap = false,
@@ -514,7 +512,7 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
                     val tabs = listOf(
                         Triple(0, Icons.Default.Home, lang["home"] ?: ""),
                         Triple(1, Icons.Default.CheckCircle, lang["tasks"] ?: ""),
-                        Triple(2, Icons.Default.SmartToy, lang["ai"] ?: ""),
+                        Triple(2, Icons.Default.SportsEsports, if (isEnglish) "Games" else "Oyunlar"),
                         Triple(3, Icons.Default.CalendarMonth, lang["cal"] ?: ""),
                         Triple(4, Icons.Default.Business, lang["office"] ?: ""),
                         Triple(5, Icons.Default.WaterDrop, lang["water"] ?: "")
@@ -567,7 +565,7 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize(),
-                beyondViewportPageCount = 1,
+                beyondViewportPageCount = 0,
                 pageSpacing = 8.dp,
                 flingBehavior = androidx.compose.foundation.pager.PagerDefaults.flingBehavior(
                     state = pagerState,
@@ -577,7 +575,7 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
                 when (page) {
                     0 -> HomeTabFull(vm, allTasksList, lang, isEnglish, totalFocusMins, completedSessions, interruptedSessions) { coroutineScope.launch { pagerState.animateScrollToPage(it) } }
                     1 -> TaskTabFull(vm, taskList, allTasksList, selectedDate, lang, isEnglish, greeting, currentQuote, haptic, context, isLandscape, { showClearDialog = true }, { showEditDialog = it }, { showDeleteConfirm = it }, { showReminderDialog = it }, { showQuoteHistory = true }, { coroutineScope.launch { pagerState.animateScrollToPage(2) } })
-                    2 -> AiTabFull(vm, lang, isEnglish, context, chatHistory, isBotTyping, chatListState, taskList) { coroutineScope.launch { pagerState.animateScrollToPage(1) } }
+                    2 -> GamesTabFull(vm, isEnglish)
                     3 -> CalendarTabFull(vm, lang, currentMonthName, selectedDay, allTasksList, { selectedDay = it }, isEnglish, context, timerRunning, isPomodoroMode, timeLeft, timeElapsed, pomodoroTotalMillis, selectedFocusSound, completedSessions, { vm.toggleTimer(context, it) }, { vm.isPomodoroMode.value = it }, { vm.pomodoroTotalMillis.longValue = it ; vm.timeLeft.longValue = it }, { selectedFocusSound = it }, { showZenMode = true })
                     4 -> OfficeTabFull(vm, isEnglish, context, allTasksList, completedSessions, { showLiveSession = true }) { showDirectChat = it }
                     5 -> WaterTabFull(vm, isEnglish)
@@ -1109,7 +1107,6 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
     val totalCount = counts.first
     val doneCount = counts.second
     val isMinimalist = vm.isMinimalistMode.value
-    val onboardingTasks = vm.onboardingTasks
     
     // Smooth scrolling physics optimized for ADHD focus
     val flingBehavior = ScrollableDefaults.flingBehavior()
@@ -1125,100 +1122,6 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
         verticalArrangement = Arrangement.spacedBy(8.dp),
         flingBehavior = flingBehavior
     ) {
-        // ONBOARDING TASKS
-        if (onboardingTasks.isNotEmpty() && !isMinimalist) {
-            item(key = "onboarding_section", contentType = "onboarding") {
-                Column(modifier = Modifier.graphicsLayer { clip = true }) {
-                    Text(
-                        text = if(isEnglish) "🚀 STARTER MISSIONS" else "🚀 BAŞLANGIÇ GÖREVLERİ",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = AccentYellow,
-                        fontWeight = FontWeight.Black,
-                        modifier = Modifier.padding(start = 4.dp, top = 8.dp)
-                    )
-                    androidx.compose.foundation.lazy.LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
-                    ) {
-                        items(onboardingTasks, key = { it.id }, contentType = { "onboarding_item" }) { task ->
-                            Card(
-                                modifier = Modifier.width(180.dp),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = if(task.isCompleted) Color.Black.copy(alpha = 0.2f) else Color.Black.copy(alpha = 0.4f)
-                                ),
-                                border = BorderStroke(1.dp, if(task.isCompleted) Color.Green.copy(0.3f) else AccentYellow.copy(alpha = 0.3f))
-                            ) {
-                                Column(modifier = Modifier.padding(12.dp)) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(
-                                            text = if(isEnglish) task.titleEn else task.titleTr,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            fontWeight = FontWeight.Bold,
-                                            color = if(task.isCompleted) Color.Gray else Color.White,
-                                            modifier = Modifier.weight(1f),
-                                            maxLines = 2,
-                                            minLines = 2
-                                        )
-                                        if (task.isCompleted) {
-                                            Icon(Icons.Default.CheckCircle, null, tint = Color.Green, modifier = Modifier.size(16.dp))
-                                        }
-                                    }
-                                    Spacer(Modifier.height(8.dp))
-                                    if (task.isCompleted) {
-                                        Text(
-                                            text = if(isEnglish) "COMPLETED" else "TAMAMLANDI",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = Color.Green,
-                                            fontWeight = FontWeight.Black
-                                        )
-                                    } else {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Text("💰", fontSize = 10.sp)
-                                            Text("+${task.rewardCoins}", fontSize = 10.sp, color = AccentYellow, fontWeight = FontWeight.Bold)
-                                            Spacer(Modifier.width(8.dp))
-                                            Text("⭐", fontSize = 10.sp)
-                                            Text("+${task.rewardXp}", fontSize = 10.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        item(key = "calendar_selector", contentType = "calendar") {
-            if (!isMinimalist) {
-                Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(0.2f))) {
-                    Row(modifier = Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement = Arrangement.SpaceAround) {
-                        for (i in -3..3) {
-                            val cal = Calendar.getInstance().apply { add(Calendar.DAY_OF_MONTH, i) }
-                            val dateMillis = cal.timeInMillis
-                            val dayNum = cal.get(Calendar.DAY_OF_MONTH)
-                            val isSelected = Calendar.getInstance().apply { timeInMillis = selectedDate }.get(Calendar.DAY_OF_YEAR) == cal.get(Calendar.DAY_OF_YEAR)
-
-                            Surface(
-                                onClick = {
-                                    vm.setSelectedDate(dateMillis)
-                                    showTomorrowDialog = true
-                                },
-                                shape = RoundedCornerShape(12.dp),
-                                color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                                border = BorderStroke(1.dp, if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray.copy(alpha = 0.2f)),
-                                modifier = Modifier.weight(1f).height(56.dp)
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                                    Text(text = SimpleDateFormat("E", Locale.getDefault()).format(cal.time).uppercase(), fontSize = 9.sp, fontWeight = FontWeight.Bold, color = if (isSelected) Color.Black else Color.Gray)
-                                    Text(text = "$dayNum", color = if (isSelected) Color.Black else MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.ExtraBold, fontSize = 15.sp)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
 
         item(key = "habit_chain_section", contentType = "habit") {
             val habits by vm.allHabits.collectAsState()
@@ -1328,70 +1231,23 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
             }
         }
 
-        item(key = "daily_planner", contentType = "planner") {
-            if (!isMinimalist) {
-                Card(
-                    modifier = Modifier.fillMaxWidth().animateItemPlacement(itemAnimationSpec),
-                    shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Text(
-                            text = if(isEnglish) "DAILY PLANNER" else "GÜNLÜK PLANLAYICI",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(
-                                onClick = {
-                                    vm.planDayWithAi(isEnglish)
-                                    onNavigateToAi()
-                                },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)),
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
-                            ) {
-                                Icon(Icons.Default.AutoAwesome, null, tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f), modifier = Modifier.size(16.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text(if(isEnglish) "Plan Today" else "Bugünü Planla", color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                            }
-                            Button(
-                                onClick = { showTomorrowDialog = true },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = AccentYellow.copy(alpha = 0.05f)),
-                                border = BorderStroke(1.dp, AccentYellow.copy(alpha = 0.2f))
-                            ) {
-                                Icon(Icons.Default.EventNote, null, tint = AccentYellow.copy(alpha = 0.8f), modifier = Modifier.size(16.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text(if(isEnglish) "Remember Tomorrow" else "Yarını Hatırla", color = AccentYellow.copy(alpha = 0.8f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
         item(key = "greeting_card", contentType = "greeting") {
             Card(modifier = Modifier.fillMaxWidth().animateItemPlacement(itemAnimationSpec), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(0.3f))) {
                 Row(modifier = Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(text = greeting, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold), color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        
+
                         val showInfo = vm.isLoggedIn.value || vm.userXp.value > 0
                         if (showInfo) {
                             Column {
                                 val userTitle = com.focuspath.app.util.FocusRank.getTitle(vm.userXp.value.toLong(), isEnglish)
                                 val statusText = if (vm.isLoggedIn.value) "${vm.userEmail.value} | $userTitle" else (if(isEnglish) "Offline | $userTitle" else "Çevrimdışı | $userTitle")
-                                
+
                                 Text(
-                                    text = "$statusText / ${vm.userXp.value}", 
-                                    style = MaterialTheme.typography.labelSmall, 
-                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f), 
-                                    maxLines = 1, 
+                                    text = "$statusText / ${vm.userXp.value}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
+                                    maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 if (!isMinimalist) {
@@ -1440,20 +1296,20 @@ private fun TaskTabFull(vm: TaskViewModel, taskList: List<TaskEntity>, allTasksL
         item(key = "add_task_form", contentType = "form") {
             Column(modifier = Modifier.animateItemPlacement(itemAnimationSpec)) {
                 OutlinedTextField(
-                    value = tabTaskInput, 
-                    onValueChange = { tabTaskInput = it }, 
-                    label = { Text(if(isEnglish) "Task Title" else "Görev Başlığı") }, 
-                    modifier = Modifier.fillMaxWidth(), 
+                    value = tabTaskInput,
+                    onValueChange = { tabTaskInput = it },
+                    label = { Text(if(isEnglish) "Task Title" else "Görev Başlığı") },
+                    modifier = Modifier.fillMaxWidth(),
                     maxLines = 2,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
                 )
                 Spacer(Modifier.height(8.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
-                        value = tabTaskNotes, 
-                        onValueChange = { tabTaskNotes = it }, 
-                        label = { Text(if(isEnglish) "Details" else "Notlar") }, 
-                        modifier = Modifier.weight(1.5f), 
+                        value = tabTaskNotes,
+                        onValueChange = { tabTaskNotes = it },
+                        label = { Text(if(isEnglish) "Details" else "Notlar") },
+                        modifier = Modifier.weight(1.5f),
                         maxLines = 3,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
                     )
@@ -2274,16 +2130,6 @@ private fun SettingsTabFull(vm: TaskViewModel, lang: Map<String, String>, isEngl
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(if(isEnglish) "Minimalist Interface" else "Sade Arayüz")
-                        Text(if(isEnglish) "Reduce cognitive load by hiding stats" else "İstatistikleri gizleyerek bilişsel yükü azalt", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-                    }
-                    Switch(checked = vm.isMinimalistMode.value, onCheckedChange = { vm.setMinimalistMode(it) })
-                }
-
-                Spacer(Modifier.height(12.dp))
-
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Column(modifier = Modifier.weight(1f)) {
                         Text(if(isEnglish) "Interval Chimes" else "Zaman Farkındalığı Sinyalleri")
                         Text(if(isEnglish) "Subtle alert every ${vm.intervalMinutes.intValue} mins" else "Her ${vm.intervalMinutes.intValue} dakikada bir hafif uyarı", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
                     }
@@ -2789,6 +2635,67 @@ fun PlantModel(level: Int, modifier: Modifier = Modifier) {
 }
 
 @Composable
+private fun GamesTabFull(vm: TaskViewModel, isEnglish: Boolean) {
+    var activeGame by remember { mutableStateOf<String?>(null) }
+    val terminalColor = MaterialTheme.colorScheme.primary
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(bottom = 8.dp)
+        ) {
+            Icon(Icons.Default.SportsEsports, null, tint = terminalColor, modifier = Modifier.size(24.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = if (activeGame == null) (if (isEnglish) "FOCUS GAMES" else "DİKKAT OYUNLARI") else activeGame!!.uppercase(),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.ExtraBold,
+                color = terminalColor,
+                modifier = Modifier.weight(1f)
+            )
+            if (activeGame != null) {
+                IconButton(onClick = { activeGame = null }) {
+                    Icon(Icons.Default.ArrowBack, null, tint = MaterialTheme.colorScheme.onSurface)
+                }
+            }
+        }
+
+        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            if (activeGame == null) {
+                com.focuspath.app.ui.screens.games.GameSelectionMenu(vm) { activeGame = it }
+            } else {
+                when (activeGame) {
+                    "Stroop Testi" -> com.focuspath.app.ui.screens.games.StroopGame(vm) { activeGame = null }
+                    "Hafıza Kartları" -> com.focuspath.app.ui.screens.games.MemoryGame(vm) { activeGame = null }
+                    "Hızlı Tepki" -> com.focuspath.app.ui.screens.games.ReactionGame(vm) { activeGame = null }
+                    "Küp Takibi" -> com.focuspath.app.ui.screens.games.CubeCountGame(vm) { activeGame = null }
+                    "Okçu Terminali" -> com.focuspath.app.ui.screens.games.ArcherGame(vm) { activeGame = null }
+                    "Sayı Bulmacası" -> com.focuspath.app.ui.screens.games.NumberPuzzleGame(vm) { activeGame = null }
+                    "Görsel Yapboz" -> com.focuspath.app.ui.screens.games.SlidingPuzzleGame(vm) { activeGame = null }
+                    "Desen Tekrarı" -> com.focuspath.app.ui.screens.games.PatternRepeatGame(vm) { activeGame = null }
+                    "Halka ve Çivi" -> com.focuspath.app.ui.screens.games.RingNailGame(vm) { activeGame = null }
+                    "Küp Kulesi" -> com.focuspath.app.ui.screens.games.CubeTowerGame(vm) { activeGame = null }
+                    "Labirent Serüveni" -> com.focuspath.app.ui.screens.games.MazeGame(vm) { activeGame = null }
+                    "Farkı Bul" -> com.focuspath.app.ui.screens.games.SpotDifferenceGame(vm) { activeGame = null }
+                    "Hafıza Matrisi" -> com.focuspath.app.ui.screens.games.MemoryMatrixGame(vm) { activeGame = null }
+                    "Bardak Bulmacası" -> com.focuspath.app.ui.screens.games.FindBallGame(vm) { activeGame = null }
+                    "IQ Testi" -> com.focuspath.app.ui.screens.games.IQTestGame(vm) { activeGame = null }
+                    "Sudoku" -> com.focuspath.app.ui.screens.games.SudokuGame(vm) { activeGame = null }
+                    "Kelime Avcısı" -> com.focuspath.app.ui.screens.games.WordScrambleGame(vm) { activeGame = null }
+                    "Matematik Fırtınası" -> com.focuspath.app.ui.screens.games.MathBallGame(vm) { activeGame = null }
+                    "Görsel Puzzle" -> com.focuspath.app.ui.screens.games.ShadowMatchGame(vm) { activeGame = null }
+                    "Ne Eksik?" -> com.focuspath.app.ui.screens.games.WhatIsMissingGame(vm) { activeGame = null }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun OfficeTabFull(vm: TaskViewModel, isEnglish: Boolean, context: Context, allTasksList: List<TaskEntity>, completedPomodorosToday: Int, onShowLiveSession: () -> Unit, onPeerClick: (String) -> Unit) {
     var showWeeklyAnalytics by rememberSaveable { mutableStateOf(false) }
 
@@ -3255,54 +3162,6 @@ private fun OfficeTabFull(vm: TaskViewModel, isEnglish: Boolean, context: Contex
                 Icon(Icons.Default.Analytics, null, tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
             }
             Spacer(Modifier.height(16.dp)); Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) { Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) { Box(contentAlignment = Alignment.Center) { CircularProgressIndicator(progress = { 1f }, modifier = Modifier.size(60.dp), color = MaterialTheme.colorScheme.primary.copy(alpha = 0.05f), strokeWidth = 4.dp); Icon(Icons.Default.Timer, null, tint = AccentYellow.copy(alpha = 0.6f), modifier = Modifier.size(24.dp)) }; Spacer(Modifier.height(8.dp)); Text("$completedPomodorosToday", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)); Text(if (isEnglish) "Focus" else "Odak", fontSize = 10.sp, color = Color.Gray) }; Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) { Box(contentAlignment = Alignment.Center) { CircularProgressIndicator(progress = { completionRate }, modifier = Modifier.size(60.dp), color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), strokeWidth = 4.dp, trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.05f)); Text("${(completionRate * 100).toInt()}%", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)) }; Spacer(Modifier.height(8.dp)); Text("$doneTasks/$totalTasks", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)); Text(if (isEnglish) "Tasks" else "Görev", fontSize = 10.sp, color = Color.Gray) }; Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) { Box(contentAlignment = Alignment.Center) { CircularProgressIndicator(progress = { 1f }, modifier = Modifier.size(60.dp), color = AccentRed.copy(alpha = 0.05f), strokeWidth = 4.dp); Icon(Icons.Default.Whatshot, null, tint = AccentRed.copy(alpha = 0.6f), modifier = Modifier.size(24.dp)) }; Spacer(Modifier.height(8.dp)); Text("${vm.userStreak.value}", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)); Text(if (isEnglish) "Streak" else "Seri", fontSize = 10.sp, color = Color.Gray) } } } }
-        Card(modifier = Modifier.fillMaxWidth(), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))) { Column(modifier = Modifier.padding(16.dp)) { Text(text = if (isEnglish) "DOPAMINE STORE" else "DOPAMİN MAĞAZASI", style = MaterialTheme.typography.titleMedium, color = AccentYellow.copy(alpha = 0.8f)); Spacer(Modifier.height(12.dp));
-            val storeItems = listOf(
-                Triple("lava_lamp_1", "🏮", 300),
-                Triple("neon_sign_1", "✨", 700),
-                Triple("arcade_1", "🕹️", 1800),
-                Triple("cat_1", "🐱", 2500),
-                Triple("robot_1", "🤖", 3500)
-            )
-            Row(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                storeItems.forEach { (id, emoji, cost) ->
-                    val isOwned = unlocked.contains(id)
-                    Surface(
-                        onClick = { 
-                            if(isOwned) vm.toggleItemVisibility(id) 
-                            else vm.buyItem(id, cost) 
-                        },
-                        shape = RoundedCornerShape(16.dp),
-                        color = if(isOwned) {
-                            if (vm.visibleItems.contains(id)) MaterialTheme.colorScheme.primary.copy(0.1f) 
-                            else MaterialTheme.colorScheme.surfaceVariant.copy(0.3f)
-                        } else MaterialTheme.colorScheme.primary.copy(0.05f),
-                        border = BorderStroke(1.dp, if(isOwned) {
-                            if (vm.visibleItems.contains(id)) MaterialTheme.colorScheme.primary.copy(0.5f)
-                            else Color.Gray.copy(0.3f)
-                        } else AccentYellow.copy(alpha = 0.4f)),
-                        modifier = Modifier.width(100.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(emoji, fontSize = 32.sp)
-                            Spacer(Modifier.height(8.dp))
-                            if (isOwned) {
-                                val isVisible = vm.visibleItems.contains(id)
-                                Text(if(isVisible) (if(isEnglish) "ACTIVE" else "AKTİF") else (if(isEnglish) "OFF" else "PASİF"), 
-                                    fontSize = 9.sp, 
-                                    color = if(isVisible) MaterialTheme.colorScheme.primary else Color.Gray, 
-                                    fontWeight = FontWeight.Bold)
-                            } else {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("$cost", fontSize = 11.sp, fontWeight = FontWeight.Black, color = AccentYellow)
-                                    Spacer(Modifier.width(2.dp))
-                                    Text("🪙", fontSize = 10.sp)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        } }
 
         Card(modifier = Modifier.fillMaxWidth(), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))) { 
             Column(modifier = Modifier.padding(16.dp)) { 

@@ -12,9 +12,9 @@ import androidx.compose.ui.unit.sp
 
 val AccentRed = Color(0xFFE57373)
 val AccentYellow = Color(0xFFFFD54F)
-val TerminalGreen = Color(0xFF81C784)
-val DarkBackground = Color(0xFF121212)
-val SurfaceColor = Color(0xFF1E1E1E)
+val TerminalGreen = Color(0xFF10E886)
+val DarkBackground = Color(0xFF07120E)
+val SurfaceColor = Color(0xFF0C1914)
 
 private val SharedColorScheme = darkColorScheme(
     primary = TerminalGreen,

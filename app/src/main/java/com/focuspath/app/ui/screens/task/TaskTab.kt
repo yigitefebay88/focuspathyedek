@@ -74,6 +74,7 @@ fun TaskTab(
     var dailyFocus by remember { mutableStateOf("") }
 
     var showAddHabitDialog by remember { mutableStateOf(false) }
+    var showAddTaskSheet by remember { mutableStateOf(false) }
     var habitNameInput by remember { mutableStateOf("") }
     var habitToDelete by remember { mutableStateOf<HabitEntity?>(null) }
 
@@ -90,150 +91,57 @@ fun TaskTab(
     LaunchedEffect(categoryFilter) { vm.setCategoryFilter(categoryFilter) }
     LaunchedEffect(priorityFilter) { vm.setPriorityFilter(priorityFilter) }
 
-    val taskInputSection = @Composable {
-        Column {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
-            ) {
+    val headerSection = @Composable {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            shape = RoundedCornerShape(20.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(8.dp),
-                    horizontalArrangement = Arrangement.SpaceAround
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    for (i in -3..3) {
-                        val cal = Calendar.getInstance().apply { add(Calendar.DAY_OF_MONTH, i) }
-                        val dateMillis = cal.timeInMillis
-                        val dayNum = cal.get(Calendar.DAY_OF_MONTH)
-                        val isSelected = Calendar.getInstance().apply { timeInMillis = selectedDate }.get(Calendar.DAY_OF_YEAR) == cal.get(Calendar.DAY_OF_YEAR)
-
-                        Surface(
-                            onClick = { vm.setSelectedDate(dateMillis) },
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                            border = BorderStroke(1.dp, if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray.copy(alpha = 0.2f)),
-                            modifier = Modifier.weight(1f).height(56.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier.fillMaxSize(),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Text(
-                                    text = SimpleDateFormat("E", Locale.getDefault()).format(cal.time).uppercase(),
-                                    fontSize = 9.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (isSelected) Color.Black else Color.Gray
-                                )
-                                Text(
-                                    text = "$dayNum",
-                                    color = if (isSelected) Color.Black else MaterialTheme.colorScheme.onSurface,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 15.sp
-                                )
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.05f), RoundedCornerShape(10.dp))
+                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("🎯 ", fontSize = 12.sp)
+                        BasicTextField(
+                            value = dailyFocus,
+                            onValueChange = { dailyFocus = it },
+                            textStyle = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium),
+                            cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
+                            modifier = Modifier.fillMaxWidth(),
+                            decorationBox = { inner ->
+                                if (dailyFocus.isEmpty()) Text(if (isEnglish) "Set daily focus..." else "Bugünkü odağını belirle...", color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+                                inner()
                             }
-                        }
+                        )
                     }
-                }
-            }
-            Spacer(Modifier.height(8.dp))
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
-            ) {
-                Row(modifier = Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(text = "Hello", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
-                        if (vm.isLoggedIn.value) {
-                            Column {
-                                Text(text = "${vm.userEmail.value} | LVL ${vm.userLevel.value}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f))
-                                Spacer(Modifier.height(4.dp))
-                                val xpProgress = (vm.userXp.value % 100) / 100f
-                                LinearProgressIndicator(progress = { xpProgress }, modifier = Modifier.width(120.dp).height(2.dp), color = MaterialTheme.colorScheme.primary, trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-                            }
-                        }
-                        Spacer(Modifier.height(8.dp))
-                        Row(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.primary.copy(alpha = 0.05f), RoundedCornerShape(4.dp)).padding(horizontal = 8.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text("> FOCUS: ", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
-                            BasicTextField(value = dailyFocus, onValueChange = { dailyFocus = it }, textStyle = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium), cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary), modifier = Modifier.fillMaxWidth(), decorationBox = { inner -> if (dailyFocus.isEmpty()) Text(if (isEnglish) "SET DAILY INTENTION..." else "BUGÜNKÜ ODAĞINI BELİRLE...", color = Color.Gray, style = MaterialTheme.typography.bodySmall); inner() })
-                        }
-                    }
+                    
+                    Spacer(Modifier.width(8.dp))
+                    
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Surface(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f), shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))) {
-                            Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(lang["statsTotal"] ?: "Total", fontSize = 9.sp, color = Color.Gray)
-                                Text("$totalCount", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        Surface(color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f), shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))) {
+                            Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Text("${lang["statsTotal"] ?: "Toplam"}: ", fontSize = 10.sp, color = Color.Gray)
+                                Text("$totalCount", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                             }
                         }
-                        Surface(color = TerminalGreen.copy(alpha = 0.15f), shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, TerminalGreen.copy(alpha = 0.5f))) {
-                            Column(modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text(lang["statsDone"] ?: "Done", fontSize = 9.sp, color = Color.Gray)
-                                Text("$doneCount", color = TerminalGreen, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        Surface(color = TerminalGreen.copy(alpha = 0.15f), shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, TerminalGreen.copy(alpha = 0.3f))) {
+                            Row(modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Text("${lang["statsDone"] ?: "Biten"}: ", fontSize = 10.sp, color = Color.Gray)
+                                Text("$doneCount", color = TerminalGreen, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                             }
                         }
                     }
-                }
-            }
-            Spacer(Modifier.height(10.dp))
-            OutlinedTextField(
-                value = taskInput, 
-                onValueChange = { taskInput = it }, 
-                label = { Text(if(isEnglish) "Task Title" else "Görev Başlığı") }, 
-                modifier = Modifier.fillMaxWidth(), 
-                maxLines = 2, 
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
-            )
-            Spacer(Modifier.height(8.dp))
-            OutlinedTextField(
-                value = taskNotes, 
-                onValueChange = { taskNotes = it }, 
-                label = { Text(if(isEnglish) "Details (Optional)" else "Notlar (Opsiyonel)") }, 
-                modifier = Modifier.fillMaxWidth(), 
-                maxLines = 3, 
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
-            )
-            Spacer(Modifier.height(8.dp))
-            OutlinedTextField(
-                value = taskDuration, 
-                onValueChange = { if (it.all { char -> char.isDigit() }) taskDuration = it }, 
-                label = { Text(if(isEnglish) "Duration (Mins)" else "Süre (Dakika)") }, 
-                modifier = Modifier.fillMaxWidth(), 
-                singleLine = true, 
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done, keyboardType = androidx.compose.ui.text.input.KeyboardType.Number), 
-                keyboardActions = KeyboardActions(onDone = { 
-                    if (taskInput.isNotBlank()) { 
-                        vm.addTask(taskInput, taskNotes, selectedCategory, selectedPriority, selectedDate, 0, taskDuration.toIntOrNull() ?: 0)
-                        taskInput = ""; taskNotes = ""; taskDuration = ""; haptic.performHapticFeedback(HapticFeedbackType.LongPress) 
-                    } 
-                })
-            )
-            Spacer(Modifier.height(6.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        listOf("Genel", "İş", "Kod", "Okul").forEach { cat -> FilterChip(selected = selectedCategory == cat, onClick = { selectedCategory = cat }, label = { Text(cat, fontSize = 10.sp) }, leadingIcon = null, modifier = Modifier.height(32.dp)) }
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        listOf("Kolay" to 0, "Orta" to 1, "Zor" to 2).forEach { (label, p) ->
-                            FilterChip(selected = selectedPriority == p, onClick = { selectedPriority = p }, label = { Text(label, fontSize = 10.sp) }, leadingIcon = null, modifier = Modifier.height(32.dp))
-                        }
-                    }
-                }
-                com.focuspath.app.ui.components.BouncyScaleButton(
-                    onClick = { 
-                        if (taskInput.isNotBlank()) { 
-                            vm.addTask(taskInput, taskNotes, selectedCategory, selectedPriority, selectedDate, 0, taskDuration.toIntOrNull() ?: 0)
-                            taskInput = ""
-                            taskNotes = ""
-                            taskDuration = ""
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress) 
-                        } 
-                    }
-                ) {
-                    Icon(Icons.Default.Add, null, tint = Color.Black)
-                    Spacer(Modifier.width(4.dp))
-                    Text("EKLE", color = Color.Black, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -455,27 +363,130 @@ fun TaskTab(
         }
     }
 
-    if (isLandscape) {
-        Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            Box(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) { 
-                Column {
-                    taskInputSection()
-                    habitSection()
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (isLandscape) {
+            Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Box(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) { 
+                    Column {
+                        headerSection()
+                        habitSection()
+                    }
+                }
+                Box(modifier = Modifier.weight(1.2f)) { taskListSection() }
+            }
+        } else {
+            Column(modifier = Modifier.fillMaxSize()) {
+                headerSection()
+                Spacer(Modifier.height(6.dp))
+                habitSection()
+                Spacer(Modifier.height(6.dp))
+                Box(modifier = Modifier.weight(1f)) { 
+                    taskListSection() 
                 }
             }
-            Box(modifier = Modifier.weight(1.2f)) { taskListSection() }
         }
-    } else {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Box(modifier = Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
-                Column {
-                    taskInputSection()
-                    habitSection()
+
+        ExtendedFloatingActionButton(
+            onClick = { showAddTaskSheet = true },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp),
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = Color.Black,
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "Add Task")
+            Spacer(Modifier.width(6.dp))
+            Text(if (isEnglish) "New Task" else "Yeni Görev", fontWeight = FontWeight.Bold)
+        }
+    }
+
+    if (showAddTaskSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showAddTaskSheet = false },
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    text = if (isEnglish) "New Task" else "Yeni Görev Ekle",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                
+                OutlinedTextField(
+                    value = taskInput,
+                    onValueChange = { taskInput = it },
+                    label = { Text(if (isEnglish) "Task Title" else "Görev Başlığı") },
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 2,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                
+                OutlinedTextField(
+                    value = taskNotes,
+                    onValueChange = { taskNotes = it },
+                    label = { Text(if (isEnglish) "Details (Optional)" else "Notlar (Opsiyonel)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 3,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                
+                OutlinedTextField(
+                    value = taskDuration,
+                    onValueChange = { if (it.all { char -> char.isDigit() }) taskDuration = it },
+                    label = { Text(if (isEnglish) "Duration (Mins)" else "Süre (Dakika)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done, keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            listOf("Genel", "İş", "Kod", "Okul").forEach { cat ->
+                                FilterChip(selected = selectedCategory == cat, onClick = { selectedCategory = cat }, label = { Text(cat, fontSize = 10.sp) }, leadingIcon = null, modifier = Modifier.height(30.dp))
+                            }
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            listOf("Kolay" to 0, "Orta" to 1, "Zor" to 2).forEach { (label, p) ->
+                                FilterChip(selected = selectedPriority == p, onClick = { selectedPriority = p }, label = { Text(label, fontSize = 10.sp) }, leadingIcon = null, modifier = Modifier.height(30.dp))
+                            }
+                        }
+                    }
                 }
-            }
-            Spacer(Modifier.height(10.dp))
-            Box(modifier = Modifier.weight(1f)) { 
-                taskListSection() 
+                
+                Spacer(Modifier.height(8.dp))
+                
+                Button(
+                    onClick = {
+                        if (taskInput.isNotBlank()) {
+                            vm.addTask(taskInput, taskNotes, selectedCategory, selectedPriority, selectedDate, 0, taskDuration.toIntOrNull() ?: 0)
+                            taskInput = ""
+                            taskNotes = ""
+                            taskDuration = ""
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            showAddTaskSheet = false
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Icon(Icons.Default.Add, null, tint = Color.Black)
+                    Spacer(Modifier.width(6.dp))
+                    Text(if (isEnglish) "ADD TASK" else "GÖREVİ EKLE", color = Color.Black, fontWeight = FontWeight.Bold)
+                }
+                
+                Spacer(Modifier.height(16.dp))
             }
         }
     }
