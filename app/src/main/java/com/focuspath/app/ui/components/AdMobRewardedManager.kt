@@ -12,7 +12,7 @@ object AdMobRewardedManager {
     private var rewardedAd: RewardedAd? = null
     private var isLoading = false
 
-    private const val AD_UNIT_ID = "ca-app-pub-9916683255323941/1166087409"
+    private const val AD_UNIT_ID = "ca-app-pub-7737712979922293/1066272217"
 
     fun loadAd(context: Context) {
         if (rewardedAd != null) {
