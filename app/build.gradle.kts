@@ -27,7 +27,7 @@ android {
         applicationId = "com.focuspath.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 117
+        versionCode = 120
         versionName = "1.2.3"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -53,6 +53,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 }

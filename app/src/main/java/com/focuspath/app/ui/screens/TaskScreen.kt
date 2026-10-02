@@ -915,7 +915,7 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
                                         Spacer(Modifier.width(8.dp))
                                         Column {
                                             Text(if(isEnglish) "STRICT MODE" else "SERT MOD", color = if(isStrictMode) MaterialTheme.colorScheme.primary else Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                            Text(if(isEnglish) "Auto DND & App Blocker active" else "Otomatik DND ve Uygulama Engelleyici aktif", color = Color.Gray, fontSize = 9.sp)
+                                            Text(if(isEnglish) "Auto DND (Do Not Disturb) active" else "Otomatik DND (Rahatsız Etmeyin) aktif", color = Color.Gray, fontSize = 9.sp)
                                         }
                                         Spacer(Modifier.width(12.dp))
                                         Switch(

@@ -146,9 +146,6 @@ class TaskViewModel @Inject constructor(
     val officeLevel = mutableStateOf(prefs.getInt("office_level", 1))
     val dailyFocusMinutes = mutableIntStateOf(prefs.getInt("DAILY_FOCUS_CURRENT", 0))
     val totalFocusMinutesCloud = mutableIntStateOf(prefs.getInt("total_focus_minutes_cloud", 0))
-    val blockedApps = mutableStateListOf<String>().apply {
-        addAll(prefs.getStringSet("blocked_apps", emptySet()) ?: emptySet())
-    }
     val isFocusActive = mutableStateOf(false)
     
     val timerRunning = mutableStateOf(false)
@@ -2376,7 +2373,6 @@ class TaskViewModel @Inject constructor(
         viewModelScope.launch { for (i in 0 until workers.size) { if (i < workers.size) { workers[i] = workers[i].copy(movementCount = 0) ; updateWorkerBehavior(i) } } }
     }
 
-    fun toggleBlockedApp(packageName: String) { if (blockedApps.contains(packageName)) blockedApps.remove(packageName) else blockedApps.add(packageName) ; prefs.edit().putStringSet("blocked_apps", blockedApps.toSet()).apply() }
     fun deleteTask(task: TaskEntity) { viewModelScope.launch(Dispatchers.IO) { taskDao.deleteTask(task) ; if (task.parentId == 0L) taskDao.deleteSubTasks(task.id) ; deleteTaskFromFirestore(task.id) ; updateWidgets() } }
     fun updateTask(task: TaskEntity) { viewModelScope.launch(Dispatchers.IO) { taskDao.updateTask(task) ; syncTaskToFirestore(task) } }
     fun setSearchQuery(query: String) { _searchQuery.value = query }
