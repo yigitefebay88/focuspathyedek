@@ -99,6 +99,23 @@ class SharedViewModel {
         }
     }
 
+    fun addTask(title: String, category: String = "Genel", priority: Int = 1, minutes: Int = 25) {
+        if (title.isBlank()) return
+        val newTask = Task(
+            id = (_tasks.value.size + 1).toLong() + (100..99999).random(),
+            title = title,
+            category = category,
+            priority = priority,
+            estimatedMinutes = minutes,
+            isCompleted = false
+        )
+        _tasks.value = listOf(newTask) + _tasks.value
+    }
+
+    fun deleteTask(task: Task) {
+        _tasks.value = _tasks.value.filter { it.id != task.id }
+    }
+
     fun completeIncomingTask(task: Task) {
         _incomingTasks.value = _incomingTasks.value.filter { it.id != task.id }
         _user.value = _user.value.copy(xp = _user.value.xp + 50, coins = _user.value.coins + 50)
@@ -116,8 +133,25 @@ class SharedViewModel {
 
     fun claimDailyReward() {
         _isDailyRewardClaimed.value = true
-        _user.value = _user.value.copy(coins = _user.value.coins + 20)
+        _user.value = _user.value.copy(coins = _user.value.coins + 50, xp = _user.value.xp + 20)
         _loginStreak.value += 1
+    }
+
+    fun upgradeOffice() {
+        val cost = _user.value.level * 500
+        if (_user.value.coins >= cost) {
+            _user.value = _user.value.copy(
+                coins = _user.value.coins - cost,
+                level = _user.value.level + 1
+            )
+        }
+    }
+
+    fun addXpAndCoins(xpAmount: Int, coinsAmount: Int) {
+        _user.value = _user.value.copy(
+            xp = _user.value.xp + xpAmount,
+            coins = _user.value.coins + coinsAmount
+        )
     }
 
     val radioStations = listOf("Lofi", "Jazz", "Nature", "White Noise")
@@ -132,7 +166,20 @@ class SharedViewModel {
         _currentRadioStation.value = null
     }
 
-    fun toggleTimer() {
-        _isTimerRunning.value = !_isTimerRunning.value
+    fun setTimerDuration(minutes: Long) {
+        _timeLeft.value = minutes * 60L
+    }
+
+    fun startTimer() {
+        _isTimerRunning.value = true
+    }
+
+    fun pauseTimer() {
+        _isTimerRunning.value = false
+    }
+
+    fun resetTimer() {
+        _isTimerRunning.value = false
+        _timeLeft.value = 1500L
     }
 }

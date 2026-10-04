@@ -107,26 +107,6 @@ class MainActivity : ComponentActivity(), BillingProvider {
         var showGamesDialogState = mutableStateOf(false)
     }
 
-    private fun loadInterstitialAd() {
-        val adRequest = AdRequest.Builder().build()
-        InterstitialAd.load(this, "ca-app-pub-3940256099942544/1033173712", adRequest, 
-            object : InterstitialAdLoadCallback() {
-                override fun onAdLoaded(ad: InterstitialAd) {
-                    interstitialAd = ad
-                }
-                override fun onAdFailedToLoad(adError: LoadAdError) {
-                    interstitialAd = null
-                }
-            })
-    }
-
-    fun showInterstitialAd() {
-        if (interstitialAd != null) {
-            interstitialAd?.show(this)
-            loadInterstitialAd() 
-        }
-    }
-
     private var timerReceiver: android.content.BroadcastReceiver? = null
 
     private val googleSignInLauncher = registerForActivityResult(
@@ -176,8 +156,6 @@ class MainActivity : ComponentActivity(), BillingProvider {
         }
     }
 
-    private var interstitialAd: InterstitialAd? = null
-
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
@@ -186,7 +164,6 @@ class MainActivity : ComponentActivity(), BillingProvider {
             android.util.Log.d("FocusPathAds", "AdMob Initialization Status: Done")
             com.focuspath.app.ui.components.AdMobRewardedManager.loadAd(this)
         }
-        loadInterstitialAd()
 
         logAppSignature()
         
@@ -223,9 +200,6 @@ class MainActivity : ComponentActivity(), BillingProvider {
                 } else if (intent?.action == "com.focuspath.TIMER_FINISHED") {
                     android.util.Log.d("FocusPathReceiver", "Timer Finished, calling recordSessionResult")
                     vm.recordSessionResult(true)
-                    if (!vm.isPremium.value) {
-                        showInterstitialAd()
-                    }
                 }
             }
         }
