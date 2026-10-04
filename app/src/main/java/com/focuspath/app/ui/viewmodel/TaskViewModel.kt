@@ -390,6 +390,7 @@ class TaskViewModel @Inject constructor(
     private var liveFocusRegistration: com.google.firebase.firestore.ListenerRegistration? = null
     private var friendsRegistration: com.google.firebase.firestore.ListenerRegistration? = null
     private var friendRequestRegistration: com.google.firebase.firestore.ListenerRegistration? = null
+    private var leaderboardRegistration: com.google.firebase.firestore.ListenerRegistration? = null
     private var lastLiveFocusUpdate = 0L
 
     private val _searchQuery = MutableStateFlow("")
@@ -1758,12 +1759,18 @@ class TaskViewModel @Inject constructor(
             if (doc.exists()) {
                 applyUserDataDoc(doc)
                 syncTasksFromCloud(email, user?.uid)
+                syncXpToFirestore()
             } else docRefByUid?.get()?.addOnSuccessListener {
                 if (it.exists()) {
                     applyUserDataDoc(it)
                     syncTasksFromCloud(email, user?.uid)
+                    syncXpToFirestore()
+                } else {
+                    syncXpToFirestore()
                 }
-            }
+            } ?: syncXpToFirestore()
+        }.addOnFailureListener {
+            syncXpToFirestore()
         }
     }
 
@@ -1950,24 +1957,45 @@ class TaskViewModel @Inject constructor(
 
     fun fetchLeaderboard() {
         isLeaderboardLoading.value = true
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val response = apiService.getLeaderboard()
-                if (response.isSuccessful && response.body() != null) {
-                    _leaderboard.value = response.body()!!.map { LeaderboardUser(uid = it.email, email = it.email, name = it.username, score = it.xp, level = it.level) }
-                    initializeWorkers()
-                } else fetchLeaderboardFromFirestore()
-            } catch (e: Exception) { fetchLeaderboardFromFirestore() } finally { isLeaderboardLoading.value = false }
-        }
+        syncXpToFirestore()
+        fetchLeaderboardFromFirestore()
+
         firestore.collection("teams").orderBy("totalTeamXp", com.google.firebase.firestore.Query.Direction.DESCENDING).limit(10).addSnapshotListener { snapshot, _ -> if (snapshot != null) _teamLeaderboard.value = snapshot.documents.mapNotNull { it.toObject(Team::class.java) } }
         listenForIncomingMessages()
     }
 
     private fun fetchLeaderboardFromFirestore() {
-        firestore.collection("leaderboard").limit(50).get().addOnSuccessListener { snapshot ->
-            val users = snapshot.documents.mapNotNull { it.toObject(LeaderboardUser::class.java)?.copy(uid = it.id) }.sortedByDescending { it.score }
-            if (users.isEmpty()) fetchLeaderboardLocal() else { _leaderboard.value = users ; initializeWorkers() }
-        }
+        leaderboardRegistration?.remove()
+        leaderboardRegistration = firestore.collection("leaderboard")
+            .orderBy("score", com.google.firebase.firestore.Query.Direction.DESCENDING)
+            .limit(50)
+            .addSnapshotListener { snapshot, error ->
+                isLeaderboardLoading.value = false
+                if (error != null) {
+                    if (_leaderboard.value.isEmpty()) fetchLeaderboardLocal()
+                    return@addSnapshotListener
+                }
+                if (snapshot != null) {
+                    val users = snapshot.documents.mapNotNull { doc ->
+                        val u = doc.toObject(LeaderboardUser::class.java)?.copy(uid = doc.id)
+                        if (u != null) {
+                            val photoVal = doc.get("photoUrl") ?: doc.get("photo_url") ?: doc.get("photo")
+                            val photoStr = photoVal?.toString()?.trim()
+                            if (!photoStr.isNullOrBlank() && photoStr.startsWith("http")) {
+                                u.photoUrl = photoStr
+                            }
+                        }
+                        u
+                    }.sortedByDescending { it.score }
+
+                    if (users.isEmpty()) {
+                        fetchLeaderboardLocal()
+                    } else {
+                        _leaderboard.value = users
+                        initializeWorkers()
+                    }
+                }
+            }
     }
 
     fun fetchLeaderboardLocal() {
@@ -2163,14 +2191,21 @@ class TaskViewModel @Inject constructor(
                     "uid" to myUid,
                     "email" to email,
                     "score" to userXp.value.toLong(),
+                    "level" to userLevel.value,
                     "photoUrl" to remoteUrl,
                     "name" to finalName,
                     "timestamp" to System.currentTimeMillis(),
+                    "isFocusing" to isFocusing,
                     "focusing" to isFocusing,
                     "currentTaskTitle" to (if (isFocusing) activeTask?.title ?: "" else "")
                 )
                 
                 firestore.collection("leaderboard").document(myUid).set(updateMap, com.google.firebase.firestore.SetOptions.merge()).await()
+                
+                if (user != null) {
+                    firestore.collection("users").document(user.uid).set(updateMap, com.google.firebase.firestore.SetOptions.merge())
+                }
+                firestore.collection("users").document(email).set(updateMap, com.google.firebase.firestore.SetOptions.merge())
             } catch (e: Exception) {}
         }
     }
@@ -2416,6 +2451,8 @@ class TaskViewModel @Inject constructor(
                 }.apply()
                 
                 fetchUserDataFromFirestore()
+                syncProfileToFirestore()
+                syncXpToFirestore()
                 fetchLeaderboard()
                 startFriendRequestListener()
                 startFriendsListener()
@@ -2540,6 +2577,8 @@ class TaskViewModel @Inject constructor(
         }.apply()
         
         fetchUserDataFromFirestore()
+        syncProfileToFirestore()
+        syncXpToFirestore()
         fetchLeaderboard()
         startFriendRequestListener()
         startFriendsListener()
