@@ -350,9 +350,6 @@ class TaskViewModel @Inject constructor(
     val isRadioPlaying = mutableStateOf(false)
     val isRadioLoading = mutableStateOf(false)
 
-    private val simulatedBots = mutableStateListOf<LeaderboardUser>()
-    private var botSimulationJob: kotlinx.coroutines.Job? = null
-
     private val prefsListener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { sharedPrefs, key ->
         when (key) {
             "user_xp" -> {
@@ -929,10 +926,9 @@ class TaskViewModel @Inject constructor(
 
         fetchUserDataFromFirestore()
         syncWithBackend()
+        fetchLeaderboard()
 
         viewModelScope.launch {
-            delay(2500)
-            fetchLeaderboard()
             fetchUserTeam()
             syncXpToFirestore()
             startFriendRequestListener()
@@ -2000,127 +1996,8 @@ class TaskViewModel @Inject constructor(
 
     fun fetchLeaderboardLocal() {
         val me = LeaderboardUser(uid = "me", name = userName.value + " (Siz)", score = userXp.value.toLong(), photoUrl = userPhotoUrl.value, level = userLevel.value)
-        _leaderboard.value = (simulatedBots + me).sortedByDescending { it.score }
+        _leaderboard.value = listOf(me)
         initializeWorkers()
-    }
-
-    private fun startBotSimulation() {
-        if (botSimulationJob != null) return
-        
-        val botTasks = listOf(
-            "Kod İnceleme", "UI Tasarımı", "Veritabanı Optimizasyonu", 
-            "Müşteri Sunumu", "E-postaları Yanıtla", "Yeni Özellik Geliştirme",
-            "Bug Fix", "Dökümantasyon Yazımı", "Ekip Toplantısı", "Kahve Molası"
-        )
-        
-        val botMessages = listOf(
-            "Harika gidiyorsun, devam et!", 
-            "Bugün çok üretkeniz!", 
-            "Biraz mola vermeyi unutma.", 
-            "Odaklanmak harika hissettiriyor.", 
-            "Hadi şu görevleri bitirelim!",
-            "Seninle çalışmak motive edici."
-        )
-
-        if (simulatedBots.isEmpty()) {
-            val names = listOf("Arda Yılmaz", "Zeynep Kaya", "Can Demir", "Elif Şahin", "Mert Aydın")
-            val colors = listOf("0D8ABC", "6495ED", "20B2AA", "F08080", "FFA07A")
-            names.forEachIndexed { i, name ->
-                simulatedBots.add(LeaderboardUser(
-                    uid = "bot_$i",
-                    name = name,
-                    score = (800..3500).random().toLong(),
-                    level = (8..35).random(),
-                    isFocusing = (0..1).random() == 1,
-                    currentTaskTitle = if ((0..1).random() == 1) botTasks.random() else "",
-                    photoUrl = "https://ui-avatars.com/api/?name=${name.replace(" ", "+")}&background=${colors[i]}&color=fff",
-                    latestEmoji = null
-                ))
-            }
-        }
-
-        botSimulationJob = viewModelScope.launch {
-            while (true) {
-                delay(30000L) // 30 saniyede bir aksiyon şansı
-                
-                var changed = false
-                val currentTime = System.currentTimeMillis()
-                
-                for (i in simulatedBots.indices) {
-                    val bot = simulatedBots[i]
-                    
-                    // 1. Odaklanma durumu değişimi (%15 ihtimal)
-                    val toggleFocus = (1..100).random() <= 15
-                    var newIsFocusing = bot.isFocusing
-                    var newTitle = bot.currentTaskTitle
-                    var newEmoji = bot.latestEmoji
-                    var newEmojiTime = bot.emojiTime
-                    
-                    if (toggleFocus) {
-                        newIsFocusing = !newIsFocusing
-                        newTitle = if (newIsFocusing) botTasks.random() else ""
-                        newEmoji = if (newIsFocusing) "🚀" else "☕"
-                        newEmojiTime = currentTime
-                        changed = true
-                    }
-                    
-                    // 2. Rastgele Emoji Tepkisi (%10 ihtimal)
-                    if (!toggleFocus && (1..100).random() <= 10) {
-                        val emojis = listOf("🔥", "⚡", "💪", "🎯", "👏", "⭐")
-                        newEmoji = emojis.random()
-                        newEmojiTime = currentTime
-                        changed = true
-                    }
-                    
-                    // 3. Mesaj Gönderme (%5 ihtimal, sadece odaklanıyorken ve kullanıcıya)
-                    if (newIsFocusing && (1..100).random() <= 5) {
-                        val msg = DirectMessage(
-                            id = UUID.randomUUID().toString(),
-                            from = "bot_${i}@focuspath.local",
-                            fromName = bot.name,
-                            to = userEmail.value,
-                            toName = userName.value,
-                            text = botMessages.random(),
-                            timestamp = currentTime
-                        )
-                        withContext(Dispatchers.Main) {
-                            if (!_directMessages.any { it.text == msg.text && it.fromName == msg.fromName }) {
-                                _directMessages.add(msg)
-                            }
-                        }
-                    }
-                    
-                    // 4. Skor artışı (Sadece odaklanıyorsa)
-                    var newScore = bot.score
-                    if (newIsFocusing) {
-                        newScore += (2..6).random()
-                        changed = true
-                    }
-                    
-                    val newLevel = (newScore / 100).toInt() + 1
-                    
-                    if (changed) {
-                        simulatedBots[i] = bot.copy(
-                            score = newScore, 
-                            level = newLevel, 
-                            isFocusing = newIsFocusing,
-                            currentTaskTitle = newTitle,
-                            latestEmoji = newEmoji,
-                            emojiTime = newEmojiTime
-                        )
-                    }
-                }
-                
-                if (changed || prefs.getBoolean("is_local_mode", false)) {
-                    val me = LeaderboardUser(uid = "me", name = userName.value + " (Siz)", score = userXp.value.toLong(), photoUrl = userPhotoUrl.value, level = userLevel.value)
-                    _leaderboard.value = (simulatedBots + me).sortedByDescending { it.score }
-                    
-                    withContext(Dispatchers.Main) {
-                        initializeWorkers()
-                    }
-                }
-            }
-        }
     }
 
     private fun listenForIncomingMessages() {
@@ -2900,7 +2777,6 @@ class TaskViewModel @Inject constructor(
         updateAmbientSounds()
         loadDopamineMenu()
         autoLogin()
-        startBotSimulation()
     }
 }
 

@@ -63,6 +63,10 @@ fun CalendarTab(
 
     val lbUsers by vm.leaderboard.collectAsState()
 
+    LaunchedEffect(Unit) {
+        vm.fetchLeaderboard()
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()

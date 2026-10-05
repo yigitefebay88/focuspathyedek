@@ -1775,7 +1775,11 @@ private fun CalendarTabFull(vm: TaskViewModel, lang: Map<String, String>, curren
     var showTomorrowDialog by remember { mutableStateOf(false) }
     var habitToDelete by remember { mutableStateOf<HabitEntity?>(null) }
 
-    val lbUsers by vm.leaderboard.collectAsState(); Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    val lbUsers by vm.leaderboard.collectAsState()
+    LaunchedEffect(Unit) {
+        vm.fetchLeaderboard()
+    }
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))) {
             Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(text = currentMonthName.uppercase(), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
