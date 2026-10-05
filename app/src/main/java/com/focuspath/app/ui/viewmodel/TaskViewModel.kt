@@ -278,32 +278,49 @@ class TaskViewModel @Inject constructor(
     ) { users, localXp, localPhoto, localName ->
         try {
             val currentUid = firebaseAuth.currentUser?.uid
-            val currentEmail = userEmail.value
+            val currentEmail = userEmail.value.trim()
             
             var foundMe = false
             val mappedUsers = users.map { user ->
-                val isMe = (currentUid != null && user.uid == currentUid) || 
-                           (user.email.isNotBlank() && user.email.equals(currentEmail, ignoreCase = true))
+                val isMe = (user.uid == "me") ||
+                           (currentUid != null && user.uid == currentUid) || 
+                           (user.email.isNotBlank() && currentEmail.isNotBlank() && user.email.trim().equals(currentEmail, ignoreCase = true))
                 
                 if (isMe) {
                     foundMe = true
-                    user.copy(photoUrl = localPhoto, score = localXp, name = localName)
+                    user.copy(
+                        uid = if (user.uid == "me" && currentUid != null) currentUid else user.uid,
+                        email = if (user.email.isBlank()) currentEmail else user.email,
+                        photoUrl = if (!localPhoto.isNullOrBlank()) localPhoto else user.photoUrl,
+                        score = localXp,
+                        name = if (localName.isNotBlank() && localName != "ANONYMOUS") localName else user.name
+                    )
                 } else {
                     user
                 }
             }.toMutableList()
 
-            if (!foundMe && currentUid != null) {
+            if (!foundMe && (currentUid != null || currentEmail.isNotBlank())) {
                 mappedUsers.add(LeaderboardUser(
-                    uid = currentUid,
-                    name = localName,
+                    uid = currentUid ?: "me",
+                    name = if (localName.isNotBlank() && localName != "ANONYMOUS") localName else "Siz",
                     email = currentEmail,
                     score = localXp,
                     photoUrl = localPhoto
                 ))
             }
 
-            mappedUsers.sortedByDescending { it.score }
+            mappedUsers
+                .distinctBy { user ->
+                    when {
+                        currentUid != null && (user.uid == currentUid || user.uid == "me") -> "me_key"
+                        currentEmail.isNotBlank() && user.email.trim().equals(currentEmail, ignoreCase = true) -> "me_key"
+                        user.email.isNotBlank() -> user.email.trim().lowercase()
+                        user.uid.isNotBlank() -> user.uid
+                        else -> user.name.lowercase()
+                    }
+                }
+                .sortedByDescending { it.score }
         } catch (e: Exception) {
             users
         }
@@ -1995,7 +2012,10 @@ class TaskViewModel @Inject constructor(
     }
 
     fun fetchLeaderboardLocal() {
-        val me = LeaderboardUser(uid = "me", name = userName.value + " (Siz)", score = userXp.value.toLong(), photoUrl = userPhotoUrl.value, level = userLevel.value)
+        val email = userEmail.value
+        val uid = firebaseAuth.currentUser?.uid ?: "me"
+        val displayName = if (userName.value.isNotBlank() && userName.value != "ANONYMOUS") userName.value else "Siz"
+        val me = LeaderboardUser(uid = uid, name = displayName, email = email, score = userXp.value.toLong(), photoUrl = userPhotoUrl.value, level = userLevel.value)
         _leaderboard.value = listOf(me)
         initializeWorkers()
     }
