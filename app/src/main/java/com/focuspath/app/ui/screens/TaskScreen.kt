@@ -457,15 +457,15 @@ fun TaskScreen(vm: TaskViewModel, onLoginClick: () -> Unit) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         val navLabels = if (isEnglish)
-                            listOf("QUEST", "INCOMING", "ACHIEVE", "FRIENDS")
+                            listOf("QUEST", "INCOMING", "ACHIEVE", "NOTES")
                         else
-                            listOf("GÖREV", "GELEN", "BAŞARIM", "ARKADAŞLAR")
+                            listOf("GÖREV", "GELEN", "BAŞARIM", "NOTLAR")
 
                         val navActions: List<() -> Unit> = listOf(
                             { com.focuspath.app.MainActivity.showQuestDialogState.value = true },
                             { com.focuspath.app.MainActivity.showIncomingTasksDialogState.value = true },
                             { com.focuspath.app.MainActivity.showAchievementDialogState.value = true },
-                            { com.focuspath.app.MainActivity.showFriendsDialogState.value = true }
+                            { com.focuspath.app.MainActivity.showNotesDialogState.value = true }
                         )
 
                         navLabels.forEachIndexed { index, label ->

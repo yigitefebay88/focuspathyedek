@@ -15,8 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Inbox
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -105,6 +104,7 @@ class MainActivity : ComponentActivity(), BillingProvider {
         var showFriendsDialogState = mutableStateOf(false)
         var showIncomingTasksDialogState = mutableStateOf(false)
         var showGamesDialogState = mutableStateOf(false)
+        var showNotesDialogState = mutableStateOf(false)
     }
 
     private var timerReceiver: android.content.BroadcastReceiver? = null
@@ -361,6 +361,68 @@ class MainActivity : ComponentActivity(), BillingProvider {
                         vm = vm,
                         onDismiss = { showGamesDialogState.value = false }
                     )
+                }
+
+                if (showNotesDialogState.value) {
+                    Dialog(onDismissRequest = { showNotesDialogState.value = false }) {
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(450.dp)
+                                .clip(RoundedCornerShape(24.dp))
+                                .border(1.dp, terminalColor.copy(alpha = 0.5f), RoundedCornerShape(24.dp)),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
+                            Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Psychology, null, tint = terminalColor)
+                                    Spacer(Modifier.width(12.dp))
+                                    Text(
+                                        "NOTLAR & ZİHİN DÖKÜMÜ",
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = terminalColor
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                val notes = vm.brainDumpNotes
+                                if (notes.isEmpty()) {
+                                    Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                        Text("Henüz kaydedilmiş not/zihin dökümü yok.", color = Color.Gray)
+                                    }
+                                } else {
+                                    LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        items(notes) { note ->
+                                            Card(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.4f)),
+                                                border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.2f))
+                                            ) {
+                                                Text(
+                                                    text = note,
+                                                    modifier = Modifier.padding(12.dp),
+                                                    color = Color.White
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                Button(
+                                    onClick = { showNotesDialogState.value = false },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = ButtonDefaults.buttonColors(containerColor = terminalColor),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text("Kapat", color = Color.Black, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
                 }
 
                 if (showQuestDialogState.value) {
