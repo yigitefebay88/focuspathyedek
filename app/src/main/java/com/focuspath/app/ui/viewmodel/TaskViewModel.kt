@@ -269,6 +269,54 @@ class TaskViewModel @Inject constructor(
         }
     }
 
+    private val botUsers = mutableListOf(
+        LeaderboardUser(uid = "bot_1", name = "Ahmet Yılmaz", email = "ahmet@focus.bot", score = 1450L, level = 3, isFocusing = true, currentTaskTitle = "Kotlin Coroutines", photoUrl = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"),
+        LeaderboardUser(uid = "bot_2", name = "Zeynep Demir", email = "zeynep@focus.bot", score = 2100L, level = 5, isFocusing = true, currentTaskTitle = "Jetpack Compose", photoUrl = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100"),
+        LeaderboardUser(uid = "bot_3", name = "Can Oruç", email = "can@focus.bot", score = 890L, level = 2, isFocusing = false, currentTaskTitle = null, photoUrl = "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=100"),
+        LeaderboardUser(uid = "bot_4", name = "Elif Kaya", email = "elif@focus.bot", score = 3200L, level = 7, isFocusing = true, currentTaskTitle = "Algoritma Optimizasyonu", photoUrl = "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100"),
+        LeaderboardUser(uid = "bot_5", name = "Burak Çelik", email = "burak@focus.bot", score = 1150L, level = 3, isFocusing = false, currentTaskTitle = null, photoUrl = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100"),
+        LeaderboardUser(uid = "bot_6", name = "AI Focus Coach", email = "coach@focus.bot", score = 4500L, level = 9, isFocusing = true, currentTaskTitle = "Sistemi Denetliyor", photoUrl = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100")
+    )
+
+    private fun startBotScoreSimulation() {
+        viewModelScope.launch {
+            while (true) {
+                delay(30_000L)
+                try {
+                    var changed = false
+                    botUsers.indices.forEach { i ->
+                        if (kotlin.random.Random.nextFloat() < 0.6f) {
+                            val bot = botUsers[i]
+                            val added = kotlin.random.Random.nextLong(10L, 40L)
+                            val newScore = bot.score + added
+                            val newLevel = (newScore / 500).toInt() + 1
+                            val isFocus = kotlin.random.Random.nextFloat() < 0.7f
+                            val tasks = listOf("Kod İnceleme", "UI Tasarımı", "Unit Test", "Refaktör", "Mimari Planlama", "Optimizasyon")
+                            botUsers[i] = bot.copy(
+                                score = newScore,
+                                level = newLevel,
+                                isFocusing = isFocus,
+                                currentTaskTitle = if (isFocus) tasks.random() else null
+                            )
+                            changed = true
+                        }
+                    }
+                    if (changed) {
+                        val currentList = _leaderboard.value.toMutableList()
+                        val updated = currentList.map { u ->
+                            if (u.uid.startsWith("bot_")) {
+                                botUsers.find { it.uid == u.uid } ?: u
+                            } else u
+                        }.sortedByDescending { it.score }
+                        _leaderboard.value = updated
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+    }
+
     private val _leaderboard = MutableStateFlow<List<LeaderboardUser>>(emptyList())
     val leaderboard: StateFlow<List<LeaderboardUser>> = combine(
         _leaderboard,
@@ -1989,7 +2037,7 @@ class TaskViewModel @Inject constructor(
                     return@addSnapshotListener
                 }
                 if (snapshot != null) {
-                    val users = snapshot.documents.mapNotNull { doc ->
+                    val realUsers = snapshot.documents.mapNotNull { doc ->
                         val u = doc.toObject(LeaderboardUser::class.java)?.copy(uid = doc.id)
                         if (u != null) {
                             val photoVal = doc.get("photoUrl") ?: doc.get("photo_url") ?: doc.get("photo")
@@ -1999,14 +2047,13 @@ class TaskViewModel @Inject constructor(
                             }
                         }
                         u
-                    }.sortedByDescending { it.score }
-
-                    if (users.isEmpty()) {
-                        fetchLeaderboardLocal()
-                    } else {
-                        _leaderboard.value = users
-                        initializeWorkers()
                     }
+
+                    val realEmails = realUsers.map { it.email.lowercase() }.toSet()
+                    val activeBots = botUsers.filter { !realEmails.contains(it.email.lowercase()) }
+                    val combined = (realUsers + activeBots).sortedByDescending { it.score }
+                    _leaderboard.value = combined
+                    initializeWorkers()
                 }
             }
     }
@@ -2016,7 +2063,8 @@ class TaskViewModel @Inject constructor(
         val uid = firebaseAuth.currentUser?.uid ?: "me"
         val displayName = if (userName.value.isNotBlank() && userName.value != "ANONYMOUS") userName.value else "Siz"
         val me = LeaderboardUser(uid = uid, name = displayName, email = email, score = userXp.value.toLong(), photoUrl = userPhotoUrl.value, level = userLevel.value)
-        _leaderboard.value = listOf(me)
+        val combined = (botUsers + me).sortedByDescending { it.score }
+        _leaderboard.value = combined
         initializeWorkers()
     }
 
@@ -2802,6 +2850,7 @@ class TaskViewModel @Inject constructor(
 
         initializeWorkers()
         startWorkerSimulation()
+        startBotScoreSimulation()
         syncTimerWithService()
         checkPlantHealth()
         fetchYesterdayStats()
