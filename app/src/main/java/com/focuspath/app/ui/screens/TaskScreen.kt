@@ -3837,6 +3837,7 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
     
     val totalCoins = vm.userCoins.value
     val totalXp = vm.userXp.value
+    var showLofiFocusDialog by remember { mutableStateOf(false) }
     
     // Bugünün başlangıcını bul (00:00:00)
     val startOfToday = remember {
@@ -4399,6 +4400,15 @@ private fun HomeTabFull(vm: TaskViewModel, allTasks: List<TaskEntity>, lang: Map
             }
         }
         item(key = "home_spacer", contentType = "spacer") { Spacer(Modifier.height(80.dp).animateItemPlacement(itemAnimationSpec)) }
+    }
+
+    if (showLofiFocusDialog) {
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = { showLofiFocusDialog = false },
+            properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            com.focuspath.app.ui.screens.games.LofiFocusDialog(vm, isEnglish) { showLofiFocusDialog = false }
+        }
     }
 }
 

@@ -188,57 +188,57 @@ fun MainScaffold(
 
     activeDialog?.let { type ->
         Dialog(onDismissRequest = { onDialogChange(null) }) {
-            Surface(
-                modifier = Modifier.fillMaxWidth().wrapContentHeight().clip(RoundedCornerShape(24.dp)),
-                color = SurfaceColor,
-                border = BorderStroke(1.dp, TerminalGreen.copy(0.3f))
-            ) {
-                Column(modifier = Modifier.padding(20.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = when (type) {
-                                "QUEST" -> "YENİ GÖREV EKLE"
-                                "INCOMING" -> "GELEN GÖREVLER"
-                                "GAMES" -> "MİNİ OYUNLAR"
-                                "ACHIEVE" -> "BAŞARIMLAR"
-                                "GÜNLÜK ÖDÜL" -> "GÜNLÜK ÖDÜL 🎉"
-                                "PROFİL" -> "PROFİL & AYARLAR"
-                                else -> type
-                            },
-                            style = MaterialTheme.typography.titleMedium,
-                            color = TerminalGreen,
-                            fontWeight = FontWeight.Black
-                        )
-                        IconButton(onClick = { onDialogChange(null) }) {
-                            Icon(Icons.Default.Close, null, tint = Color.Gray)
+                Surface(
+                    modifier = Modifier.fillMaxWidth().wrapContentHeight().clip(RoundedCornerShape(24.dp)),
+                    color = SurfaceColor,
+                    border = BorderStroke(1.dp, TerminalGreen.copy(0.3f))
+                ) {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = when (type) {
+                                    "QUEST" -> "YENİ GÖREV EKLE"
+                                    "INCOMING" -> "GELEN GÖREVLER"
+                                    "GAMES" -> "MİNİ OYUNLAR"
+                                    "ACHIEVE" -> "BAŞARIMLAR"
+                                    "GÜNLÜK ÖDÜL" -> "GÜNLÜK ÖDÜL 🎉"
+                                    "PROFİL" -> "PROFİL & AYARLAR"
+                                    else -> type
+                                },
+                                style = MaterialTheme.typography.titleMedium,
+                                color = TerminalGreen,
+                                fontWeight = FontWeight.Black
+                            )
+                            IconButton(onClick = { onDialogChange(null) }) {
+                                Icon(Icons.Default.Close, null, tint = Color.Gray)
+                            }
                         }
-                    }
 
-                    Spacer(Modifier.height(12.dp))
+                        Spacer(Modifier.height(12.dp))
 
-                    when (type) {
-                        "QUEST" -> AddQuestDialogContent(viewModel) { onDialogChange(null) }
-                        "INCOMING" -> IncomingTasksDialogContent(incomingTasks, viewModel)
-                        "GAMES" -> MiniGamesDialogContent(viewModel)
-                        "ACHIEVE" -> AchievementsDialogContent(user)
-                        "GÜNLÜK ÖDÜL" -> DailyRewardDialogContent(viewModel, loginStreak) { onDialogChange(null) }
-                        "PROFİL" -> ProfileDialogContent(user, viewModel)
-                        else -> {
-                            Text("Bu özellik iOS için aktif edildi.", color = Color.White)
-                            Spacer(Modifier.height(16.dp))
-                            Button(onClick = { onDialogChange(null) }, modifier = Modifier.fillMaxWidth()) {
-                                Text("TAMAM")
+                        when (type) {
+                            "QUEST" -> AddQuestDialogContent(viewModel) { onDialogChange(null) }
+                            "INCOMING" -> IncomingTasksDialogContent(incomingTasks, viewModel)
+                            "GAMES" -> MiniGamesDialogContent(viewModel)
+                            "ACHIEVE" -> AchievementsDialogContent(user)
+                            "GÜNLÜK ÖDÜL" -> DailyRewardDialogContent(viewModel, loginStreak) { onDialogChange(null) }
+                            "PROFİL" -> ProfileDialogContent(user, viewModel)
+                            else -> {
+                                Text("Bu özellik iOS için aktif edildi.", color = Color.White)
+                                Spacer(Modifier.height(16.dp))
+                                Button(onClick = { onDialogChange(null) }, modifier = Modifier.fillMaxWidth()) {
+                                    Text("TAMAM")
+                                }
                             }
                         }
                     }
                 }
             }
         }
-    }
 
     if (!isDailyRewardClaimed && activeDialog == null) {
         LaunchedEffect(Unit) { onDialogChange("GÜNLÜK ÖDÜL") }
@@ -472,10 +472,54 @@ fun HomeTab(leaderboard: List<LeaderboardUser>, user: User, viewModel: SharedVie
     
     LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item {
+            Card(
+                onClick = { onDialogChange("LOFI") },
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1B4B)),
+                border = BorderStroke(1.dp, TerminalGreen)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("🎧", fontSize = 32.sp)
+                    Spacer(Modifier.width(16.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Focus with Lofi beats", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
+                        Text("Immersive lofi study & focus session", style = MaterialTheme.typography.bodySmall, color = TerminalGreen)
+                    }
+                    Icon(Icons.Default.PlayArrow, null, tint = TerminalGreen)
+                }
+            }
+        }
+
+        item {
             Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = SurfaceColor)) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("Hoş Geldin, ${user.name}", style = MaterialTheme.typography.titleMedium, color = Color.White)
                     Text("${user.coins} Coin • Seviye ${user.level}", style = MaterialTheme.typography.bodySmall, color = TerminalGreen)
+                }
+            }
+        }
+
+        item {
+            Card(
+                onClick = { onDialogChange("LOFI") },
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1B4B)),
+                border = BorderStroke(1.dp, TerminalGreen)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("🎧", fontSize = 32.sp)
+                    Spacer(Modifier.width(16.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Focus with Lofi beats", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
+                        Text("Immersive lofi study & focus session", style = MaterialTheme.typography.bodySmall, color = TerminalGreen)
+                    }
+                    Icon(Icons.Default.PlayArrow, null, tint = TerminalGreen)
                 }
             }
         }
