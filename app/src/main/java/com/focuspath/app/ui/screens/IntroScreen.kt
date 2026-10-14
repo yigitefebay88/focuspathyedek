@@ -4,6 +4,8 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -45,16 +47,15 @@ fun IntroScreen(terminalColor: Color, onFinish: () -> Unit) {
         Crossfade(
             targetState = backgrounds[currentBgIndex],
             animationSpec = tween(1200),
-            label = "BackgroundFade"
+            label = "BackgroundFade",
+            modifier = Modifier.fillMaxSize()
         ) { background ->
-            Box(modifier = Modifier.fillMaxSize()) {
-                AsyncImage(
-                    model = background,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            }
+            AsyncImage(
+                model = background,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
         }
 
         Box(
@@ -67,59 +68,71 @@ fun IntroScreen(terminalColor: Color, onFinish: () -> Unit) {
                 )
         )
 
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .statusBarsPadding()
+                .navigationBarsPadding()
                 .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            contentAlignment = Alignment.Center
         ) {
-            LottieAnimation(
-                composition = composition,
-                iterations = LottieConstants.IterateForever,
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth(0.7f)
-                    .aspectRatio(1f)
-            )
-            
-            Spacer(Modifier.height(32.dp))
-            
-            Text(
-                text = "ODAKLANMAYA HAZIR MISIN?",
-                color = terminalColor,
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 2.sp
-                ),
-                textAlign = TextAlign.Center
-            )
-            
-            Spacer(Modifier.height(8.dp))
-            
-            Text(
-                text = "FocusPath ile Hedefine Ulaş",
-                color = Color.White.copy(alpha = 0.7f),
-                style = MaterialTheme.typography.bodyLarge,
-                textAlign = TextAlign.Center
-            )
-            
-            Spacer(Modifier.height(48.dp))
-            
-            Button(
-                onClick = onFinish,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1976D2)),
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier
-                    .fillMaxWidth(0.65f)
-                    .height(56.dp)
+                    .widthIn(max = 450.dp)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                Text(
-                    text = "EVET, BAŞLA",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
+                Spacer(Modifier.height(16.dp))
+                LottieAnimation(
+                    composition = composition,
+                    iterations = LottieConstants.IterateForever,
+                    modifier = Modifier
+                        .size(180.dp)
                 )
+                
+                Spacer(Modifier.height(24.dp))
+                
+                Text(
+                    text = "ODAKLANMAYA HAZIR MISIN?",
+                    color = terminalColor,
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 2.sp
+                    ),
+                    textAlign = TextAlign.Center
+                )
+                
+                Spacer(Modifier.height(8.dp))
+                
+                Text(
+                    text = "FocusPath ile Hedefine Ulaş",
+                    color = Color.White.copy(alpha = 0.7f),
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center
+                )
+                
+                Spacer(Modifier.height(32.dp))
+                
+                Button(
+                    onClick = onFinish,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1976D2)),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                ) {
+                    Text(
+                        text = "EVET, BAŞLA",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+                }
+                
+                Spacer(Modifier.height(24.dp))
             }
         }
     }
