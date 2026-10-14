@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
 class SharedViewModel {
-    private val _user = MutableStateFlow(User(name = "Kullanıcı", coins = 120, level = 2, xp = 350))
+    private val _user = MutableStateFlow(User(name = "Yigit", coins = 250, level = 3, xp = 520))
     val user: StateFlow<User> = _user.asStateFlow()
 
     private val _tasks = MutableStateFlow(
@@ -31,9 +31,6 @@ class SharedViewModel {
     )
     val leaderboard: StateFlow<List<LeaderboardUser>> = _leaderboard.asStateFlow()
 
-    private val _isPremium = MutableStateFlow(false)
-    val isPremium: StateFlow<Boolean> = _isPremium.asStateFlow()
-
     private val _incomingTasks = MutableStateFlow(
         listOf(
             Task(id = 101, title = "Kod İncelemesi (Peer Review)", category = "İş", priority = 1)
@@ -44,13 +41,14 @@ class SharedViewModel {
     private val _isDailyRewardClaimed = MutableStateFlow(false)
     val isDailyRewardClaimed: StateFlow<Boolean> = _isDailyRewardClaimed.asStateFlow()
 
-    private val _loginStreak = MutableStateFlow(3)
+    private val _loginStreak = MutableStateFlow(4)
     val loginStreak: StateFlow<Int> = _loginStreak.asStateFlow()
 
     private val _workers = MutableStateFlow(
         listOf(
-            WorkerInfo(id = "1", name = "Ahmet", position = "Developer", isMe = true),
-            WorkerInfo(id = "2", name = "Elif", position = "Designer")
+            WorkerInfo(id = "1", name = "Ahmet", position = "Developer", isMe = true, isFocusing = true),
+            WorkerInfo(id = "2", name = "Elif", position = "Designer", isFocusing = false),
+            WorkerInfo(id = "3", name = "Can", position = "Tester", isFocusing = true)
         )
     )
     val workers: StateFlow<List<WorkerInfo>> = _workers.asStateFlow()
@@ -58,16 +56,26 @@ class SharedViewModel {
     private val _isTimerRunning = MutableStateFlow(false)
     val isTimerRunning: StateFlow<Boolean> = _isTimerRunning.asStateFlow()
 
+    private val _timeLeft = MutableStateFlow(25 * 60 * 1000L)
+    val timeLeft: StateFlow<Long> = _timeLeft.asStateFlow()
+
     private val _currentRadioStation = MutableStateFlow<String?>(null)
     val currentRadioStation: StateFlow<String?> = _currentRadioStation.asStateFlow()
 
-    private val _waterCupsDrunk = MutableStateFlow(4)
+    private val _waterCupsDrunk = MutableStateFlow(5)
     val waterCupsDrunk: StateFlow<Int> = _waterCupsDrunk.asStateFlow()
+
+    private val _officeLevel = MutableStateFlow(2)
+    val officeLevel: StateFlow<Int> = _officeLevel.asStateFlow()
 
     fun toggleTask(task: Task) {
         _tasks.update { currentList ->
             currentList.map {
-                if (it.id == task.id) it.copy(isCompleted = !it.isCompleted) else it
+                if (it.id == task.id) {
+                    val nextState = !it.isCompleted
+                    if (nextState) addXpAndCoins(30, 15)
+                    it.copy(isCompleted = nextState)
+                } else it
             }
         }
     }
@@ -81,6 +89,10 @@ class SharedViewModel {
             isCompleted = false
         )
         _tasks.update { listOf(newTask) + it }
+    }
+
+    fun deleteTask(task: Task) {
+        _tasks.update { list -> list.filter { it.id != task.id } }
     }
 
     fun completeIncomingTask(task: Task) {
@@ -100,7 +112,11 @@ class SharedViewModel {
     fun claimDailyReward() {
         _isDailyRewardClaimed.value = true
         _loginStreak.update { it + 1 }
-        addXpAndCoins(20, 50)
+        addXpAndCoins(25, 50)
+    }
+
+    fun toggleTimer() {
+        _isTimerRunning.update { !it }
     }
 
     fun playRadio(station: String) {
@@ -113,6 +129,14 @@ class SharedViewModel {
 
     fun drinkWater() {
         _waterCupsDrunk.update { minOf(it + 1, 8) }
-        _user.update { it.copy(coins = it.coins + 5) }
+        addXpAndCoins(10, 5)
+    }
+
+    fun upgradeOffice() {
+        val cost = _officeLevel.value * 500
+        if (_user.value.coins >= cost) {
+            _user.update { it.copy(coins = it.coins - cost) }
+            _officeLevel.update { it + 1 }
+        }
     }
 }

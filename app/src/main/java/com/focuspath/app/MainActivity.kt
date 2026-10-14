@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -212,13 +213,13 @@ class MainActivity : ComponentActivity(), BillingProvider {
 
         setContent {
             FocusPathTheme {
-                var showSplash by remember { mutableStateOf(true) }
-            var showIntro by remember { mutableStateOf(false) }
-            var showAuthDialog by remember { mutableStateOf(false) }
+                val prefs = getSharedPreferences("focuspath_prefs", Context.MODE_PRIVATE)
 
-            val prefs = getSharedPreferences("focuspath_prefs", Context.MODE_PRIVATE)
+                var showSplash by rememberSaveable { mutableStateOf(false) }
+                var showIntro by rememberSaveable { mutableStateOf(false) }
+                var showAuthDialog by remember { mutableStateOf(false) }
 
-            val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+                val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
             val lastQuestDate = prefs.getString("LAST_QUEST_DATE", "") ?: ""
             if (lastQuestDate != todayStr) {
                 prefs.edit()
@@ -303,7 +304,10 @@ class MainActivity : ComponentActivity(), BillingProvider {
                             showIntro = true
                         })
                     } else if (showIntro) {
-                        com.focuspath.app.ui.screens.IntroScreen(terminalColor, onFinish = { showIntro = false })
+                        com.focuspath.app.ui.screens.IntroScreen(terminalColor, onFinish = { 
+                            showIntro = false 
+                            prefs.edit().putBoolean("INTRO_SHOWN", true).apply()
+                        })
                     } else {
                         Box(modifier = Modifier.fillMaxSize()) {
                             TaskScreen(

@@ -1,12 +1,10 @@
 package com.focuspath.shared
 
-import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -15,11 +13,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -41,14 +36,14 @@ fun App() {
     val user by viewModel.user.collectAsState()
     val tasks by viewModel.tasks.collectAsState()
     val leaderboard by viewModel.leaderboard.collectAsState()
-    val isPremium by viewModel.isPremium.collectAsState()
     val incomingTasks by viewModel.incomingTasks.collectAsState()
     val isDailyRewardClaimed by viewModel.isDailyRewardClaimed.collectAsState()
     val loginStreak by viewModel.loginStreak.collectAsState()
     val workers by viewModel.workers.collectAsState()
     val isTimerRunning by viewModel.isTimerRunning.collectAsState()
+    val officeLevel by viewModel.officeLevel.collectAsState()
 
-    var appState by remember { mutableStateOf(AppState.SPLASH) }
+    var appState by remember { mutableStateOf(AppState.MAIN) }
     var selectedTab by remember { mutableStateOf(0) }
     var activeDialog by remember { mutableStateOf<String?>(null) }
 
@@ -63,7 +58,6 @@ fun App() {
                         tasks = tasks,
                         leaderboard = leaderboard,
                         user = user,
-                        isPremium = isPremium,
                         incomingTasks = incomingTasks,
                         isDailyRewardClaimed = isDailyRewardClaimed,
                         loginStreak = loginStreak,
@@ -71,6 +65,7 @@ fun App() {
                         onTabSelect = { selectedTab = it },
                         workers = workers,
                         isFocusActive = isTimerRunning,
+                        officeLevel = officeLevel,
                         activeDialog = activeDialog,
                         onDialogChange = { activeDialog = it }
                     )
@@ -85,6 +80,8 @@ fun SplashScreen(onFinish: () -> Unit) {
     Box(modifier = Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text("FocusPath", style = MaterialTheme.typography.displayMedium, fontWeight = FontWeight.Black, color = TerminalGreen)
+            Spacer(Modifier.height(12.dp))
+            Text("DEHB Odaklanma & Üretkenlik Merkezi", color = Color.Gray, fontSize = 12.sp)
             Spacer(Modifier.height(32.dp))
             Button(
                 onClick = onFinish,
@@ -107,6 +104,7 @@ fun IntroScreen(onFinish: () -> Unit) {
         Text("🎯", fontSize = 64.sp)
         Spacer(Modifier.height(24.dp))
         Text("Hoş Geldiniz", style = MaterialTheme.typography.headlineMedium, color = Color.White, fontWeight = FontWeight.Bold)
+        Text("Android ve iOS platformlarında tam özellikli deneyim!", color = Color.Gray, textAlign = TextAlign.Center, fontSize = 13.sp)
         Spacer(Modifier.height(48.dp))
         Button(
             onClick = onFinish,
@@ -125,7 +123,6 @@ fun MainScaffold(
     tasks: List<Task>,
     leaderboard: List<LeaderboardUser>,
     user: User,
-    isPremium: Boolean,
     incomingTasks: List<Task>,
     isDailyRewardClaimed: Boolean,
     loginStreak: Int,
@@ -133,19 +130,26 @@ fun MainScaffold(
     onTabSelect: (Int) -> Unit,
     workers: List<WorkerInfo>,
     isFocusActive: Boolean,
+    officeLevel: Int,
     activeDialog: String?,
     onDialogChange: (String?) -> Unit
 ) {
     Scaffold(
         bottomBar = {
             NavigationBar(containerColor = Color(0xFF1A1A1A), contentColor = TerminalGreen) {
-                val items = listOf("Ana" to Icons.Default.Home, "Görev" to Icons.Default.CheckCircle, "Ofis" to Icons.Default.Business, "Su" to Icons.Default.WaterDrop)
+                val items = listOf(
+                    "Ana" to Icons.Default.Home,
+                    "Görev" to Icons.Default.CheckCircle,
+                    "Zaman" to Icons.Default.Timer,
+                    "Ofis" to Icons.Default.Business,
+                    "Su/Oyun" to Icons.Default.SportsEsports
+                )
                 items.forEachIndexed { index, (label, icon) ->
                     NavigationBarItem(
                         selected = selectedTab == index,
                         onClick = { onTabSelect(index) },
                         icon = { Icon(icon, null, modifier = Modifier.size(20.dp)) },
-                        label = { Text(label, fontSize = 10.sp) },
+                        label = { Text(label, fontSize = 9.sp) },
                         colors = NavigationBarItemDefaults.colors(selectedIconColor = TerminalGreen, unselectedIconColor = Color.Gray, indicatorColor = Color.White.copy(0.1f))
                     )
                 }
@@ -158,7 +162,13 @@ fun MainScaffold(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("FocusPath", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color.White)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("FocusPath", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color.White)
+                    Spacer(Modifier.width(8.dp))
+                    Surface(color = TerminalGreen.copy(0.2f), shape = RoundedCornerShape(6.dp)) {
+                        Text("PRO", color = TerminalGreen, fontSize = 8.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                    }
+                }
                 IconButton(onClick = { onDialogChange("PROFİL") }) {
                     Box(modifier = Modifier.size(32.dp).clip(CircleShape).background(TerminalGreen.copy(0.2f)).border(1.dp, TerminalGreen, CircleShape), contentAlignment = Alignment.Center) {
                         Text(user.name.take(1).uppercase(), color = TerminalGreen, fontWeight = FontWeight.Bold)
@@ -166,8 +176,8 @@ fun MainScaffold(
                 }
             }
 
-            LazyRow(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                val buttons = listOf("GÖREV" to "QUEST", "GELEN" to "INCOMING", "OYUN" to "GAMES", "BAŞARIM" to "ACHIEVE")
+            LazyRow(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                val buttons = listOf("GÖREV EKLE" to "QUEST", "GELEN (${incomingTasks.size})" to "INCOMING", "BAŞARIMLAR" to "ACHIEVE")
                 items(buttons) { (label, key) ->
                     TextButton(onClick = { onDialogChange(key) }) {
                         Text(label, color = TerminalGreen, fontSize = 10.sp, fontWeight = FontWeight.Bold)
@@ -177,10 +187,11 @@ fun MainScaffold(
 
             Box(Modifier.weight(1f)) {
                 when (selectedTab) {
-                    0 -> HomeTab(leaderboard, user, viewModel, onDialogChange)
-                    1 -> TaskTab(tasks, onToggle = { viewModel.toggleTask(it) })
-                    2 -> SharedOfficeScreen(workers = workers, officeLevel = user.level, coins = user.coins, isFocusActive = isFocusActive)
-                    else -> WaterTab(viewModel)
+                    0 -> HomeTab(leaderboard, user, viewModel)
+                    1 -> TaskTab(tasks, onToggle = { viewModel.toggleTask(it) }, onDelete = { viewModel.deleteTask(it) }, onAddClick = { onDialogChange("QUEST") })
+                    2 -> TimerTab(isFocusActive, viewModel)
+                    3 -> SharedOfficeScreen(workers = workers, officeLevel = officeLevel, coins = user.coins, isFocusActive = isFocusActive)
+                    else -> GamesAndWaterTab(viewModel)
                 }
             }
         }
@@ -188,57 +199,55 @@ fun MainScaffold(
 
     activeDialog?.let { type ->
         Dialog(onDismissRequest = { onDialogChange(null) }) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth().wrapContentHeight().clip(RoundedCornerShape(24.dp)),
-                    color = SurfaceColor,
-                    border = BorderStroke(1.dp, TerminalGreen.copy(0.3f))
-                ) {
-                    Column(modifier = Modifier.padding(20.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = when (type) {
-                                    "QUEST" -> "YENİ GÖREV EKLE"
-                                    "INCOMING" -> "GELEN GÖREVLER"
-                                    "GAMES" -> "MİNİ OYUNLAR"
-                                    "ACHIEVE" -> "BAŞARIMLAR"
-                                    "GÜNLÜK ÖDÜL" -> "GÜNLÜK ÖDÜL 🎉"
-                                    "PROFİL" -> "PROFİL & AYARLAR"
-                                    else -> type
-                                },
-                                style = MaterialTheme.typography.titleMedium,
-                                color = TerminalGreen,
-                                fontWeight = FontWeight.Black
-                            )
-                            IconButton(onClick = { onDialogChange(null) }) {
-                                Icon(Icons.Default.Close, null, tint = Color.Gray)
-                            }
+            Surface(
+                modifier = Modifier.fillMaxWidth().wrapContentHeight().clip(RoundedCornerShape(24.dp)),
+                color = SurfaceColor,
+                border = BorderStroke(1.dp, TerminalGreen.copy(0.3f))
+            ) {
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = when (type) {
+                                "QUEST" -> "YENİ GÖREV EKLE"
+                                "INCOMING" -> "ARKADAŞTAN GELEN GÖREVLER"
+                                "ACHIEVE" -> "BAŞARIMLAR"
+                                "GÜNLÜK ÖDÜL" -> "GÜNLÜK ÖDÜL 🎉"
+                                "PROFİL" -> "PROFİL & AYARLAR"
+                                else -> type
+                            },
+                            style = MaterialTheme.typography.titleMedium,
+                            color = TerminalGreen,
+                            fontWeight = FontWeight.Black
+                        )
+                        IconButton(onClick = { onDialogChange(null) }) {
+                            Icon(Icons.Default.Close, null, tint = Color.Gray)
                         }
+                    }
 
-                        Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(12.dp))
 
-                        when (type) {
-                            "QUEST" -> AddQuestDialogContent(viewModel) { onDialogChange(null) }
-                            "INCOMING" -> IncomingTasksDialogContent(incomingTasks, viewModel)
-                            "GAMES" -> MiniGamesDialogContent(viewModel)
-                            "ACHIEVE" -> AchievementsDialogContent(user)
-                            "GÜNLÜK ÖDÜL" -> DailyRewardDialogContent(viewModel, loginStreak) { onDialogChange(null) }
-                            "PROFİL" -> ProfileDialogContent(user, viewModel)
-                            else -> {
-                                Text("Bu özellik iOS için aktif edildi.", color = Color.White)
-                                Spacer(Modifier.height(16.dp))
-                                Button(onClick = { onDialogChange(null) }, modifier = Modifier.fillMaxWidth()) {
-                                    Text("TAMAM")
-                                }
+                    when (type) {
+                        "QUEST" -> AddQuestDialogContent(viewModel) { onDialogChange(null) }
+                        "INCOMING" -> IncomingTasksDialogContent(incomingTasks, viewModel)
+                        "ACHIEVE" -> AchievementsDialogContent(user)
+                        "GÜNLÜK ÖDÜL" -> DailyRewardDialogContent(viewModel, loginStreak) { onDialogChange(null) }
+                        "PROFİL" -> ProfileDialogContent(user, viewModel)
+                        else -> {
+                            Text("Bu özellik aktif edildi.", color = Color.White)
+                            Spacer(Modifier.height(16.dp))
+                            Button(onClick = { onDialogChange(null) }, modifier = Modifier.fillMaxWidth()) {
+                                Text("TAMAM")
                             }
                         }
                     }
                 }
             }
         }
+    }
 
     if (!isDailyRewardClaimed && activeDialog == null) {
         LaunchedEffect(Unit) { onDialogChange("GÜNLÜK ÖDÜL") }
@@ -344,42 +353,6 @@ fun IncomingTasksDialogContent(incomingTasks: List<Task>, viewModel: SharedViewM
 }
 
 @Composable
-fun MiniGamesDialogContent(viewModel: SharedViewModel) {
-    var gameScore by remember { mutableStateOf(0) }
-    var gameActive by remember { mutableStateOf(false) }
-
-    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Refleks ve Odak Testi", style = MaterialTheme.typography.bodyMedium, color = Color.White)
-        
-        Card(
-            modifier = Modifier.fillMaxWidth().height(140.dp),
-            colors = CardDefaults.cardColors(containerColor = if (gameActive) TerminalGreen.copy(0.2f) else Color.White.copy(0.05f)),
-            border = BorderStroke(1.dp, if (gameActive) TerminalGreen else Color.Gray.copy(0.2f))
-        ) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                if (gameActive) {
-                    Button(
-                        onClick = {
-                            gameScore += 10
-                            viewModel.addXpAndCoins(10, 5)
-                            gameActive = false
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = TerminalGreen)
-                    ) {
-                        Text("ŞİMDİ DOKUN! (+10 XP)", color = Color.Black, fontWeight = FontWeight.Bold)
-                    }
-                } else {
-                    Button(onClick = { gameActive = true }) {
-                        Text("TESTİ BAŞLAT", fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
-        Text("Kazanılan Puan: $gameScore XP", color = AccentYellow, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-    }
-}
-
-@Composable
 fun AchievementsDialogContent(user: User) {
     val badges = listOf(
         "🎯" to "İlk Adım" to "İlk görevini oluştur",
@@ -467,13 +440,12 @@ fun ProfileDialogContent(user: User, viewModel: SharedViewModel) {
 }
 
 @Composable
-fun HomeTab(leaderboard: List<LeaderboardUser>, user: User, viewModel: SharedViewModel, onDialogChange: (String?) -> Unit) {
+fun HomeTab(leaderboard: List<LeaderboardUser>, user: User, viewModel: SharedViewModel) {
     val currentStation by viewModel.currentRadioStation.collectAsState()
     
     LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item {
             Card(
-                onClick = { onDialogChange("LOFI") },
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1B4B)),
                 border = BorderStroke(1.dp, TerminalGreen)
@@ -486,9 +458,8 @@ fun HomeTab(leaderboard: List<LeaderboardUser>, user: User, viewModel: SharedVie
                     Spacer(Modifier.width(16.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text("Focus with Lofi beats", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
-                        Text("Immersive lofi study & focus session", style = MaterialTheme.typography.bodySmall, color = TerminalGreen)
+                        Text("Immersive lofi study session", style = MaterialTheme.typography.bodySmall, color = TerminalGreen)
                     }
-                    Icon(Icons.Default.PlayArrow, null, tint = TerminalGreen)
                 }
             }
         }
@@ -503,39 +474,17 @@ fun HomeTab(leaderboard: List<LeaderboardUser>, user: User, viewModel: SharedVie
         }
 
         item {
-            Card(
-                onClick = { onDialogChange("LOFI") },
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1B4B)),
-                border = BorderStroke(1.dp, TerminalGreen)
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("🎧", fontSize = 32.sp)
-                    Spacer(Modifier.width(16.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Focus with Lofi beats", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
-                        Text("Immersive lofi study & focus session", style = MaterialTheme.typography.bodySmall, color = TerminalGreen)
-                    }
-                    Icon(Icons.Default.PlayArrow, null, tint = TerminalGreen)
-                }
-            }
-        }
-
-        item {
             Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = SurfaceColor)) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("📻 RADYO", style = MaterialTheme.typography.labelSmall, color = AccentYellow)
+                    Text("📻 ODAK RADYOSU", style = MaterialTheme.typography.labelSmall, color = AccentYellow)
                     Row(modifier = Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
                         listOf("Lofi", "Jazz", "Brain", "Rain").forEach { name ->
                             val isSelected = currentStation == name
-                            IconButton(
+                            Button(
                                 onClick = { if(isSelected) viewModel.stopRadio() else viewModel.playRadio(name) },
-                                modifier = Modifier.background(if (isSelected) TerminalGreen.copy(0.2f) else Color.White.copy(0.05f), CircleShape)
+                                colors = ButtonDefaults.buttonColors(containerColor = if (isSelected) TerminalGreen else Color.White.copy(0.05f))
                             ) {
-                                Icon(Icons.Default.MusicNote, null, tint = if (isSelected) TerminalGreen else Color.Gray)
+                                Text(name, color = if (isSelected) Color.Black else Color.White, fontSize = 11.sp)
                             }
                         }
                     }
@@ -544,7 +493,7 @@ fun HomeTab(leaderboard: List<LeaderboardUser>, user: User, viewModel: SharedVie
         }
 
         item {
-            Text("LİDERLİK", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+            Text("LİDERLİK TABLOSU", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
             Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = SurfaceColor)) {
                 Column(modifier = Modifier.padding(8.dp)) {
                     leaderboard.take(3).forEach { lbUser ->
@@ -564,23 +513,146 @@ fun HomeTab(leaderboard: List<LeaderboardUser>, user: User, viewModel: SharedVie
 }
 
 @Composable
-fun TaskTab(tasks: List<Task>, onToggle: (Task) -> Unit) {
+fun TaskTab(tasks: List<Task>, onToggle: (Task) -> Unit, onDelete: (Task) -> Unit, onAddClick: () -> Unit) {
     LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        item { SharedDashboardHeader("Görevler", "Bugünkü hedeflerin") }
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text("GÖREVLER", style = MaterialTheme.typography.titleMedium, color = TerminalGreen, fontWeight = FontWeight.Bold)
+                    Text("${tasks.count { it.isCompleted }}/${tasks.size} Tamamlandı", color = Color.Gray, fontSize = 12.sp)
+                }
+                Button(
+                    onClick = onAddClick,
+                    colors = ButtonDefaults.buttonColors(containerColor = TerminalGreen),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                    modifier = Modifier.height(36.dp)
+                ) {
+                    Icon(Icons.Default.Add, null, tint = Color.Black, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Ekle", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                }
+            }
+        }
         items(tasks) { task ->
-            SharedTaskItem(title = task.title, isCompleted = task.isCompleted, onClick = { onToggle(task) })
+            Card(
+                colors = CardDefaults.cardColors(containerColor = SurfaceColor),
+                border = BorderStroke(1.dp, if (task.isCompleted) Color.Gray.copy(0.2f) else TerminalGreen.copy(0.3f))
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = task.isCompleted,
+                        onCheckedChange = { onToggle(task) },
+                        colors = CheckboxDefaults.colors(checkedColor = TerminalGreen)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = task.title,
+                            color = if (task.isCompleted) Color.Gray else Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(text = "[${task.category}]", color = TerminalGreen, fontSize = 10.sp)
+                    }
+                    IconButton(onClick = { onDelete(task) }) {
+                        Icon(Icons.Default.Delete, null, tint = AccentRed, modifier = Modifier.size(18.dp))
+                    }
+                }
+            }
         }
     }
 }
 
 @Composable
-fun WaterTab(viewModel: SharedViewModel) {
+fun TimerTab(isTimerRunning: Boolean, viewModel: SharedViewModel) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text("ZAMANLAYICI & POMODORO", style = MaterialTheme.typography.titleMedium, color = TerminalGreen)
+        Spacer(Modifier.height(32.dp))
+        Box(
+            modifier = Modifier.size(220.dp).border(4.dp, TerminalGreen, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("25:00", fontSize = 48.sp, fontWeight = FontWeight.Black, color = Color.White)
+                Text(if (isTimerRunning) "ODAKLANIYOR..." else "HAZIR", color = if (isTimerRunning) AccentYellow else Color.Gray, fontSize = 12.sp)
+            }
+        }
+        Spacer(Modifier.height(48.dp))
+        Button(
+            onClick = { viewModel.toggleTimer() },
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = if (isTimerRunning) AccentRed else TerminalGreen),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Text(if (isTimerRunning) "DURDUR" else "ODAKLANMAYI BAŞLAT", color = Color.Black, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+fun GamesAndWaterTab(viewModel: SharedViewModel) {
     val waterCups by viewModel.waterCupsDrunk.collectAsState()
-    Column(modifier = Modifier.fillMaxSize().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(24.dp)) {
-        Text("SU TAKİBİ", style = MaterialTheme.typography.headlineMedium, color = TerminalGreen)
-        Text("$waterCups / 8 Bardak", style = MaterialTheme.typography.displaySmall, color = Color.White)
-        Button(onClick = { viewModel.drinkWater() }, modifier = Modifier.fillMaxWidth().height(60.dp)) {
-            Text("İÇTİM (+5 Coin)")
+    var gameScore by remember { mutableStateOf(0) }
+    var gameActive by remember { mutableStateOf(false) }
+
+    LazyColumn(modifier = Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        item {
+            Card(colors = CardDefaults.cardColors(containerColor = SurfaceColor)) {
+                Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("💧 SU TAKİBİ", style = MaterialTheme.typography.titleMedium, color = TerminalGreen)
+                    Spacer(Modifier.height(8.dp))
+                    Text("$waterCups / 8 Bardak", style = MaterialTheme.typography.headlineMedium, color = Color.White)
+                    Spacer(Modifier.height(12.dp))
+                    Button(
+                        onClick = { viewModel.drinkWater() },
+                        colors = ButtonDefaults.buttonColors(containerColor = TerminalGreen),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("SU İÇ (+5 Coin)", color = Color.Black, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+
+        item {
+            Card(colors = CardDefaults.cardColors(containerColor = SurfaceColor)) {
+                Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("🎮 HIZLI REFLEKS OYUNU", style = MaterialTheme.typography.titleMedium, color = AccentYellow)
+                    Spacer(Modifier.height(8.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth().height(100.dp),
+                        colors = CardDefaults.cardColors(containerColor = if (gameActive) TerminalGreen.copy(0.2f) else Color.White.copy(0.05f))
+                    ) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            if (gameActive) {
+                                Button(onClick = {
+                                    gameScore += 15
+                                    viewModel.addXpAndCoins(15, 10)
+                                    gameActive = false
+                                }) {
+                                    Text("TIKLA! (+15 XP)")
+                                }
+                            } else {
+                                Button(onClick = { gameActive = true }) {
+                                    Text("BAŞLAT")
+                                }
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text("Oyun Puanı: $gameScore XP", color = Color.Gray, fontSize = 12.sp)
+                }
+            }
         }
     }
 }
